@@ -1,0 +1,16 @@
+{
+  "name": "bdnumbers",
+  "private": true,
+  "description": "Daily numbers for Bangladesh: dollar rate, gold, market prices, AQI and more. Runs entirely on Cloudflare's free tier.",
+  "workspaces": [
+    "shared",
+    "worker"
+  ],
+  "scripts": {
+    "test": "npm test -w worker",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
