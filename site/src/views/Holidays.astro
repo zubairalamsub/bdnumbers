@@ -1,5 +1,5 @@
 ---
-import { defaultDigits, dhakaDate, formatDate, type Holiday, type Lang } from '@bdnumbers/shared';
+import { defaultDigits, dhakaDate, formatDate, toBengaliDigits, type Holiday, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Related from '../components/Related.astro';
 import { SITE_NAME } from '../config';
@@ -19,7 +19,7 @@ const entry = latest.series.find((e) => e.key === 'holidays_public');
 const holidays = ((entry?.meta?.holidays as Holiday[] | undefined) ?? []).filter((h) => h.type === 'public');
 const today = dhakaDate();
 const next = holidays.find((h) => h.date >= today);
-const year = today.slice(0, 4);
+const year = digits === 'beng' ? toBengaliDigits(today.slice(0, 4)) : today.slice(0, 4);
 const name = (h: Holiday) => (lang === 'bn' ? (h.name_bn ?? h.name) : h.name);
 const weekday = (date: string) =>
   new Intl.DateTimeFormat(lang, { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
