@@ -1,0 +1,42 @@
+---
+import type { Lang, LatestEntry } from '@bdnumbers/shared';
+import { STRINGS } from '../i18n';
+import Ago from './Ago.astro';
+import DateText from './DateText.astro';
+
+interface Props {
+  entry: LatestEntry;
+  lang: Lang;
+  /** Hide the source link when the page already names the source nearby. */
+  source?: boolean;
+}
+
+const { entry, lang, source = true } = Astro.props;
+const s = STRINGS[lang];
+const mirror = entry.meta?.source === 'mirror';
+---
+
+<p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
+  <span>{s.asOf}: <DateText date={entry.date} lang={lang} field="date" /></span>
+  <span>{s.updated}: <Ago at={entry.checked_at} lang={lang} field="checked" /></span>
+  <span class="badge text-warn-ink" data-field="stale" title={s.staleHint} hidden={!entry.stale}>
+    <span aria-hidden="true">⚠</span>{s.stale}
+  </span>
+  {
+    mirror && (
+      <span class="badge text-ink-2" title={s.mirrorHint}>
+        {s.mirror}
+      </span>
+    )
+  }
+  {
+    source && (
+      <span>
+        {s.source}:{' '}
+        <a href={entry.source_url} rel="noopener" target="_blank">
+          {entry.source_name}
+        </a>
+      </span>
+    )
+  }
+</p>

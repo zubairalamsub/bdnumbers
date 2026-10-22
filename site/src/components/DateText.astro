@@ -1,0 +1,13 @@
+---
+import { defaultDigits, formatDate, type Lang } from '@bdnumbers/shared';
+
+interface Props {
+  date: string;
+  lang: Lang;
+  field?: string;
+}
+
+const { date, lang, field } = Astro.props;
+---
+
+<time datetime={date.slice(0, 10)} data-date={date} data-field={field}>{formatDate(date, lang, defaultDigits(lang))}</time>

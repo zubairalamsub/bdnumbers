@@ -1,0 +1,116 @@
+---
+import { defaultDigits, formatNumber, unitLabel, type Category, type Lang } from '@bdnumbers/shared';
+import { STRINGS } from '../i18n';
+import { RANGES, axisLabels, defaultRange, geometry, sliceRange, tickDecimals, type Pt } from '../lib/chart';
+
+interface Props {
+  points: Pt[];
+  category: Category;
+  unit: string;
+  lang: Lang;
+  /** What the chart shows, for screen readers, e.g. "US Dollar rate (weighted average)". */
+  label: string;
+}
+
+const { points, category, unit, lang, label } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const range = defaultRange(points);
+const view = sliceRange(points, range);
+const geo = geometry(view);
+const last = view[view.length - 1];
+const decimals = geo ? tickDecimals(geo.ticks) : 0;
+const tickText = (v: number) => formatNumber(v, digits, decimals, decimals);
+const end = geo?.xy[geo.xy.length - 1];
+const xLabels = view[0] && last ? axisLabels(view[0][0], last[0], lang, digits) : ['', ''];
+---
+
+<figure
+  class="card p-4 sm:p-5"
+  data-chart
+  data-cat={category}
+  data-range={range}
+  data-label={label}
+  data-unit={unitLabel(unit, lang)}
+>
+  <div class="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label={s.rangeLabel}>
+    {
+      RANGES.map((r) => (
+        <button
+          type="button"
+          data-range-btn={r}
+          aria-pressed={r === range ? 'true' : 'false'}
+          class="rounded-md border border-hairline px-2.5 py-0.5 text-sm text-ink-2 aria-pressed:border-ink aria-pressed:font-semibold aria-pressed:text-ink"
+        >
+          {s.ranges[r]}
+        </button>
+      ))
+    }
+  </div>
+  {
+    geo && last ? (
+      <>
+        <div class="grid grid-cols-[auto_1fr] gap-x-2">
+          <div class="relative h-56 text-right text-xs tabular-nums text-muted" data-y-axis aria-hidden="true">
+            {geo.ticks.map((t) => (
+              <span class="absolute right-0 -translate-y-1/2 whitespace-nowrap" style={`top:${t.y / 10}%`}>
+                {tickText(t.value)}
+              </span>
+            ))}
+            <span class="invisible block whitespace-nowrap">{tickText(geo.ticks[geo.ticks.length - 1]!.value)}</span>
+          </div>
+          <div class="relative h-56 touch-pan-y outline-none" data-plot tabindex="0" aria-label={label}>
+            <div data-grid aria-hidden="true">
+              {geo.ticks.map((t) => (
+                <span class="absolute inset-x-0 border-t border-grid" style={`top:${t.y / 10}%`} />
+              ))}
+            </div>
+            <svg class="absolute inset-0 size-full overflow-visible" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+              <path data-area d={geo.area} fill="var(--series-wash)" />
+              <path
+                data-line
+                d={geo.line}
+                fill="none"
+                stroke="var(--series)"
+                stroke-width="2"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+            <span
+              data-end-dot
+              aria-hidden="true"
+              class="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-series"
+              style={`left:${end![0] / 10}%;top:${end![1] / 10}%`}
+            />
+            <span data-crosshair aria-hidden="true" class="absolute inset-y-0 w-px bg-axis" hidden />
+            <span
+              data-hover-dot
+              aria-hidden="true"
+              class="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-series"
+              hidden
+            />
+            <div
+              data-tooltip
+              role="status"
+              class="pointer-events-none absolute top-1 z-10 rounded-md border border-hairline bg-surface px-2.5 py-1.5 text-sm shadow-sm"
+              hidden
+            >
+              <div data-tooltip-value class="font-semibold text-ink" />
+              <div data-tooltip-date class="text-xs text-ink-2" />
+            </div>
+          </div>
+          <span />
+          <div class="mt-1 flex justify-between text-xs text-muted" data-x-axis aria-hidden="true">
+            <span data-x-start>{xLabels[0]}</span>
+            <span data-x-end>{xLabels[1]}</span>
+          </div>
+        </div>
+      </>
+    ) : (
+      <p class="text-sm text-ink-2">{s.chartEmpty}</p>
+    )
+  }
+  <script type="application/json" data-points set:html={JSON.stringify(points)} />
+</figure>

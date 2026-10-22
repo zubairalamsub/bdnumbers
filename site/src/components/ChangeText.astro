@@ -1,0 +1,30 @@
+---
+import { defaultDigits, type Category, type Change, type Lang } from '@bdnumbers/shared';
+import { changeLabel } from '../lib/view';
+
+interface Props {
+  change: Change | null;
+  category: Category;
+  lang: Lang;
+  /** e.g. "change.prev"; a client refresh rewrites it from latest.json. */
+  field?: string;
+  /** With no change to show: hide the element, or show a dash (in tables). */
+  empty?: 'hide' | 'dash';
+  class?: string;
+}
+
+const { change, category, lang, field, empty = 'hide', class: className } = Astro.props;
+const label = change ? changeLabel(change, category, lang, defaultDigits(lang)) : null;
+---
+
+<span
+  class:list={['whitespace-nowrap', className]}
+  data-change
+  data-field={field}
+  data-cat={category}
+  data-abs={change?.abs ?? ''}
+  data-pct={change?.pct ?? ''}
+  data-empty={empty}
+  aria-label={label?.aria}
+  hidden={!change && empty === 'hide'}>{label ? label.text : '—'}</span
+>

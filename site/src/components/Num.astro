@@ -1,0 +1,17 @@
+---
+import { defaultDigits, formatNumber, type Lang } from '@bdnumbers/shared';
+
+interface Props {
+  value: number;
+  /** Fixed fraction digits. */
+  fd?: number;
+  lang: Lang;
+  /** Which LatestEntry field a client refresh writes here, e.g. "value". */
+  field?: string;
+  class?: string;
+}
+
+const { value, fd = 0, lang, field, class: className } = Astro.props;
+---
+
+<span class={className} data-num={value} data-fd={fd} data-field={field}>{formatNumber(value, defaultDigits(lang), fd, fd)}</span>

@@ -1,0 +1,37 @@
+---
+import type { Lang, LatestEntry } from '@bdnumbers/shared';
+import { STRINGS } from '../i18n';
+import ChangeText from './ChangeText.astro';
+
+interface Props {
+  entry: LatestEntry;
+  lang: Lang;
+}
+
+const { entry, lang } = Astro.props;
+const s = STRINGS[lang];
+const periods = ['prev', 'd7', 'd30', 'y1'] as const;
+---
+
+<table class="data-table text-[0.9375rem]" data-series={entry.key}>
+  <thead>
+    <tr>
+      <th scope="col">{s.period}</th>
+      <th scope="col">{s.change}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      periods.map((p) => (
+        <tr>
+          <th scope="row" class="font-normal text-ink-2">
+            {s.vs[p]}
+          </th>
+          <td>
+            <ChangeText change={entry.change[p]} category={entry.category} lang={lang} field={`change.${p}`} empty="dash" />
+          </td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>
