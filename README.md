@@ -4,9 +4,9 @@ Daily numbers for Bangladesh (dollar rate, gold and silver, market prices, air q
 **[bdrate.fyi](https://bdrate.fyi)**. Everything runs on Cloudflare's free tier: a Worker collects data
 and serves the API, D1 stores it, and Pages hosts the site. No servers and no paid services.
 
-> **Status: Stage 2 of 5.** Done: the Worker, D1, Bangladesh Bank and BAJUS sources, cron, API, and the
-> Astro site (dashboard, dollar, gold, silver, history, status). Next: TCB, AQI, DSE and weather (3);
-> periodic sources, calculators, prayer times and holidays (4); and SEO, PWA and notifications (5).
+> **Status: Stage 3 of 5.** Done: Bangladesh Bank and BAJUS (Stage 1); the Astro site with dashboard, dollar,
+> gold, silver, history and status pages (Stage 2); TCB market prices, DSE indices and weather (Stage 3, AQI left
+> out by choice). Next: periodic sources, calculators, prayer times and holidays (4), then SEO, PWA and notifications (5).
 
 ```
 /shared   TypeScript types, series catalog, date and number formatting (used by worker and site)
@@ -24,7 +24,7 @@ cron ─▶ scheduled() ─▶ one invocation per source via the SELF service bi
 GET /api/* ─▶ edge cache (keyed by cache version) ─▶ KV ─▶ D1
 ```
 
-- **Crons:** `0 1,7 * * *` runs the daily sources at 07:00 and 13:00 Dhaka. `15 * * * *` runs the hourly sources (AQI and weather, from Stage 3).
+- **Crons:** `0 1,7 * * *` runs the daily sources (Bangladesh Bank, BAJUS, TCB, DSE) at 07:00 and 13:00 Dhaka. `15 * * * *` runs weather every hour.
 - **Failures are loud but contained.** A failing source is logged in `runs` with its error. It never stops the other sources. Its latest points are flagged `stale`, so the API keeps serving the last good value marked as stale. The next successful run clears the flag.
 - **Sanity checks:** every point must belong to a known series and have a real date and a value inside the series bounds. Gold and silver must also keep 22K > 21K > 18K > traditional. A violation fails the run instead of storing bad data.
 - **Writes are idempotent:** re-running a source writes nothing unless a value changed.
@@ -37,6 +37,9 @@ GET /api/* ─▶ edge cache (keyed by cache version) ─▶ KV ─▶ D1
 | [Bangladesh Bank: Exchange Rate of Taka](https://www.bb.org.bd/en/index.php/econdata/exchangerate) | `usd_bdt_low` (bid), `usd_bdt_high` (ask), `usd_bdt_avg` (WAR), `{ccy}_bdt_bid/ask` for every listed currency | Dated from the page header ("Oct 19, 2026"), which lags by business days. New currencies are picked up automatically. |
 | [BAJUS: Gold Price](https://www.bajus.org/gold-price) | `gold_22k/21k/18k/traditional`, `silver_…` in BDT per bhori | BAJUS quotes per gram; stored as per gram × 11.664 (raw per-gram value in `meta`). Dated from the effective-date PDF link. Written only on change. |
 | [UNB news](https://unb.com.bd/search?q=gold+price) (mirror) | same as BAJUS | Used only when BAJUS fails. Values carry `meta.source = "mirror"`, and a metal whose figures break the karat ladder is skipped. |
+| [TCB: daily retail market prices](https://tcb.gov.bd/pages/daily-rmps) | `tcb_<item>_min` / `tcb_<item>_max` for 60 items (rice, flour, oil, pulses, vegetables, spices, fish/meat/eggs, milk powder, sugar, rods…) | TCB publishes an XLSX per day. The Worker reads it directly (small zip reader + native `DecompressionStream`), so no PDF/GitHub Actions fallback is needed. Items are matched to [`shared/src/catalog/tcb.ts`](shared/src/catalog/tcb.ts) by name and unit after Unicode normalisation; unknown rows show up as a warning on `/status`. A price of 0 (item not in the market) is skipped. |
+| [DSE: recent market information](https://www.dse.com.bd/recent-market-information) | `dse_dsex`, `dse_dses`, `dse_ds30`, `dse_turnover` (Tk crore) | One row per trading day, so DSE holidays simply have no data. Each run upserts the ~6 weeks listed. |
+| [MET Norway Locationforecast](https://api.met.no/) | `weather_<city>_temp` / `_humidity` / `_wind` (km/h) / `_rain` (mm, next hour) for Dhaka and the 7 other division HQs | Hourly. CC BY 4.0, which allows commercial use with attribution (Open-Meteo's free tier is non-commercial, which an ad slot would break). Coordinates are GeoNames places. The temperature point's meta carries the sky symbol and the next 24 hours' high/low. |
 
 Each parser has tests against pages saved from the live sites (`worker/test/fixtures`). When a site changes its layout, the parser throws a clear error and `/api/status.json` shows it.
 
@@ -107,6 +110,14 @@ cd worker
    npx wrangler secret put PAGES_DEPLOY_HOOK
    ```
 
+### TCB backfill
+
+TCB's list page keeps recent files, so 50 days of market history can be loaded once (already done for 30 Aug – 19 Oct 2026):
+
+```bash
+cd worker && npx tsx scripts/backfill-tcb.ts 50   # uses INGEST_TOKEN from worker/.dev.vars; safe to re-run
+```
+
 ### Seeding history
 
 So charts aren't empty at launch, load history from CSVs. Name each file `<series_key>.csv` (for example `usd_bdt_avg.csv` or `gold_22k.csv`) and give it a `date,value` header row:
@@ -149,14 +160,14 @@ Everything runs at $0. The Cloudflare account is on the **Workers Free** plan an
 
 | Resource | Free limit | Estimated use (Stage 2) | If the limit is hit |
 |---|---|---|---|
-| Workers requests | 100,000/day | ~30/day for cron and fan-out, plus 1 per visible page view whose data is ≥5 min old (the live refresh) | Make the island poll less often or serve `latest.json` from Pages. Workers Paid is $5/mo for 10M requests. |
+| Workers requests | 100,000/day | ~80/day for cron and fan-out (24 hourly + 2 daily batches), plus 1 per visible page view whose data is ≥5 min old (the live refresh, which asks only for the page's series) | Make the island poll less often or serve `latest.json` from Pages. Workers Paid is $5/mo for 10M requests. |
 | Workers CPU | 10 ms per invocation (HTTP and cron) | Each source runs in its own invocation; HTMLRewriter parsing is native | `runs` shows "exceeded CPU". Move that parser to a GitHub Actions job that posts to `/api/ingest`. |
 | Workers subrequests | 50 per invocation (1,000 via service bindings) | ≤3 per source | Already spread across invocations |
 | Cron triggers | 5 per account | 2 | — |
-| D1 rows written | 100,000/day | <100/day now; ~3,000/day once hourly AQI and weather run | Drop hourly series or cities, or store AQI every 3 h |
+| D1 rows written | 100,000/day | ~2,500/day: 32 weather points an hour, ~120 TCB and 4 DSE points a day, each also updating indexes (the one-off TCB backfill was ~17,000) | Fewer weather cities or metrics, or fetch weather every 3 h |
 | D1 rows read | 5,000,000/day | ~1,000 per batch plus API cache misses | Cache misses are rare thanks to KV and the edge cache; lengthen `max-age` |
 | D1 storage | 500 MB per database, 5 GB per account | <50 MB/year | Prune old hourly points |
-| KV writes | 1,000/day | 3 per batch with sources (~6/day now, ~80/day with hourly sources) | Rebuild KV only when a batch wrote something |
+| KV writes | 1,000/day | 3 per batch: ~80/day (24 hourly + 2 daily) | Rebuild KV only when a batch wrote something |
 | KV reads | 100,000/day | ≤2 per API request (cache version memoized per isolate) | Same as Workers requests |
 | Pages builds | 500/month | ≤2/day (only when the daily batch wrote data) ≈ 60/month, plus pushes | Rebuild once a day |
 | Workers Logs | 200,000 events/day | a few hundred (one summary line per batch, errors) | Logs stop for the day; the `runs` table still records every run |
