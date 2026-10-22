@@ -38,6 +38,7 @@ describe('GET /api/latest.json', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
     expect(res.headers.get('cache-control')).toBe('public, max-age=300');
+    expect(res.headers.get('x-robots-tag')).toBe('noindex');
 
     const body = await res.json<LatestResponse>();
     const usd = body.series.find((s) => s.key === 'usd_bdt_avg')!;

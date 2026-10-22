@@ -16,6 +16,10 @@ export default defineConfig(async () => {
             INGEST_TOKEN: 'test-ingest-token',
             INTERNAL_TOKEN: 'test-internal-token',
             PAGES_DEPLOY_HOOK: 'https://deploy-hook.test/hook',
+            // .dev.vars may hold real keys for these optional services; tests start with them off.
+            ONESIGNAL_APP_ID: '',
+            ONESIGNAL_KEY: '',
+            BUTTONDOWN_API_KEY: '',
           },
         },
       }),

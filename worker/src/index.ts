@@ -8,6 +8,12 @@ import { manual } from './routes/manual';
 
 const app = new Hono<AppEnv>();
 
+// The API, embeds and forms are for the site and other apps, not for search results.
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.set('x-robots-tag', 'noindex');
+});
+
 app.get('/', (c) =>
   c.json({
     name: 'bdnumbers API',
