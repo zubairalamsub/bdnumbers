@@ -68,6 +68,9 @@ Every page is static HTML in Bengali (`/`) and English (`/en/…`), with Bengali
 - **`/sitemap.xml`** lists both language versions of every indexable page with hreflang alternates. `lastmod` is when the data behind the page last changed. History pages are `noindex` and left out, so each number has one evergreen URL.
 - **Feeds:** `/feed.xml` (Atom) and `/rss.xml`, plus `/en/…` versions, have one entry per day listing every number that moved.
 - **`_redirects`** maps short aliases such as `/dollar`, `/gold`, `/namaz` and `/zakat` to the evergreen pages.
+- **One indexed host:** `_headers` sends `X-Robots-Tag: noindex` on `bdnumbers.pages.dev`, and the Worker sends it on every `api.bdrate.fyi` response (JSON, embeds, the manual form), so only `bdrate.fyi` pages appear in search. Indexable pages carry `robots: max-image-preview:large`, which lets Google show large previews and use them in Discover.
+- **Trust pages:** `/about` lists every source (from the series catalog) and how updates work; `/privacy` describes what the browser keeps and each outside service, with sections for ads, push and email that appear only when that service is configured. Bump `PRIVACY_UPDATED` in [`site/src/lib/site-pages.ts`](site/src/lib/site-pages.ts) when the policy changes.
+- **Search Console:** verify the domain property `bdrate.fyi` (DNS, through Cloudflare) and submit `https://bdrate.fyi/sitemap.xml`. Bing Webmaster Tools can import the property from Search Console.
 - **Social cards** (`/og/<lang>/<page>.png`, 1200×630) show the page's current number and are rebuilt with every deploy. Bengali text is shaped with HarfBuzz ([harfbuzzjs](https://github.com/harfbuzz/harfbuzzjs)) and rasterised with resvg, because no SVG renderer available here shapes Bengali correctly on its own. The font is Hind Siliguri (SIL OFL, licence in `site/src/og/fonts`).
 - **PWA:** a web app manifest (Bengali and English), app icons, and a service worker (`/sw.js`). Pages load network-first, so a page you opened before still works offline with the data it last showed. Hashed assets are cache-first, and pages never opened before show `/offline`.
 - **Performance:** CSS is inlined, the Bengali webfont is preloaded with `font-display: swap`, and the only scripts are the site's own. OneSignal, Buttondown and AdSense load only when switched on and used. The [Lighthouse CI workflow](.github/workflows/lighthouse.yml) fails if any of 7 key pages scores under 95 on mobile in performance, accessibility, best practices or SEO. Local runs on 2026-10-22 scored 98–100 everywhere.
@@ -80,7 +83,8 @@ These stay off until you add the keys, and nothing breaks without them.
 |---|---|---|
 | "Notify me when this changes" buttons on the dollar, gold, silver, fuel/LPG and savings pages | [OneSignal](https://onesignal.com): web push, up to 10,000 subscribers per send, 6 data tags per subscriber (this site uses 5) | Create a Web app with **Custom Code** setup for `https://bdrate.fyi`. Add `ONESIGNAL_APP_ID` as a Pages environment variable, then add `ONESIGNAL_APP_ID` and `ONESIGNAL_KEY` (the REST API key) as Worker secrets. |
 | Daily email digest: one bilingual email at about 13:00 on days something changed | [Buttondown](https://buttondown.com): free up to 100 subscribers, one email a day | Add `BUTTONDOWN_USERNAME` as a Pages environment variable (this shows the sign-up form in the footer) and `BUTTONDOWN_API_KEY` as a Worker secret. |
-| One ad slot per number page, loaded only when scrolled near | Google AdSense | Add `ADSENSE_CLIENT` (`ca-pub-…`) and `ADSENSE_SLOT` as Pages environment variables. |
+| One ad slot per number page, loaded only when scrolled near | Google AdSense | Add `ADSENSE_CLIENT` (`ca-pub-…`) as a Pages environment variable and rebuild: this adds the `google-adsense-account` meta tag, the Google line in `/ads.txt` and the ads section of `/privacy`, which is what AdSense checks before approving the site. Once approved, create a display ad unit and add its ID as `ADSENSE_SLOT`. |
+| Contact email on `/about` and `/privacy` (next to the GitHub issues link) | — | Add `CONTACT_EMAIL` as a Pages environment variable. |
 
 The Worker sends pushes after any daily batch that changed a subscribed number. Subscribers are tagged `n_<topic>` with their page language, and each language gets its own message ([`shared/src/catalog/notify.ts`](shared/src/catalog/notify.ts)). The digest goes out once a day after the 13:00 batch, which a KV flag guarantees. Each batch's log line reports `push` and `digest` outcomes such as `not-configured`, `sent` or `failed`.
 
@@ -145,7 +149,7 @@ cd worker
    | Root directory | *(leave empty: the repo root, so the npm workspace resolves `shared`)* |
    | Build watch paths, include | `site/*`, `shared/*`, `package-lock.json` (worker-only pushes then skip a build) |
 
-   No environment variables are needed: Node comes from `.nvmrc`, and `API_BASE` defaults to `https://api.bdrate.fyi`. The optional ones (`ONESIGNAL_APP_ID`, `BUTTONDOWN_USERNAME`, `ADSENSE_CLIENT`, `ADSENSE_SLOT`) are covered under *Notifications and ads*. Then add `bdrate.fyi` under *Custom domains*.
+   No environment variables are needed: Node comes from `.nvmrc`, and `API_BASE` defaults to `https://api.bdrate.fyi`. The optional ones (`ONESIGNAL_APP_ID`, `BUTTONDOWN_USERNAME`, `ADSENSE_CLIENT`, `ADSENSE_SLOT`, `CONTACT_EMAIL`) are covered under *Notifications and ads*. Then add `bdrate.fyi` under *Custom domains*.
 8. **Add the deploy hook.** Under *Settings → Builds → Deploy hooks*, add one for `main` and store its URL as a Worker secret. After that, every daily batch that writes new data rebuilds the site.
    ```bash
    npx wrangler secret put PAGES_DEPLOY_HOOK
