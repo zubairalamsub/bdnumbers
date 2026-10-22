@@ -4,14 +4,14 @@ Daily numbers for Bangladesh (dollar rate, gold and silver, market prices, air q
 **[bdrate.fyi](https://bdrate.fyi)**. Everything runs on Cloudflare's free tier: a Worker collects data
 and serves the API, D1 stores it, and Pages hosts the site. No servers and no paid services.
 
-> **Status: Stage 1 of 5.** Worker, D1, Bangladesh Bank and BAJUS sources, cron and API are done.
-> Next: the Astro site (Stage 2); then TCB, AQI, DSE and weather (3); periodic sources, calculators,
-> prayer times and holidays (4); and SEO, PWA and notifications (5).
+> **Status: Stage 2 of 5.** Done: the Worker, D1, Bangladesh Bank and BAJUS sources, cron, API, and the
+> Astro site (dashboard, dollar, gold, silver, history, status). Next: TCB, AQI, DSE and weather (3);
+> periodic sources, calculators, prayer times and holidays (4); and SEO, PWA and notifications (5).
 
 ```
 /shared   TypeScript types, series catalog, date and number formatting (used by worker and site)
 /worker   Cloudflare Worker: sources, cron, Hono API, D1 migrations, tests
-/site     Astro site (Stage 2)
+/site     Astro 7 + Tailwind 4 static site on Cloudflare Pages
 ```
 
 ## How it works
@@ -90,7 +90,22 @@ cd worker
    curl -X POST https://api.bdrate.fyi/internal/batch/daily -H "authorization: Bearer <INTERNAL_TOKEN>"
    ```
 6. **Set up CI deploys.** In the GitHub repo, add the secrets `CLOUDFLARE_API_TOKEN` (create it from the "Edit Cloudflare Workers" template and add *D1: Edit*) and `CLOUDFLARE_ACCOUNT_ID`. After that, every push to `main` that touches `worker/` or `shared/` runs the tests, applies migrations and deploys. Without the secrets, the workflow skips the deploy with a warning.
-7. **Connect Pages (Stage 2).** Create a Pages project from the repo (root `site`). Then add a deploy hook under *Settings → Builds → Deploy hooks* and store it with `npx wrangler secret put PAGES_DEPLOY_HOOK`.
+7. **Connect Pages.** In the dashboard, go to *Workers & Pages → Create → Pages → Connect to Git* and pick this repo. Use these settings:
+
+   | Setting | Value |
+   |---|---|
+   | Production branch | `main` |
+   | Framework preset | None |
+   | Build command | `npm run build -w site` |
+   | Build output directory | `site/dist` |
+   | Root directory | *(leave empty: the repo root, so the npm workspace resolves `shared`)* |
+   | Build watch paths, include | `site/*`, `shared/*`, `package-lock.json` (worker-only pushes then skip a build) |
+
+   No environment variables are needed: Node comes from `.nvmrc`, and `API_BASE` defaults to `https://api.bdrate.fyi`. Then add `bdrate.fyi` under *Custom domains*.
+8. **Add the deploy hook.** Under *Settings → Builds → Deploy hooks*, add one for `main` and store its URL as a Worker secret. After that, every daily batch that writes new data rebuilds the site.
+   ```bash
+   npx wrangler secret put PAGES_DEPLOY_HOOK
+   ```
 
 ### Seeding history
 
@@ -108,10 +123,16 @@ The script accepts `YYYY-MM-DD`, `DD/MM/YYYY` and `DD-MM-YYYY` dates, plus quote
 
 ```bash
 npm test                 # vitest inside workerd: real D1, KV and HTMLRewriter
-npm run typecheck
+npm run typecheck        # tsc for shared/worker, astro check for the site
 npm run dev -w worker    # wrangler dev --test-scheduled (copy worker/.dev.vars.example to .dev.vars)
 curl "http://localhost:8787/__scheduled?cron=0+1,7+*+*+*"   # trigger the daily batch locally
+npm run dev -w site      # Astro dev server; reads the live API (set API_BASE to point elsewhere)
+npm run build -w site    # what Pages runs
 ```
+
+### How the site stays fresh
+
+Pages builds from the API at build time, so every page is complete static HTML with today's numbers. The Worker calls the deploy hook after a daily batch that wrote data, which keeps rebuilds to about 2 a day. In the browser, one small script (`site/src/scripts/live.ts`) re-reads `/api/latest.json` once the page's data is more than 5 minutes old, so visitors never see older numbers than that. The same script ticks "updated X ago", switches between Bengali and English digits (remembered per language), and drives the charts. Charts are inline SVG with no chart library, in a single blue validated for both light and dark mode.
 
 To add a source, create `worker/src/sources/<name>.ts` exporting a `Source` (`key`, `cadence`, `writeMode`, `fetch(env, ctx)`). Register it in `sources/index.ts` and add its series to `shared/src/series.ts`. Save the live page under `worker/test/fixtures/` and write the parser against it.
 

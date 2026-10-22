@@ -16,3 +16,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # Builds against the live API, so a site that can't render today's data fails CI.
+      - run: npm run build -w site
