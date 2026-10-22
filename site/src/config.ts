@@ -1,5 +1,7 @@
 export const SITE_URL = 'https://bdrate.fyi';
 export const SITE_NAME = 'bdrate.fyi';
+/** The public source repository; its issue tracker is the contact channel on /about. */
+export const REPO_URL = 'https://github.com/zubairalamsub/bdnumbers';
 
 /** The Worker API the build reads from and the browser refreshes against. Override with API_BASE at build time. */
 // Build-time only (reads process.env): never import this file from browser scripts.
@@ -12,6 +14,12 @@ const env = (name: string) => (process.env[name] ?? '').trim();
 export const ONESIGNAL_APP_ID = env('ONESIGNAL_APP_ID');
 /** Buttondown newsletter username: turns on the daily-digest sign-up form (free plan). */
 export const BUTTONDOWN_USERNAME = env('BUTTONDOWN_USERNAME');
-/** Google AdSense publisher ID (ca-pub-…) and ad slot: turns on one lazily loaded ad slot per number page. */
+/**
+ * Google AdSense publisher ID (ca-pub-…) and ad slot. The ID alone adds the site-ownership meta tag,
+ * the ads.txt line and the ads section of /privacy (what AdSense review needs); with the slot as well,
+ * each number page gets one lazily loaded ad.
+ */
 export const ADSENSE_CLIENT = env('ADSENSE_CLIENT');
 export const ADSENSE_SLOT = env('ADSENSE_SLOT');
+/** A contact email shown on /about next to the issue tracker (optional). */
+export const CONTACT_EMAIL = env('CONTACT_EMAIL');

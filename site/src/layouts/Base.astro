@@ -4,7 +4,7 @@ import { Font } from 'astro:assets';
 import BottomNav from '../components/BottomNav.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import { API_BASE, SITE_NAME, SITE_URL } from '../config';
+import { ADSENSE_CLIENT, API_BASE, SITE_NAME, SITE_URL } from '../config';
 import { localePath } from '../i18n';
 import { ogImagePath } from '../lib/og-cards';
 import { fitDescription, fitTitle, ldJson, type JsonLd } from '../lib/seo';
@@ -49,7 +49,8 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
         </>
       )
     }
-    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="robots" content={noindex ? 'noindex' : 'max-image-preview:large'} />
+    {ADSENSE_CLIENT && <meta name="google-adsense-account" content={ADSENSE_CLIENT} />}
     <meta name="theme-color" content="#006a4e" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -63,6 +64,7 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content={lang === 'bn' ? 'bn_BD' : 'en_US'} />
+    {!noindex && <meta property="og:locale:alternate" content={lang === 'bn' ? 'en_US' : 'bn_BD'} />}
     <meta property="og:type" content="website" />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />

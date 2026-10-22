@@ -15,6 +15,10 @@
 /en/rss.xml
   Content-Type: application/rss+xml; charset=utf-8
 
+# The pages.dev copy of the site stays out of search results; bdrate.fyi is the only indexed host.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
 /sw.js
   Cache-Control: no-cache
 /manifest.webmanifest
