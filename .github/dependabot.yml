@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # Security fixes arrive as soon as an advisory is published; version bumps once a week, grouped so
+  # each ecosystem opens at most one pull request.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ['*']
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
