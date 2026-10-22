@@ -23,14 +23,27 @@ const entry = await getEntry(seriesKey);
 const history = await getHistory(seriesKey);
 const name = lang === 'bn' ? entry.name_bn : entry.name_en;
 const parent = CATEGORY_PAGE[entry.category];
-const parentLabel = entry.category === 'fx' ? s.nav.dollar : entry.category === 'gold' ? s.nav.gold : s.nav.silver;
-const rows = history.points
+const NAV_FOR: Record<typeof entry.category, string> = {
+  fx: s.nav.dollar,
+  gold: s.nav.gold,
+  silver: s.nav.silver,
+  market: s.nav.market,
+  stock: s.nav.stock,
+  weather: s.nav.weather,
+};
+const parentLabel = NAV_FOR[entry.category];
+// Hourly series: chart the last 30 days and list the last week; the CSV still has everything.
+const hourly = history.points.some((p) => p.date.length > 10);
+const chartPoints = hourly ? history.points.slice(-30 * 24) : history.points;
+const listed = hourly ? history.points.slice(-7 * 24 - 1) : history.points;
+const rows = listed
   .map((p, i) => {
-    const prev = history.points[i - 1];
+    const prev = listed[i - 1];
     const abs = prev ? p.value - prev.value : null;
     return { ...p, change: prev && abs !== null ? { from: prev.value, date: prev.date, abs, pct: prev.value ? (abs / prev.value) * 100 : null } : null };
   })
-  .reverse();
+  .reverse()
+  .slice(0, hourly ? 7 * 24 : undefined);
 const title = `${name}: ${s.history} | ${SITE_NAME}`;
 const description =
   lang === 'bn'
@@ -47,7 +60,7 @@ const path = `/history/${seriesKey}`;
   </div>
 
   <div class="mt-4">
-    <LineChart points={history.points.map((p) => [p.date, p.value])} category={entry.category} unit={entry.unit} lang={lang} label={name} />
+    <LineChart points={chartPoints.map((p) => [p.date, p.value])} category={entry.category} unit={entry.unit} lang={lang} label={name} />
   </div>
 
   <p class="mt-4">

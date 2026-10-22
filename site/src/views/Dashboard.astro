@@ -6,6 +6,10 @@ import {
   formatSeriesValue,
   fractionDigits,
   getSeriesDef,
+  TCB_ITEMS,
+  WEATHER_CITIES,
+  unitLabel,
+  weatherCondition,
   type Lang,
 } from '@bdnumbers/shared';
 import ChangeText from '../components/ChangeText.astro';
@@ -28,8 +32,19 @@ const [usd, bid, ask] = await getEntries(['usd_bdt_avg', 'usd_bdt_low', 'usd_bdt
 const gold = await getEntries(KARAT_ORDER.map((k) => `gold_${k}`));
 const crossCodes = ['eur', 'gbp', 'inr', 'sgd', 'aud', 'cad'].filter((c) => latest.series.some((e) => e.key === `${c}_bdt_ask`));
 const cross = await getEntries(crossCodes.map((c) => `${c}_bdt_ask`));
-// A series' first value isn't a change.
-const changed = (await getChanges()).changes.filter((c) => c.previous !== null);
+// A series' first value isn't a change, and hourly weather would drown out everything else.
+const changed = (await getChanges()).changes.filter(
+  (c) => c.previous !== null && getSeriesDef(c.key)?.category !== 'weather',
+);
+const byKey = new Map(latest.series.map((e) => [e.key, e]));
+const marketItems = ['rice_coarse', 'soybean_oil_loose', 'onion_local', 'potato', 'lentil_bold', 'egg', 'chicken_broiler', 'sugar']
+  .map((id) => ({ item: TCB_ITEMS.find((i) => i.id === id)!, min: byKey.get(`tcb_${id}_min`), max: byKey.get(`tcb_${id}_max`) }))
+  .filter((r) => r.min && r.max);
+const dsex = byKey.get('dse_dsex');
+const turnover = byKey.get('dse_turnover');
+const weatherCities = ['dhaka', 'chattogram', 'sylhet', 'rajshahi']
+  .map((id) => ({ city: WEATHER_CITIES.find((c) => c.id === id)!, temp: byKey.get(`weather_${id}_temp`) }))
+  .filter((c) => c.temp !== undefined);
 const [silver, ...silverRest] = await getEntries(KARAT_ORDER.map((k) => `silver_${k}`));
 
 const usdText = formatSeriesValue(usd!.value, 'fx', digits);
@@ -121,6 +136,72 @@ const description =
         </tbody>
       </table>
     </section>
+  </div>
+
+  <div class="mt-4 grid gap-4 md:grid-cols-3">
+    {
+      marketItems.length > 0 && (
+        <section class="card p-4 sm:p-5">
+          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
+            <a href={localePath(lang, '/market-price-today')} class="text-ink-2 no-underline hover:underline">
+              {s.nav.market} ({s.market.city})
+            </a>
+          </h2>
+          <ul class="divide-y divide-grid text-[0.9375rem]">
+            {marketItems.map((r) => (
+              <li class="flex justify-between gap-3 py-1">
+                <span>{lang === 'bn' ? r.item.bn : r.item.en}</span>
+                <span class="whitespace-nowrap text-right">
+                  <span class="font-semibold">
+                    <span data-series={r.min!.key}><Num value={r.min!.value} lang={lang} field="value" /></span>–<span data-series={r.max!.key}><Num value={r.max!.value} lang={lang} field="value" /></span>
+                  </span>
+                  <span class="block text-xs text-muted">{unitLabel(`BDT/${r.item.unit}`, lang)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      dsex && (
+        <NumberCard entry={dsex} lang={lang} href={localePath(lang, '/share-market-today')} label={`${s.nav.stock} · DSEX`}>
+          {turnover && (
+            <p class="text-sm text-ink-2" data-series={turnover.key}>
+              {lang === 'bn' ? 'লেনদেন' : 'Turnover'}: <Num value={turnover.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" />{' '}
+              {unitLabel('BDT crore', lang)}
+            </p>
+          )}
+        </NumberCard>
+      )
+    }
+
+    {
+      weatherCities.length > 0 && (
+        <section class="card p-4 sm:p-5">
+          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
+            <a href={localePath(lang, '/weather')} class="text-ink-2 no-underline hover:underline">
+              {s.nav.weather}
+            </a>
+          </h2>
+          <ul class="divide-y divide-grid text-[0.9375rem]">
+            {weatherCities.map(({ city, temp: e }) => {
+              const sky = weatherCondition(e!.meta?.symbol, lang);
+              return (
+                <li class="flex items-center justify-between gap-3 py-1.5" data-series={e!.key}>
+                  <span>{lang === 'bn' ? city.bn : city.en}</span>
+                  <span class="text-right">
+                    <span class="text-sm text-ink-2" data-field="symbol">{sky ? `${sky.icon} ${sky.text}` : ''}</span>{' '}
+                    <span class="font-semibold"><Num value={e!.value} fd={1} lang={lang} field="value" />°</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )
+    }
   </div>
 
   {

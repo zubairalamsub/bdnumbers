@@ -1,0 +1,164 @@
+---
+import {
+  MARKET_GROUPS,
+  TCB_ITEMS,
+  defaultDigits,
+  formatDate,
+  formatNumber,
+  unitLabel,
+  type Lang,
+  type LatestEntry,
+} from '@bdnumbers/shared';
+import Ago from '../components/Ago.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeText from '../components/ChangeText.astro';
+import DateText from '../components/DateText.astro';
+import Num from '../components/Num.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const m = s.market;
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const byKey = new Map(latest.series.map((e) => [e.key, e]));
+
+const rows = TCB_ITEMS.map((item) => ({
+  item,
+  min: byKey.get(`tcb_${item.id}_min`),
+  max: byKey.get(`tcb_${item.id}_max`),
+})).filter((r): r is typeof r & { min: LatestEntry; max: LatestEntry } => !!r.min && !!r.max);
+
+// The day of TCB's latest list, and when it was last checked.
+const marketDate = rows.reduce((d, r) => (r.max.date > d ? r.max.date : d), '');
+const checkedAt = rows.find((r) => r.max.date === marketDate)?.max.checked_at ?? null;
+const stale = rows.some((r) => r.max.stale);
+
+/** Change in the midpoint of the range between two days, as the ChangeText component wants it. */
+function midChange(r: (typeof rows)[number], period: 'd7' | 'd30') {
+  const a = r.min.change[period];
+  const b = r.max.change[period];
+  if (!a || !b) return null;
+  const now = (r.min.value + r.max.value) / 2;
+  const then = (a.from + b.from) / 2;
+  return { from: then, date: b.date, abs: now - then, pct: then ? ((now - then) / then) * 100 : null };
+}
+const range = (lo: number, hi: number) =>
+  lo === hi ? formatNumber(hi, digits, 0) : `${formatNumber(lo, digits, 0)}–${formatNumber(hi, digits, 0)}`;
+
+const pick = (id: string) => rows.find((r) => r.item.id === id);
+const rice = pick('rice_coarse');
+const oil = pick('soybean_oil_loose');
+const onion = pick('onion_local');
+const date = marketDate ? formatDate(marketDate, lang, digits) : '';
+const title = lang === 'bn' ? `আজকের বাজারদর (ঢাকা, ${date}) | ${SITE_NAME}` : `Market prices today (Dhaka, ${date}) | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `টিসিবির ${date} তারিখের হিসাবে ঢাকায় মোটা চাল ${rice ? range(rice.min.value, rice.max.value) : '—'} টাকা কেজি, খোলা সয়াবিন তেল ${oil ? range(oil.min.value, oil.max.value) : '—'} টাকা লিটার, পেঁয়াজ ${onion ? range(onion.min.value, onion.max.value) : '—'} টাকা। ৬০টি পণ্যের দাম।`
+    : `TCB Dhaka retail prices for ${date}: coarse rice Tk ${rice ? range(rice.min.value, rice.max.value) : '—'}/kg, loose soybean oil Tk ${oil ? range(oil.min.value, oil.max.value) : '—'}/litre, onion Tk ${onion ? range(onion.min.value, onion.max.value) : '—'}/kg. 60 items.`;
+const path = '/market-price-today';
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.market, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{m.title} <span class="text-ink-2">({m.city})</span></h1>
+  <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
+    {marketDate && <span>{s.asOf}: <DateText date={marketDate} lang={lang} /></span>}
+    <span>{s.updated}: <Ago at={checkedAt} lang={lang} /></span>
+    {stale && <span class="badge text-warn-ink" title={s.staleHint}><span aria-hidden="true">⚠</span>{s.stale}</span>}
+    <span>{s.source}: <a href={rows[0]?.max.source_url} rel="noopener" target="_blank">{lang === 'bn' ? 'টিসিবি' : 'TCB'}</a></span>
+  </p>
+
+  <nav class="mt-4 flex flex-wrap gap-2 text-sm" aria-label={m.title}>
+    {MARKET_GROUPS.map((g) => <a href={`#${g}`} class="card px-2.5 py-1 no-underline hover:underline">{m.groups[g]}</a>)}
+  </nav>
+
+  {
+    MARKET_GROUPS.map((group) => {
+      const groupRows = rows.filter((r) => r.item.group === group);
+      if (groupRows.length === 0) return null;
+      return (
+        <section class="mt-6" id={group}>
+          <h2 class="mb-2 text-lg font-semibold">{m.groups[group]}</h2>
+          <div class="card overflow-x-auto">
+            <table class="data-table text-[0.9375rem]">
+              <thead>
+                <tr>
+                  <th scope="col">{m.item}</th>
+                  <th scope="col">{m.today}</th>
+                  <th scope="col">{m.weekAgo}</th>
+                  <th scope="col">{m.monthAgo}</th>
+                  <th scope="col">{s.change} ({s.vs.d7})</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupRows.map((r) => {
+                  const d7 = [r.min.change.d7, r.max.change.d7];
+                  const d30 = [r.min.change.d30, r.max.change.d30];
+                  return (
+                    <tr>
+                      <th scope="row" class="font-normal">
+                        <a href={localePath(lang, `/history/${r.max.key}`)} class="text-ink no-underline hover:underline">
+                          {lang === 'bn' ? r.item.bn : r.item.en}
+                        </a>
+                        <span class="block text-xs text-muted">{unitLabel(`BDT/${r.item.unit}`, lang)}</span>
+                      </th>
+                      <td class="font-semibold">
+                        <span data-series={r.min.key}><Num value={r.min.value} lang={lang} field="value" /></span>–<span data-series={r.max.key}><Num value={r.max.value} lang={lang} field="value" /></span>
+                        {r.max.date !== marketDate && (
+                          <span class="block text-xs font-normal text-muted">
+                            {m.notToday} <DateText date={r.max.date} lang={lang} />
+                          </span>
+                        )}
+                      </td>
+                      <td class="text-ink-2">{d7[0] && d7[1] ? range(d7[0].from, d7[1].from) : '—'}</td>
+                      <td class="text-ink-2">{d30[0] && d30[1] ? range(d30[0].from, d30[1].from) : '—'}</td>
+                      <td>
+                        <ChangeText change={midChange(r, 'd7')} category="market" lang={lang} empty="dash" class="text-sm text-ink-2" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      );
+    })
+  }
+
+  <section class="mt-8 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{lang === 'bn' ? 'এই দাম কোথা থেকে' : 'Where these prices come from'}</h2>
+    {
+      lang === 'bn' ? (
+        <p>
+          ট্রেডিং কর্পোরেশন অব বাংলাদেশ (টিসিবি) প্রতিদিন ঢাকার কয়েকটি বাজার থেকে নিত্যপ্রয়োজনীয় পণ্যের খুচরা দাম সংগ্রহ করে সর্বনিম্ন ও সর্বোচ্চ দাম প্রকাশ করে।
+          এখানে সেই তালিকা প্রতিদিন নিজে থেকে হালনাগাদ হয়। কোনো পণ্য কোনো দিন বাজারে না থাকলে টিসিবি তার দাম শূন্য দেখায়; সেদিন এখানে আগের দিনের দাম তারিখসহ দেখানো হয়।
+        </p>
+      ) : (
+        <p>
+          The Trading Corporation of Bangladesh (TCB) collects retail prices of essentials from several Dhaka markets every day and publishes the
+          lowest and highest price for each. This page updates from that list on its own. When an item is not in the market, TCB lists it as zero;
+          this page then shows the last price seen, with its date.
+        </p>
+      )
+    }
+  </section>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+      { label: s.nav.gold, path: '/gold-price-today' },
+      { label: s.nav.stock, path: '/share-market-today' },
+    ]}
+  />
+</Base>

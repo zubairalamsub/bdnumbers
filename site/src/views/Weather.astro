@@ -1,0 +1,154 @@
+---
+import {
+  MET_CREDIT_URL,
+  WEATHER_CITIES,
+  defaultDigits,
+  formatNumber,
+  unitLabel,
+  weatherCondition,
+  type Lang,
+  type LatestEntry,
+} from '@bdnumbers/shared';
+import Ago from '../components/Ago.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import DateText from '../components/DateText.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getHistory, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const w = s.weather;
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const byKey = new Map(latest.series.map((e) => [e.key, e]));
+const cities = WEATHER_CITIES.map((city) => ({
+  city,
+  temp: byKey.get(`weather_${city.id}_temp`),
+  humidity: byKey.get(`weather_${city.id}_humidity`),
+  wind: byKey.get(`weather_${city.id}_wind`),
+  rain: byKey.get(`weather_${city.id}_rain`),
+})).filter((c): c is typeof c & { temp: LatestEntry } => !!c.temp);
+const dhaka = cities.find((c) => c.city.id === 'dhaka');
+const dhakaHistory = dhaka ? await getHistory(dhaka.temp.key) : null;
+const num = (meta: unknown) => (typeof meta === 'number' ? meta : null);
+
+const dhakaTemp = dhaka ? formatNumber(dhaka.temp.value, digits, 1, 1) : '—';
+const dhakaSky = dhaka ? weatherCondition(dhaka.temp.meta?.symbol, lang)?.text : null;
+const title = lang === 'bn' ? `আজকের আবহাওয়া: ঢাকায় ${dhakaTemp}°সে | ${SITE_NAME}` : `Weather today: Dhaka ${dhakaTemp}°C | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `ঢাকায় এখন ${dhakaTemp}°সে${dhakaSky ? `, ${dhakaSky}` : ''}। আট বিভাগীয় শহরের তাপমাত্রা, আর্দ্রতা, বাতাস ও বৃষ্টি, প্রতি ঘণ্টায় হালনাগাদ।`
+    : `Dhaka is ${dhakaTemp}°C now${dhakaSky ? `, ${dhakaSky.toLowerCase()}` : ''}. Temperature, humidity, wind and rain for all eight division cities, updated hourly.`;
+const path = '/weather';
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.weather, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{w.title}</h1>
+
+  <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {
+      cities.map(({ city, temp, humidity, wind, rain }, i) => {
+        const sky = weatherCondition(temp.meta?.symbol, lang);
+        const high = num(temp.meta?.max24);
+        const low = num(temp.meta?.min24);
+        return (
+          <article class="card flex flex-col gap-1 p-4" data-series={temp.key}>
+            <h2 class="text-[0.9375rem] font-semibold text-ink-2">{lang === 'bn' ? city.bn : city.en}</h2>
+            <p class:list={['font-semibold leading-tight', i === 0 ? 'text-5xl' : 'text-3xl']}>
+              <Num value={temp.value} fd={1} lang={lang} field="value" />
+              <span class="ml-0.5 text-lg font-normal text-ink-2">{unitLabel('°C', lang)}</span>
+            </p>
+            <p class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+              <span data-field="symbol">{sky ? `${sky.icon} ${sky.text}` : ''}</span>
+              {high !== null && low !== null && (
+                <span class="whitespace-nowrap text-ink-2" title={`${w.next24}: ${w.high} / ${w.low}`}>
+                  <span class="sr-only">{w.next24}: {w.high}</span>
+                  <span aria-hidden="true">↑</span>
+                  <Num value={high} fd={0} lang={lang} field="meta.max24" />°{' '}
+                  <span class="sr-only">{w.low}</span>
+                  <span aria-hidden="true">↓</span>
+                  <Num value={low} fd={0} lang={lang} field="meta.min24" />°
+                </span>
+              )}
+            </p>
+            <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 text-sm text-ink-2">
+              {humidity && (
+                <>
+                  <dt>{lang === 'bn' ? 'আর্দ্রতা' : 'Humidity'}</dt>
+                  <dd class="text-right text-ink" data-series={humidity.key}>
+                    <Num value={humidity.value} fd={0} lang={lang} field="value" />%
+                  </dd>
+                </>
+              )}
+              {wind && (
+                <>
+                  <dt>{lang === 'bn' ? 'বাতাস' : 'Wind'}</dt>
+                  <dd class="text-right text-ink" data-series={wind.key}>
+                    <Num value={wind.value} fd={0} lang={lang} field="value" /> {unitLabel('km/h', lang)}
+                  </dd>
+                </>
+              )}
+              {rain && (
+                <>
+                  <dt>{lang === 'bn' ? 'বৃষ্টি (১ ঘণ্টা)' : 'Rain (1 h)'}</dt>
+                  <dd class="text-right text-ink" data-series={rain.key}>
+                    <Num value={rain.value} fd={1} lang={lang} field="value" /> {unitLabel('mm', lang)}
+                  </dd>
+                </>
+              )}
+            </dl>
+            <p class="mt-auto pt-1 text-xs text-muted">
+              <DateText date={temp.date} lang={lang} field="date" /> · {s.updated} <Ago at={temp.checked_at} lang={lang} field="checked" />
+              <span class="badge ml-1 text-warn-ink" data-field="stale" title={s.staleHint} hidden={!temp.stale}>
+                {s.stale}
+              </span>
+            </p>
+          </article>
+        );
+      })
+    }
+  </div>
+
+  {
+    dhaka && dhakaHistory && (
+      <div class="mt-6">
+        <h2 class="mb-2 text-lg font-semibold">{lang === 'bn' ? dhaka.temp.name_bn : dhaka.temp.name_en}</h2>
+        <LineChart
+          points={dhakaHistory.points.map((p) => [p.date, p.value])}
+          category="weather"
+          unit="°C"
+          lang={lang}
+          label={lang === 'bn' ? dhaka.temp.name_bn : dhaka.temp.name_en}
+        />
+      </div>
+    )
+  }
+
+  <p class="mt-6 max-w-3xl text-sm text-ink-2">
+    {w.credit} (<a href={MET_CREDIT_URL} rel="noopener" target="_blank">MET Norway</a>,
+    <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" target="_blank">CC BY 4.0</a>).
+    {
+      lang === 'bn'
+        ? ' মান প্রতি ঘণ্টায় হালনাগাদ হয়; বাতাস কিমি/ঘণ্টায় রূপান্তর করা।'
+        : ' Values update every hour; wind converted to km/h.'
+    }
+  </p>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.market, path: '/market-price-today' },
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+    ]}
+  />
+</Base>

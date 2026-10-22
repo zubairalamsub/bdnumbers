@@ -1,0 +1,132 @@
+---
+import { defaultDigits, formatDate, formatSeriesValue, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeTable from '../components/ChangeTable.astro';
+import DateText from '../components/DateText.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import NumberCard from '../components/NumberCard.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getEntries, getHistory, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const keys = ['dse_dsex', 'dse_dses', 'dse_ds30', 'dse_turnover'] as const;
+const [dsex, dses, ds30, turnover] = await getEntries(keys);
+const histories = await Promise.all(keys.map((k) => getHistory(k)));
+
+// The last 15 trading days, newest first, one row per date with all four numbers.
+const byDate = new Map<string, Partial<Record<(typeof keys)[number], number>>>();
+histories.forEach((h, i) => {
+  for (const p of h.points) byDate.set(p.date, { ...byDate.get(p.date), [keys[i]!]: p.value });
+});
+const recent = [...byDate.entries()].sort(([a], [b]) => b.localeCompare(a)).slice(0, 15);
+
+const value = formatSeriesValue(dsex!.value, 'stock', digits);
+const date = formatDate(dsex!.date, lang, digits);
+const title = lang === 'bn' ? `আজকের শেয়ারবাজার: ডিএসইএক্স ${value} | ${SITE_NAME}` : `Share market today: DSEX ${value} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `ঢাকা স্টক এক্সচেঞ্জে ${date} তারিখে ডিএসইএক্স সূচক ${value}, লেনদেন ${formatSeriesValue(turnover!.value, 'stock', digits)} কোটি টাকা। ডিএসইএস, ডিএস৩০ ও সাম্প্রতিক লেনদেনের চার্ট।`
+    : `Dhaka Stock Exchange on ${date}: DSEX at ${value}, turnover Tk ${formatSeriesValue(turnover!.value, 'stock', digits)} crore. DSES, DS30 and recent trading days with a chart.`;
+const path = '/share-market-today';
+const numberCols = [
+  { key: 'dse_dsex', label: 'DSEX' },
+  { key: 'dse_dses', label: 'DSES' },
+  { key: 'dse_ds30', label: 'DS30' },
+  { key: 'dse_turnover', label: lang === 'bn' ? 'লেনদেন (কোটি)' : 'Turnover (crore)' },
+] as const;
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.stock, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{s.stock.title}</h1>
+
+  <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
+    <NumberCard entry={dsex!} lang={lang} hero />
+    <div class="card p-4 sm:p-5">
+      <ChangeTable entry={dsex!} lang={lang} />
+    </div>
+  </div>
+
+  <div class="mt-4 grid gap-4 sm:grid-cols-3">
+    <NumberCard entry={dses!} lang={lang} headingLevel={3} />
+    <NumberCard entry={ds30!} lang={lang} headingLevel={3} />
+    <NumberCard entry={turnover!} lang={lang} headingLevel={3} />
+  </div>
+
+  <div class="mt-4">
+    <LineChart
+      points={histories[0]!.points.map((p) => [p.date, p.value])}
+      category="stock"
+      unit="points"
+      lang={lang}
+      label={lang === 'bn' ? dsex!.name_bn : dsex!.name_en}
+    />
+    <p class="mt-2 text-sm"><a href={localePath(lang, `/history/${dsex!.key}`)}>{s.history}</a></p>
+  </div>
+
+  <section class="mt-8">
+    <h2 class="mb-3 text-lg font-semibold">{s.stock.recent}</h2>
+    <div class="card overflow-x-auto">
+      <table class="data-table text-[0.9375rem]">
+        <thead>
+          <tr>
+            <th scope="col">{s.table.date}</th>
+            {numberCols.map((c) => <th scope="col">{c.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {
+            recent.map(([d, row]) => (
+              <tr>
+                <th scope="row" class="font-normal">
+                  <DateText date={d} lang={lang} />
+                </th>
+                {numberCols.map((c) => (
+                  <td>{row[c.key] === undefined ? '—' : <Num value={row[c.key]!} fd={2} lang={lang} />}</td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-8 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{lang === 'bn' ? 'সূচকগুলো কী' : 'What the indices are'}</h2>
+    {
+      lang === 'bn' ? (
+        <p>
+          ডিএসইএক্স ঢাকা স্টক এক্সচেঞ্জের প্রধান সূচক; ডিএসইএস শরিয়াহসম্মত কোম্পানির সূচক; ডিএস৩০ বাছাই করা ৩০টি বড় কোম্পানির সূচক। লেনদেন দেখানো হয়েছে কোটি টাকায়।
+          সংখ্যাগুলো প্রতিটি লেনদেন দিবসের সমাপনী মান, সরাসরি ঢাকা স্টক এক্সচেঞ্জের ওয়েবসাইট থেকে নেওয়া; ছুটির দিনে লেনদেন হয় না, তাই সেসব দিনের তথ্য নেই।
+        </p>
+      ) : (
+        <p>
+          DSEX is the Dhaka Stock Exchange's broad index, DSES tracks Shariah-compliant companies, and DS30 follows 30 selected large companies.
+          Turnover is in crore taka. Figures are each trading day's closing values from the Dhaka Stock Exchange website; there is no trading,
+          and so no data, on holidays.
+        </p>
+      )
+    }
+  </section>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+      { label: s.nav.gold, path: '/gold-price-today' },
+      { label: s.nav.market, path: '/market-price-today' },
+    ]}
+  />
+</Base>

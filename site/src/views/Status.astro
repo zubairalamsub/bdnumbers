@@ -16,7 +16,13 @@ const s = STRINGS[lang];
 const t = s.status;
 const latest = await getLatest();
 const status = await getStatus();
-const NAMES: Record<string, string> = { bangladeshBank: 'Bangladesh Bank', bajusGold: 'BAJUS' };
+const NAMES: Record<string, string> = {
+  bangladeshBank: 'Bangladesh Bank',
+  bajusGold: 'BAJUS',
+  tcbMarketPrices: 'TCB',
+  dseIndex: 'Dhaka Stock Exchange',
+  weather: 'MET Norway',
+};
 const title = `${s.nav.status} | ${SITE_NAME}`;
 const description =
   lang === 'bn'

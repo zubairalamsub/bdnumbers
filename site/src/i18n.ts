@@ -7,8 +7,17 @@ export function localePath(lang: Lang, path: string): string {
 }
 
 const bn = {
-  tagline: 'বাংলাদেশের আজকের ডলার রেট, সোনা-রুপার দাম',
-  nav: { home: 'হোম', dollar: 'ডলার রেট', gold: 'সোনার দাম', silver: 'রুপার দাম', status: 'ডেটার অবস্থা' },
+  tagline: 'বাংলাদেশের আজকের ডলার রেট, সোনার দাম, বাজারদর ও আবহাওয়া',
+  nav: {
+    home: 'হোম',
+    dollar: 'ডলার রেট',
+    gold: 'সোনার দাম',
+    silver: 'রুপার দাম',
+    market: 'বাজারদর',
+    stock: 'শেয়ারবাজার',
+    weather: 'আবহাওয়া',
+    status: 'ডেটার অবস্থা',
+  },
   otherLang: 'English',
   digitsLabel: 'সংখ্যা দেখান',
   digitsBeng: 'বাংলা অঙ্কে',
@@ -36,7 +45,7 @@ const bn = {
   table: { currency: 'মুদ্রা', bid: 'বিড (ক্রয়)', ask: 'আস্ক (বিক্রয়)', purity: 'মান', perBhori: 'প্রতি ভরি', perGram: 'প্রতি গ্রাম', date: 'তারিখ', value: 'মান' },
   karats: { '22k': '২২ ক্যারেট', '21k': '২১ ক্যারেট', '18k': '১৮ ক্যারেট', traditional: 'সনাতন পদ্ধতি' },
   footer:
-    'তথ্য বাংলাদেশ ব্যাংক, বাজুসসহ প্রাতিষ্ঠানিক উৎস থেকে স্বয়ংক্রিয়ভাবে সংগ্রহ করা হয়। লেনদেনের আগে মূল উৎস যাচাই করুন।',
+    'তথ্য বাংলাদেশ ব্যাংক, বাজুস, টিসিবি ও ঢাকা স্টক এক্সচেঞ্জ থেকে স্বয়ংক্রিয়ভাবে সংগ্রহ করা হয়; আবহাওয়ার তথ্য MET Norway (CC BY 4.0) থেকে। লেনদেনের আগে মূল উৎস যাচাই করুন।',
   notFound: 'পাতাটি পাওয়া যায়নি',
   status: {
     source: 'উৎস',
@@ -50,13 +59,50 @@ const bn = {
     never: 'এখনো চলেনি',
     none: 'নেই',
   },
+  market: {
+    title: 'আজকের বাজারদর',
+    city: 'ঢাকা মহানগর',
+    item: 'পণ্য',
+    today: 'আজ',
+    weekAgo: '১ সপ্তাহ আগে',
+    monthAgo: '১ মাস আগে',
+    notToday: 'আজকের তালিকায় নেই; সর্বশেষ',
+    groups: {
+      rice: 'চাল',
+      flour: 'আটা ও ময়দা',
+      oil: 'ভোজ্য তেল',
+      pulses: 'ডাল ও ছোলা',
+      vegetables: 'সবজি ও পেঁয়াজ',
+      spices: 'মসলা',
+      protein: 'মাছ, মাংস ও ডিম',
+      dairy: 'গুঁড়া দুধ',
+      misc: 'অন্যান্য',
+    },
+  },
+  stock: { title: 'আজকের শেয়ারবাজার', recent: 'সাম্প্রতিক লেনদেন দিবস' },
+  weather: {
+    title: 'আজকের আবহাওয়া',
+    next24: 'পরের ২৪ ঘণ্টা',
+    high: 'সর্বোচ্চ',
+    low: 'সর্বনিম্ন',
+    credit: 'আবহাওয়ার তথ্য: MET Norway-এর মডেলভিত্তিক পূর্বাভাস',
+  },
 };
 
 type Strings = typeof bn;
 
 const en: Strings = {
-  tagline: "Today's dollar rate and gold and silver prices in Bangladesh",
-  nav: { home: 'Home', dollar: 'Dollar rate', gold: 'Gold price', silver: 'Silver price', status: 'Data status' },
+  tagline: "Today's dollar rate, gold, market prices, shares and weather in Bangladesh",
+  nav: {
+    home: 'Home',
+    dollar: 'Dollar rate',
+    gold: 'Gold price',
+    silver: 'Silver price',
+    market: 'Market prices',
+    stock: 'Share market',
+    weather: 'Weather',
+    status: 'Data status',
+  },
   otherLang: 'বাংলা',
   digitsLabel: 'Show numbers',
   digitsBeng: 'in Bengali digits',
@@ -84,7 +130,7 @@ const en: Strings = {
   table: { currency: 'Currency', bid: 'Bid', ask: 'Ask', purity: 'Purity', perBhori: 'Per bhori', perGram: 'Per gram', date: 'Date', value: 'Value' },
   karats: { '22k': '22 karat', '21k': '21 karat', '18k': '18 karat', traditional: 'Traditional' },
   footer:
-    'Figures are collected automatically from Bangladesh Bank, BAJUS and other institutional sources. Check the original source before you transact.',
+    'Figures are collected automatically from Bangladesh Bank, BAJUS, TCB and the Dhaka Stock Exchange; weather data from MET Norway (CC BY 4.0). Check the original source before you transact.',
   notFound: 'Page not found',
   status: {
     source: 'Source',
@@ -97,6 +143,34 @@ const en: Strings = {
     failed: 'Failed',
     never: 'Not run yet',
     none: 'None',
+  },
+  market: {
+    title: 'Market prices today',
+    city: 'Dhaka city',
+    item: 'Item',
+    today: 'Today',
+    weekAgo: '1 week ago',
+    monthAgo: '1 month ago',
+    notToday: 'not in today’s list; last seen',
+    groups: {
+      rice: 'Rice',
+      flour: 'Atta & maida',
+      oil: 'Cooking oil',
+      pulses: 'Pulses',
+      vegetables: 'Vegetables & onions',
+      spices: 'Spices',
+      protein: 'Fish, meat & eggs',
+      dairy: 'Milk powder',
+      misc: 'Other',
+    },
+  },
+  stock: { title: 'Share market today', recent: 'Recent trading days' },
+  weather: {
+    title: 'Weather today',
+    next24: 'Next 24 hours',
+    high: 'High',
+    low: 'Low',
+    credit: 'Weather data: MET Norway model forecast',
   },
 };
 

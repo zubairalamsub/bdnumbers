@@ -1,5 +1,6 @@
 ---
-import { defaultDigits, formatDate, type Lang } from '@bdnumbers/shared';
+import { defaultDigits, type Lang } from '@bdnumbers/shared';
+import { formatPointDate } from '../lib/view';
 
 interface Props {
   date: string;
@@ -10,4 +11,4 @@ interface Props {
 const { date, lang, field } = Astro.props;
 ---
 
-<time datetime={date.slice(0, 10)} data-date={date} data-field={field}>{formatDate(date, lang, defaultDigits(lang))}</time>
+<time datetime={date} data-date={date} data-field={field}>{formatPointDate(date, lang, defaultDigits(lang))}</time>

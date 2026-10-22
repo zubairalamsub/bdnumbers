@@ -4,7 +4,6 @@
 import {
   BHORI_GRAMS,
   defaultDigits,
-  formatDate,
   formatNumber,
   fractionDigits,
   relativeTime,
@@ -14,10 +13,11 @@ import {
   type LatestEntry,
   type LatestResponse,
   type StatusResponse,
+  weatherCondition,
 } from '@bdnumbers/shared';
 import { STRINGS } from '../i18n';
 import { axisLabels, geometry, sliceRange, tickDecimals, type Pt, type Range } from '../lib/chart';
-import { REFRESH_MS, changeLabel, formatDateTime } from '../lib/view';
+import { REFRESH_MS, changeLabel, formatDateTime, formatPointDate } from '../lib/view';
 
 const DIGITS_EVENT = 'bdrate:digits';
 
@@ -62,8 +62,8 @@ function renderValues(scope: ParentNode = document): void {
   }
   for (const el of scope.querySelectorAll<HTMLElement>('[data-date]')) {
     const date = el.dataset.date!;
-    el.textContent = formatDate(date, lang, digits);
-    el.setAttribute('datetime', date.slice(0, 10));
+    el.textContent = formatPointDate(date, lang, digits);
+    el.setAttribute('datetime', date);
   }
   renderTimes(scope);
 }
@@ -98,6 +98,14 @@ function applyEntry(container: HTMLElement, entry: LatestEntry): void {
     else if (field === 'date') el.dataset.date = entry.date;
     else if (field === 'checked') el.dataset.ago = entry.checked_at ?? '';
     else if (field === 'stale') el.hidden = !entry.stale;
+    else if (field === 'symbol') {
+      const condition = weatherCondition(entry.meta?.symbol, lang);
+      el.textContent = condition ? `${condition.icon} ${condition.text}` : '';
+    } else if (field.startsWith('meta.')) {
+      const value = entry.meta?.[field.slice('meta.'.length)];
+      el.hidden = typeof value !== 'number';
+      if (typeof value === 'number') el.dataset.num = String(value);
+    }
     else if (field.startsWith('change.')) {
       const change = entry.change[field.slice('change.'.length) as keyof LatestEntry['change']];
       el.dataset.abs = change ? String(change.abs) : '';
@@ -116,10 +124,14 @@ async function getJson<T>(path: string): Promise<T | null> {
 }
 
 async function refreshLatest(): Promise<void> {
-  const latest = await getJson<LatestResponse>('/api/latest.json');
+  const containers = document.querySelectorAll<HTMLElement>('[data-series]');
+  if (containers.length === 0) return;
+  // Only the series on this page; sorted so every visitor of a page shares one edge-cached URL.
+  const keys = [...new Set([...containers].map((c) => c.dataset.series!))].sort();
+  const latest = await getJson<LatestResponse>(`/api/latest.json?keys=${encodeURIComponent(keys.join(','))}`);
   if (!latest) return;
   const byKey = new Map(latest.series.map((e) => [e.key, e]));
-  for (const container of document.querySelectorAll<HTMLElement>('[data-series]')) {
+  for (const container of containers) {
     const entry = byKey.get(container.dataset.series!);
     if (entry) applyEntry(container, entry);
   }
@@ -238,7 +250,7 @@ function setupChart(fig: HTMLElement): void {
     hoverDot.style.top = `${y / 10}%`;
     const fd = fractionDigits(category, point[1]);
     tipValue.textContent = `${formatNumber(point[1], digits, fd, fd)} ${unit}`;
-    tipDate.textContent = formatDate(point[0], lang, digits);
+    tipDate.textContent = formatPointDate(point[0], lang, digits);
     // Keep the tooltip inside the plot: right of the crosshair on the left half, left of it on the right.
     tooltip.style.left = x < 600 ? `calc(${x / 10}% + 10px)` : '';
     tooltip.style.right = x < 600 ? '' : `calc(${(1000 - x) / 10}% + 10px)`;

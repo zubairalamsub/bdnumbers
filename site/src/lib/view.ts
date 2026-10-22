@@ -39,6 +39,14 @@ export function changeLabel(
   return { text: `${ARROWS[dir]} ${amount}${pct}`, aria: `${dir === 'up' ? s.up : s.down} ${amount}${pct}`, dir };
 }
 
+/** A point's date: "19 Oct 2026", or "22 Oct 2026, 17:00" for hourly points (already Dhaka time). */
+export function formatPointDate(date: string, lang: Lang, digits: Digits): string {
+  const day = formatDate(date, lang, digits);
+  if (date.length <= 10) return day;
+  const time = date.slice(11, 16);
+  return `${day}, ${digits === 'beng' ? toBengaliDigits(time) : time}`;
+}
+
 /** "22 Oct 2026, 13:00" in Dhaka time (UTC+6, no DST). */
 export function formatDateTime(iso: string, lang: Lang, digits: Digits): string {
   const dhaka = new Date(Date.parse(iso) + 6 * 60 * 60 * 1000);
