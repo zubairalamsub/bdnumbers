@@ -10,7 +10,7 @@
     "migrate:remote": "wrangler d1 migrations apply bdnumbers --remote",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p scripts/tsconfig.json",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.4.6",
     "@cloudflare/workers-types": "^5.20261022.1",
+    "@types/node": "^24.19.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "~4.1.12",

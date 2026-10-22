@@ -1,0 +1,5 @@
+# Copy to .dev.vars for `wrangler dev`. Never commit .dev.vars.
+INGEST_TOKEN=change-me
+INTERNAL_TOKEN=change-me-too
+# PAGES_DEPLOY_HOOK=https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/...
+# ONESIGNAL_KEY=
