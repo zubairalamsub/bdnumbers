@@ -44,7 +44,7 @@ GET /api/* ─▶ edge cache (keyed by cache version) ─▶ KV ─▶ D1
 
 | [BPC: local sale prices](https://bpc.gov.bd/pages/static-pages/6922ddb6933eb65569e15fbc) | `fuel_diesel`, `fuel_kerosene`, `fuel_octane`, `fuel_petrol`, `fuel_furnace_oil` (Tk/litre), `lpg_govt_12_5kg` | Each row carries its own effective date, which becomes the point date. |
 | [UNB news](https://unb.com.bd/search?q=LPG+price) for BERC's LPG price | `lpg_12kg` (Tk/cylinder), `lpg_per_kg` | BERC announces the monthly price as an image only, so the Worker reads the newest UNB report of it. It takes the first of the 3 newest articles where the 12 kg price is about 12 × the per-kg price (within Tk 3), and warns on `/status` about any it skipped. `meta.source = "mirror"`. |
-| [National Savings Directorate](https://nationalsavings.gov.bd/pages/static-pages/6922e111933eb65569e29fed) | `savings_rates` (top rate; the full table is in `meta.notice`) | The official sites still link the notice issued 30 June 2025 (rates for July–December 2025). Those rates are transcribed in [`shared/src/catalog/periodic.ts`](shared/src/catalog/periodic.ts) and the page says which period they cover. The Worker watches the directorate page and warns on `/status` when it links a different document, which is the cue to update the table. |
+| [National Savings Directorate](https://nationalsavings.gov.bd/pages/static-pages/6922e111933eb65569e29fed) | `savings_rates` (top rate; the full table is in `meta.notice`) | The rates in force are the table in the notice of 30 June 2025. A cut announced on 30 Dec 2025 was cancelled on 4 Jan 2026, and notices of 4 Jan and 2 Jul 2026 kept the table unchanged until 31 Dec 2026 (all checked against the notices on 2026-10-22). The table and the notices that extend it are in [`shared/src/catalog/periodic.ts`](shared/src/catalog/periodic.ts). The page states which notices confirm the rates, and turns back into a "may have changed" warning once the last one lapses. The Worker watches the directorate's schemes page and its [notices page](https://nationalsavings.gov.bd/pages/static-pages/6922de17933eb65569e182f5), and warns on `/status` when a newer rate notice appears (the next review is expected around January 2027). |
 | [Google Calendar: Holidays in Bangladesh](https://calendar.google.com/calendar/ical/en.bd%23holiday%40group.v.calendar.google.com/public/basic.ics) (ICS) | `holidays_public` (count this year; the list is in `meta.holidays`) | Public holidays for this year and next. Bengali names come from a map in `periodic.ts`; a holiday without one shows a warning. Lunar holidays can move by a day after moon sighting. |
 
 **Not yet collected:** Bangladesh Bank policy rates (repo, SDF, SLF). bb.org.bd has returned "403 Service Temporarily Unavailable" to every request since this stage started, so the page can't be inspected to write a parser. Add it once BB is back, following the BB exchange-rate source.
@@ -157,6 +157,15 @@ TCB's list page keeps recent files, so 50 days of market history can be loaded o
 
 ```bash
 cd worker && npx tsx scripts/backfill-tcb.ts 50   # uses INGEST_TOKEN from worker/.dev.vars; safe to re-run
+```
+
+### Gold and silver backfill
+
+BAJUS keeps only the current price file, so past prices come from UNB's reports of each BAJUS change. These reports are found through UNB's search API and parsed with the same prose parser and karat checks as the Worker's UNB fallback. Each change is dated to the day it took effect ("effective from Thursday" → that date). Points carry `meta.source = "mirror"` and the article URL, and are written only before the first stored BAJUS date. Coverage before 2025 (gold) and 2026 (silver) is too sparse to chart, so it is skipped. The backfill ran on 2026-10-22: 50 gold changes since January 2025 and 23 silver changes since January 2026.
+
+```bash
+cd worker && npx tsx scripts/backfill-gold.ts            # dry run: what it would write
+cd worker && npx tsx scripts/backfill-gold.ts --ingest   # write (safe to re-run)
 ```
 
 ### Seeding history
