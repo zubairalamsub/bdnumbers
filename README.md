@@ -4,9 +4,10 @@ Daily numbers for Bangladesh (dollar rate, gold and silver, market prices, air q
 **[bdrate.fyi](https://bdrate.fyi)**. Everything runs on Cloudflare's free tier: a Worker collects data
 and serves the API, D1 stores it, and Pages hosts the site. No servers and no paid services.
 
-> **Status: Stage 3 of 5.** Done: Bangladesh Bank and BAJUS (Stage 1); the Astro site with dashboard, dollar,
+> **Status: Stage 4 of 5.** Done: Bangladesh Bank and BAJUS (Stage 1); the Astro site with dashboard, dollar,
 > gold, silver, history and status pages (Stage 2); TCB market prices, DSE indices and weather (Stage 3, AQI left
-> out by choice). Next: periodic sources, calculators, prayer times and holidays (4), then SEO, PWA and notifications (5).
+> out by choice); fuel, LPG, savings rates, holidays, prayer times and calculators (Stage 4). Next: SEO, PWA and
+> notifications (5).
 
 ```
 /shared   TypeScript types, series catalog, date and number formatting (used by worker and site)
@@ -24,7 +25,7 @@ cron ─▶ scheduled() ─▶ one invocation per source via the SELF service bi
 GET /api/* ─▶ edge cache (keyed by cache version) ─▶ KV ─▶ D1
 ```
 
-- **Crons:** `0 1,7 * * *` runs the daily sources (Bangladesh Bank, BAJUS, TCB, DSE) at 07:00 and 13:00 Dhaka. `15 * * * *` runs weather every hour.
+- **Crons:** `0 1,7 * * *` runs the daily and periodic sources (Bangladesh Bank, BAJUS, TCB, DSE, fuel, LPG, savings rates, holidays) at 07:00 and 13:00 Dhaka. `15 * * * *` runs weather every hour. Periodic sources change a few times a year, so they are checked daily but write only when a value or its details change.
 - **Failures are loud but contained.** A failing source is logged in `runs` with its error. It never stops the other sources. Its latest points are flagged `stale`, so the API keeps serving the last good value marked as stale. The next successful run clears the flag.
 - **Sanity checks:** every point must belong to a known series and have a real date and a value inside the series bounds. Gold and silver must also keep 22K > 21K > 18K > traditional. A violation fails the run instead of storing bad data.
 - **Writes are idempotent:** re-running a source writes nothing unless a value changed.
@@ -41,7 +42,21 @@ GET /api/* ─▶ edge cache (keyed by cache version) ─▶ KV ─▶ D1
 | [DSE: recent market information](https://www.dse.com.bd/recent-market-information) | `dse_dsex`, `dse_dses`, `dse_ds30`, `dse_turnover` (Tk crore) | One row per trading day, so DSE holidays simply have no data. Each run upserts the ~6 weeks listed. |
 | [MET Norway Locationforecast](https://api.met.no/) | `weather_<city>_temp` / `_humidity` / `_wind` (km/h) / `_rain` (mm, next hour) for Dhaka and the 7 other division HQs | Hourly. CC BY 4.0, which allows commercial use with attribution (Open-Meteo's free tier is non-commercial, which an ad slot would break). Coordinates are GeoNames places. The temperature point's meta carries the sky symbol and the next 24 hours' high/low. |
 
+| [BPC: local sale prices](https://bpc.gov.bd/pages/static-pages/6922ddb6933eb65569e15fbc) | `fuel_diesel`, `fuel_kerosene`, `fuel_octane`, `fuel_petrol`, `fuel_furnace_oil` (Tk/litre), `lpg_govt_12_5kg` | Each row carries its own effective date, which becomes the point date. |
+| [UNB news](https://unb.com.bd/search?q=LPG+price) for BERC's LPG price | `lpg_12kg` (Tk/cylinder), `lpg_per_kg` | BERC announces the monthly price as an image only, so the Worker reads the newest UNB report of it. It takes the first of the 3 newest articles where the 12 kg price is about 12 × the per-kg price (within Tk 3), and warns on `/status` about any it skipped. `meta.source = "mirror"`. |
+| [National Savings Directorate](https://nationalsavings.gov.bd/pages/static-pages/6922e111933eb65569e29fed) | `savings_rates` (top rate; the full table is in `meta.notice`) | The official sites still link the notice issued 30 June 2025 (rates for July–December 2025). Those rates are transcribed in [`shared/src/catalog/periodic.ts`](shared/src/catalog/periodic.ts) and the page says which period they cover. The Worker watches the directorate page and warns on `/status` when it links a different document, which is the cue to update the table. |
+| [Google Calendar: Holidays in Bangladesh](https://calendar.google.com/calendar/ical/en.bd%23holiday%40group.v.calendar.google.com/public/basic.ics) (ICS) | `holidays_public` (count this year; the list is in `meta.holidays`) | Public holidays for this year and next. Bengali names come from a map in `periodic.ts`; a holiday without one shows a warning. Lunar holidays can move by a day after moon sighting. |
+
+**Not yet collected:** Bangladesh Bank policy rates (repo, SDF, SLF). bb.org.bd has returned "403 Service Temporarily Unavailable" to every request since this stage started, so the page can't be inspected to write a parser. Add it once BB is back, following the BB exchange-rate source.
+
 Each parser has tests against pages saved from the live sites (`worker/test/fixtures`). When a site changes its layout, the parser throws a clear error and `/api/status.json` shows it.
+
+## Site
+
+Every page is static HTML in Bengali (`/`) and English (`/en/…`), with Bengali or Latin digits remembered per language. Besides the number pages:
+
+- **Prayer times** (`/prayer-times/<district>`, all 64 districts): computed with [adhan](https://github.com/batoulapps/adhan-js) using the Karachi method and Hanafi Asr, the convention in Bangladesh. They are computed at build time and again in the browser, so they stay right between builds. Each page has today's times, the month's timetable and a Ramadan sehri/iftar table. Ramadan dates come from the Umm al-Qura calendar, shifted by `RAMADAN_OFFSET_DAYS` in `site/src/views/PrayerDistrict.astro` if the local moon sighting differs. District coordinates are GeoNames places, listed in `shared/src/catalog/districts.ts`.
+- **Calculators** (`/calculators`): currency converter, gold/silver weight and value, zakat, loan EMI, DPS maturity, Sanchayapatra return, and bKash/Nagad/Rocket cash-out fees. All run in the browser and take today's rates from the build. The math is in `site/src/lib/calc.ts` with tests. Cash-out fees are in `site/src/lib/mfs-fees.ts`, with the date they were checked; Rocket's newest published rates are from March 2025. To add your own calculator (income tax, electricity bill and construction cost already have slots), see [site/CALCULATORS.md](site/CALCULATORS.md).
 
 ## API
 
@@ -133,7 +148,7 @@ The script accepts `YYYY-MM-DD`, `DD/MM/YYYY` and `DD-MM-YYYY` dates, plus quote
 ## Development
 
 ```bash
-npm test                 # vitest inside workerd: real D1, KV and HTMLRewriter
+npm test                 # worker tests in workerd (real D1, KV, HTMLRewriter), then site tests (calculators, prayer times)
 npm run typecheck        # tsc for shared/worker, astro check for the site
 npm run dev -w worker    # wrangler dev --test-scheduled (copy worker/.dev.vars.example to .dev.vars)
 curl "http://localhost:8787/__scheduled?cron=0+1,7+*+*+*"   # trigger the daily batch locally
@@ -152,13 +167,14 @@ To add a source, create `worker/src/sources/<name>.ts` exporting a `Source` (`ke
 - **Health:** `/api/status.json` shows each source's last run, error, 24 h failures and stale series. For live logs, run `npx wrangler tail` (observability is on).
 - **Wrong value from a source:** post an override, either through `/manual` with *Override* ticked or with `"override": true` to `/api/ingest`. The override wins for that series and date and shows `overridden: true`.
 - **A site changed its layout:** the run fails and the data goes stale. Save the new page as a fixture, update the parser and its test, and push; CI deploys it.
-- **Blocked from Cloudflare's network:** move that source to a GitHub Actions job that POSTs to `/api/ingest`, the same pattern TCB will use in Stage 3.
+- **Blocked from Cloudflare's network:** move that source to a GitHub Actions job that POSTs to `/api/ingest`.
+- **Savings rates changed:** when `/status` warns that the directorate links a new notice, transcribe its table into `SAVINGS_NOTICE` in `shared/src/catalog/periodic.ts` and push. Do the same for `site/src/lib/mfs-fees.ts` when an operator changes its charges.
 
 ## Free-tier limits
 
 Everything runs at $0. The Cloudflare account is on the **Workers Free** plan and the `bdrate.fyi` zone on the **Free** plan (both checked in the dashboard on 2026-10-22). Pages is on its free plan, and the repo is public, so GitHub Actions minutes are free. On the Free plan nothing can bill: a request over a limit fails instead. Failure degrades gracefully. The site is static HTML served by Pages (unmetered), so even if the Worker hit its daily request limit, every page would still load with the last built numbers; only the 5-minute live refresh would pause until midnight UTC.
 
-| Resource | Free limit | Estimated use (Stage 2) | If the limit is hit |
+| Resource | Free limit | Estimated use (Stage 4) | If the limit is hit |
 |---|---|---|---|
 | Workers requests | 100,000/day | ~80/day for cron and fan-out (24 hourly + 2 daily batches), plus 1 per visible page view whose data is ≥5 min old (the live refresh, which asks only for the page's series) | Make the island poll less often or serve `latest.json` from Pages. Workers Paid is $5/mo for 10M requests. |
 | Workers CPU | 10 ms per invocation (HTTP and cron) | Each source runs in its own invocation; HTMLRewriter parsing is native | `runs` shows "exceeded CPU". Move that parser to a GitHub Actions job that posts to `/api/ingest`. |
@@ -170,5 +186,6 @@ Everything runs at $0. The Cloudflare account is on the **Workers Free** plan an
 | KV writes | 1,000/day | 3 per batch: ~80/day (24 hourly + 2 daily) | Rebuild KV only when a batch wrote something |
 | KV reads | 100,000/day | ≤2 per API request (cache version memoized per isolate) | Same as Workers requests |
 | Pages builds | 500/month | ≤2/day (only when the daily batch wrote data) ≈ 60/month, plus pushes | Rebuild once a day |
+| Pages files | 20,000 per deployment | ~600 files: 561 pages, of which 390 are per-series history pages (195 series × 2 languages) and 128 are district prayer times | Drop the English history pages |
 | Workers Logs | 200,000 events/day | a few hundred (one summary line per batch, errors) | Logs stop for the day; the `runs` table still records every run |
 | GitHub Actions | Unlimited minutes for public repos | test, deploy, Lighthouse (Stage 5), TCB fallback (Stage 3) | — |
