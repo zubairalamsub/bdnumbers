@@ -125,6 +125,12 @@
     text-align: left;
     white-space: normal;
   }
+  /* Tables of words rather than numbers. */
+  .data-table.text-table th,
+  .data-table.text-table td {
+    text-align: left;
+    white-space: normal;
+  }
   /* Wide tables that scroll sideways keep their first column (dates, names) in view. */
   .sticky-first th:first-child,
   .sticky-first td:first-child {

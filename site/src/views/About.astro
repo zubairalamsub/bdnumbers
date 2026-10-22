@@ -1,0 +1,174 @@
+---
+import { SERIES, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { CONTACT_EMAIL, REPO_URL, SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+// Who runs the site, where every number comes from, and how to report a mistake.
+const { lang } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const latest = await getLatest();
+const path = '/about';
+
+/** What each source in the series catalog supplies, by its source_name. */
+const SOURCES: Record<string, { name_bn: string; bn: string; en: string }> = {
+  'Bangladesh Bank': { name_bn: 'বাংলাদেশ ব্যাংক', bn: 'ডলারসহ বৈদেশিক মুদ্রার বিনিময় হার', en: 'Taka exchange rates, including the dollar' },
+  BAJUS: { name_bn: 'বাজুস', bn: 'সোনা ও রুপার দাম', en: 'Gold and silver prices' },
+  TCB: { name_bn: 'টিসিবি', bn: 'ঢাকার নিত্যপণ্যের খুচরা বাজারদর', en: 'Retail prices of essentials in Dhaka' },
+  'Dhaka Stock Exchange': { name_bn: 'ঢাকা স্টক এক্সচেঞ্জ', bn: 'শেয়ারবাজারের সূচক ও লেনদেন', en: 'Share market indices and turnover' },
+  'MET Norway': { name_bn: 'MET Norway', bn: 'আবহাওয়ার পূর্বাভাস (CC BY 4.0)', en: 'Weather forecasts (CC BY 4.0)' },
+  BPC: { name_bn: 'বিপিসি', bn: 'জ্বালানি তেলের দাম', en: 'Fuel prices' },
+  'BERC (via UNB)': { name_bn: 'বিইআরসি (ইউএনবির প্রতিবেদন থেকে)', bn: 'এলপিজির দাম', en: 'LPG prices' },
+  'National Savings Directorate': { name_bn: 'জাতীয় সঞ্চয় অধিদপ্তর', bn: 'সঞ্চয়পত্রের মুনাফার হার', en: 'Savings certificate profit rates' },
+  'Google Calendar (Bangladesh holidays)': { name_bn: 'গুগল ক্যালেন্ডার (বাংলাদেশের ছুটি)', bn: 'সরকারি ছুটির তারিখ', en: 'Public holiday dates' },
+};
+const sources = [...new Map(SERIES.map((d) => [d.source_name, d])).values()].map((d) => {
+  const info = SOURCES[d.source_name];
+  return {
+    name: bn ? (info?.name_bn ?? d.source_name) : d.source_name,
+    what: info ? info[lang] : '',
+    url: d.source_url,
+  };
+});
+
+const title = bn
+  ? ['আমাদের সম্পর্কে: তথ্য কোথা থেকে আসে', 'আমাদের সম্পর্কে']
+  : ['About us: where the numbers come from', 'About us'];
+const description = bn
+  ? `${SITE_NAME} কী, প্রতিটি সংখ্যা কোন সরকারি বা মূল উৎস থেকে আসে, কত ঘন ঘন হালনাগাদ হয় এবং ভুল পেলে কীভাবে জানাবেন।`
+  : `What ${SITE_NAME} is, which official or primary source each number comes from, how often it updates, and how to report a mistake.`;
+const issues = `${REPO_URL}/issues`;
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.about, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? `${SITE_NAME} সম্পর্কে` : `About ${SITE_NAME}`}</h1>
+
+  <div class="mt-4 max-w-3xl space-y-4 text-[0.9375rem] leading-relaxed">
+    {
+      bn ? (
+        <p>
+          {SITE_NAME} বাংলাদেশের প্রতিদিনের দরকারি সংখ্যা এক জায়গায় দেখায়: ডলার রেট, সোনা ও রুপার দাম, বাজারদর, শেয়ারবাজার, জ্বালানি
+          তেল ও এলপিজির দাম, সঞ্চয়পত্রের মুনাফার হার, আবহাওয়া, নামাজের সময় ও সরকারি ছুটি। প্রতিটি সংখ্যার পাশে তার উৎস ও তারিখ দেওয়া
+          থাকে, যাতে আপনি নিজে মিলিয়ে নিতে পারেন।
+        </p>
+      ) : (
+        <p>
+          {SITE_NAME} puts Bangladesh's everyday numbers in one place: the dollar rate, gold and silver prices, market prices, the share
+          market, fuel and LPG prices, savings certificate rates, the weather, prayer times and public holidays. Every number shows its
+          source and date, so you can check it yourself.
+        </p>
+      )
+    }
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'তথ্য কোথা থেকে আসে' : 'Where the numbers come from'}</h2>
+    <p>
+      {
+        bn
+          ? 'সংখ্যাগুলো নিচের সরকারি বা মূল উৎসগুলোর ওয়েবসাইট থেকে স্বয়ংক্রিয়ভাবে সংগ্রহ করা হয়। আমরা নিজেরা কোনো দাম নির্ধারণ করি না।'
+          : 'The numbers are collected automatically from the websites of the official or primary sources below. We do not set any price ourselves.'
+      }
+    </p>
+  </div>
+
+  <div class="mt-4 card max-w-3xl overflow-x-auto">
+    <table class="data-table text-table text-[0.9375rem]">
+      <thead>
+        <tr>
+          <th scope="col">{s.source}</th>
+          <th scope="col">{bn ? 'যে তথ্য' : 'What it provides'}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          sources.map((x) => (
+            <tr>
+              <td>
+                <a href={x.url} rel="noopener" target="_blank">
+                  {x.name}
+                </a>
+              </td>
+              <td>{x.what}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-4 max-w-3xl space-y-4 text-[0.9375rem] leading-relaxed">
+    {
+      bn ? (
+        <p>
+          বাজুসের ওয়েবসাইট সাময়িকভাবে বন্ধ থাকলে সোনা ও রুপার দাম ইউএনবির প্রকাশিত প্রতিবেদন থেকে নেওয়া হয় এবং তা পাতায় চিহ্নিত থাকে। নামাজের
+          সময় প্রতিটি জেলার অবস্থান থেকে হিসাব করা হয় (করাচি পদ্ধতি, আসর হানাফি মতে)।
+        </p>
+      ) : (
+        <p>
+          When the BAJUS website is down, gold and silver prices come from UNB's published reports and are marked as such on the page.
+          Prayer times are calculated from each district's location (Karachi method, Hanafi Asr).
+        </p>
+      )
+    }
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'কীভাবে হালনাগাদ হয়' : 'How it is updated'}</h2>
+    {
+      bn ? (
+        <p>
+          প্রতিটি উৎস প্রতিদিন সকাল ৭টা ও দুপুর ১টায় স্বয়ংক্রিয়ভাবে যাচাই করা হয়, আর আবহাওয়া প্রতি ঘণ্টায়। কোনো উৎস থেকে নতুন তথ্য পাওয়া না গেলে শেষ পাওয়া মানটি
+          "পুরোনো তথ্য" চিহ্নসহ দেখানো হয়; কখনো অনুমান করে সংখ্যা বসানো হয় না। কোন উৎস সর্বশেষ কখন সফলভাবে পড়া হয়েছে, তা{' '}
+          <a href={localePath(lang, '/status')}>{s.nav.status}</a> পাতায় দেখা যায়।
+        </p>
+      ) : (
+        <p>
+          Each source is checked automatically at 7 am and 1 pm Dhaka time every day, and the weather every hour. If a source cannot be read, the last value
+          is shown marked as old; a number is never guessed. The <a href={localePath(lang, '/status')}>{s.nav.status}</a> page shows when
+          each source was last read successfully.
+        </p>
+      )
+    }
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'সতর্কতা' : 'Disclaimer'}</h2>
+    {
+      bn ? (
+        <p>
+          {SITE_NAME} একটি স্বাধীন ওয়েবসাইট; উপরের কোনো প্রতিষ্ঠানের সঙ্গে এর সম্পর্ক নেই। এখানের তথ্য শুধু জানার জন্য, আর্থিক পরামর্শ নয়। কেনাবেচা,
+          বিনিয়োগ বা লেনদেনের আগে মূল উৎস বা আপনার ব্যাংকের সঙ্গে মিলিয়ে নিন।
+        </p>
+      ) : (
+        <p>
+          {SITE_NAME} is an independent website, not affiliated with any of the organisations above. The information is for reference only
+          and is not financial advice. Check with the original source or your bank before buying, selling, investing or making a transaction.
+        </p>
+      )
+    }
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'যোগাযোগ' : 'Contact'}</h2>
+    <p>
+      {bn ? 'কোনো সংখ্যা ভুল দেখলে, কোনো উৎস বন্ধ হয়ে গেলে বা নতুন কিছু যোগ করার পরামর্শ থাকলে জানান: ' : 'Seen a wrong number, a source that has stopped working, or something worth adding? Tell us: '}
+      <a href={issues} rel="noopener" target="_blank">{bn ? 'GitHub-এ ইস্যু খুলুন' : 'open an issue on GitHub'}</a>
+      {
+        CONTACT_EMAIL && (
+          <>
+            {bn ? ' অথবা ইমেইল করুন ' : ' or email '}
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </>
+        )
+      }
+      {bn ? '।' : '.'}
+    </p>
+    <p>
+      {bn ? 'সাইটের সম্পূর্ণ সোর্স কোড উন্মুক্ত: ' : 'The site is open source: '}
+      <a href={REPO_URL} rel="noopener" target="_blank">{REPO_URL.replace('https://', '')}</a>
+      {bn ? '। ' : '. '}
+      <a href={localePath(lang, '/privacy')}>{s.nav.privacy}</a>
+    </p>
+  </div>
+</Base>

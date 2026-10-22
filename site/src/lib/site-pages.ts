@@ -15,6 +15,9 @@ type LastMod =
 
 const ALL_CATEGORIES = [...new Set(SERIES.map((s) => s.category))];
 
+/** When /privacy last changed; bump it whenever the policy text or the services it describes change. */
+export const PRIVACY_UPDATED = '2026-10-23';
+
 export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> = [
   { path: '/', lastmod: { categories: ALL_CATEGORIES } },
   { path: '/dollar-rate-today', lastmod: { categories: ['fx'] } },
@@ -42,6 +45,8 @@ export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> 
       } as Record<string, LastMod>
     )[c.slug] ?? null,
   })),
+  { path: '/about', lastmod: null },
+  { path: '/privacy', lastmod: { date: PRIVACY_UPDATED } },
 ];
 
 /** When a page's content last changed, from the data behind it (W3C datetime), or null. */

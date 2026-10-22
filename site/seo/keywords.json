@@ -166,5 +166,18 @@
       "bn": ["বিকাশ ক্যাশ আউট চার্জ", "নগদ ক্যাশ আউট চার্জ", "রকেট ক্যাশ আউট চার্জ"],
       "en": ["bKash cash out charge", "Nagad cash out charge", "Rocket cash out charge"]
     }
+  },
+  "/about": {
+    "bn": "আমাদের সম্পর্কে",
+    "en": "about",
+    "longTail": {
+      "bn": ["ডলার রেট ও সোনার দামের উৎস", "বাজুস ও বাংলাদেশ ব্যাংকের তথ্য"],
+      "en": ["source of Bangladesh dollar rate and gold price", "BAJUS and Bangladesh Bank data"]
+    }
+  },
+  "/privacy": {
+    "bn": "গোপনীয়তা নীতি",
+    "en": "privacy policy",
+    "longTail": { "bn": [], "en": [] }
   }
 }

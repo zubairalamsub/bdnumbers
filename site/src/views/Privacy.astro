@@ -1,0 +1,190 @@
+---
+import { defaultDigits, formatDate, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { ADSENSE_CLIENT, BUTTONDOWN_USERNAME, CONTACT_EMAIL, ONESIGNAL_APP_ID, REPO_URL, SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+import { PRIVACY_UPDATED } from '../lib/site-pages';
+
+interface Props {
+  lang: Lang;
+}
+
+// What the site and the services it switches on do with visitors' data. Sections for ads, push and email
+// appear only when that service is configured, so the policy always matches what the site actually runs.
+const { lang } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const latest = await getLatest();
+const path = '/privacy';
+const ext = { rel: 'noopener', target: '_blank' } as const;
+
+const title = bn ? 'গোপনীয়তা নীতি' : 'Privacy policy';
+const description = bn
+  ? `${SITE_NAME} আপনার কাছ থেকে কোনো ব্যক্তিগত তথ্য চায় না। ব্রাউজারে কী রাখা হয়, কোন বাইরের সেবা ব্যবহার হয় এবং কুকি সম্পর্কে বিস্তারিত।`
+  : `${SITE_NAME} does not ask for personal information. What is kept in your browser, which outside services are used, and how cookies work.`;
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.privacy, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{s.nav.privacy}</h1>
+  <p class="mt-2 text-sm text-ink-2">
+    {bn ? 'সর্বশেষ হালনাগাদ: ' : 'Last updated: '}{formatDate(PRIVACY_UPDATED, lang, defaultDigits(lang))}
+  </p>
+
+  <div class="mt-4 max-w-3xl space-y-4 text-[0.9375rem] leading-relaxed">
+    {
+      bn ? (
+        <p>
+          {SITE_NAME}-এ কোনো অ্যাকাউন্ট নেই এবং আমরা আপনার নাম, ফোন নম্বর বা অন্য কোনো ব্যক্তিগত তথ্য চাই না। সাইট নিজে কোনো কুকি বসায় না এবং
+          কোনো অ্যানালিটিক্স বা ট্র্যাকিং স্ক্রিপ্ট ব্যবহার করে না।
+        </p>
+      ) : (
+        <p>
+          {SITE_NAME} has no accounts, and we do not ask for your name, phone number or any other personal information. The site itself
+          sets no cookies and runs no analytics or tracking scripts.
+        </p>
+      )
+    }
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'আপনার ব্রাউজারে যা রাখা হয়' : 'What is kept in your browser'}</h2>
+    {
+      bn ? (
+        <ul class="list-disc space-y-1 ps-5">
+          <li>সংখ্যা বাংলা না ইংরেজি অঙ্কে দেখাবেন, সেই পছন্দ।</li>
+          <li>যে পাতাগুলো আগে খুলেছেন তার একটি কপি, যাতে ইন্টারনেট না থাকলেও সেগুলো দেখা যায়।</li>
+          {ONESIGNAL_APP_ID && <li>কোন বিষয়ে নোটিফিকেশন চালু করেছেন।</li>}
+        </ul>
+      ) : (
+        <ul class="list-disc space-y-1 ps-5">
+          <li>Whether you prefer numbers in Bengali or English digits.</li>
+          <li>A copy of pages you have opened, so they still work without an internet connection.</li>
+          {ONESIGNAL_APP_ID && <li>Which topics you turned notifications on for.</li>}
+        </ul>
+      )
+    }
+    <p>
+      {
+        bn
+          ? 'এগুলো শুধু আপনার ডিভাইসেই থাকে, আমাদের কাছে পাঠানো হয় না। ব্রাউজারের সেটিংস থেকে এই সাইটের ডেটা মুছে দিলেই সব মুছে যাবে।'
+          : 'These stay on your device and are never sent to us. Clearing this site’s data in your browser settings removes them.'
+      }
+    </p>
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'হোস্টিং' : 'Hosting'}</h2>
+    {
+      bn ? (
+        <p>
+          সাইট ও এর ডেটা সার্ভিস Cloudflare-এ চলে। পাতা পৌঁছে দেওয়া ও সাইটকে আক্রমণ থেকে রক্ষা করতে Cloudflare আপনার আইপি ঠিকানা ও ব্রাউজারের মতো
+          সাধারণ অনুরোধের তথ্য প্রক্রিয়া করে, যা{' '}
+          <a href="https://www.cloudflare.com/privacypolicy/" {...ext}>Cloudflare-এর গোপনীয়তা নীতি</a> মেনে চলে।
+        </p>
+      ) : (
+        <p>
+          The site and its data service run on Cloudflare. To deliver pages and protect the site from attacks, Cloudflare processes ordinary
+          request information such as your IP address and browser, under{' '}
+          <a href="https://www.cloudflare.com/privacypolicy/" {...ext}>Cloudflare’s privacy policy</a>.
+        </p>
+      )
+    }
+
+    {
+      ADSENSE_CLIENT && (
+        <>
+          <h2 class="pt-2 text-xl font-semibold">{bn ? 'বিজ্ঞাপন ও কুকি' : 'Advertising and cookies'}</h2>
+          {bn ? (
+            <p>
+              এই সাইটে Google AdSense-এর বিজ্ঞাপন দেখানো হয়। Google-সহ তৃতীয় পক্ষের বিজ্ঞাপনদাতারা কুকি ব্যবহার করে আপনার এই সাইট ও অন্যান্য
+              সাইটে আগের ভিজিটের ভিত্তিতে বিজ্ঞাপন দেখায়। Google-এর বিজ্ঞাপন কুকির মাধ্যমে Google ও তার অংশীদাররা এ ধরনের বিজ্ঞাপন দেখাতে পারে।
+              ব্যক্তিগতকৃত বিজ্ঞাপন বন্ধ করতে <a href="https://adssettings.google.com/" {...ext}>Google-এর বিজ্ঞাপন সেটিংস</a> ব্যবহার করুন,
+              অথবা অন্যান্য বিজ্ঞাপনদাতার কুকি বন্ধ করতে <a href="https://optout.aboutads.info/" {...ext}>aboutads.info</a> দেখুন। Google কীভাবে
+              তথ্য ব্যবহার করে তা জানতে{' '}
+              <a href="https://policies.google.com/technologies/partner-sites" {...ext}>
+                Google-এর এই পাতাটি
+              </a>{' '}
+              দেখুন।
+            </p>
+          ) : (
+            <p>
+              This site shows ads from Google AdSense. Third-party vendors, including Google, use cookies to serve ads based on your prior
+              visits to this website and other websites. Google’s advertising cookies enable it and its partners to serve such ads. You can
+              opt out of personalised advertising in <a href="https://adssettings.google.com/" {...ext}>Google’s Ads Settings</a>, or opt
+              out of other vendors’ cookies at <a href="https://optout.aboutads.info/" {...ext}>aboutads.info</a>. See{' '}
+              <a href="https://policies.google.com/technologies/partner-sites" {...ext}>
+                how Google uses information from sites that use its services
+              </a>
+              .
+            </p>
+          )}
+        </>
+      )
+    }
+
+    {
+      ONESIGNAL_APP_ID && (
+        <>
+          <h2 class="pt-2 text-xl font-semibold">{bn ? 'নোটিফিকেশন' : 'Notifications'}</h2>
+          {bn ? (
+            <p>
+              কোনো দাম বদলালে জানাতে বললে আপনার ব্রাউজারের একটি নোটিফিকেশন আইডি এবং বিষয় ও ভাষা{' '}
+              <a href="https://onesignal.com/privacy_policy" {...ext}>OneSignal</a>-এ রাখা হয়। একই বোতাম চেপে বা ব্রাউজারের সেটিংস থেকে যেকোনো
+              সময় বন্ধ করতে পারবেন।
+            </p>
+          ) : (
+            <p>
+              If you ask to be notified when a price changes, a notification ID for your browser and the topic and language you chose are
+              kept by <a href="https://onesignal.com/privacy_policy" {...ext}>OneSignal</a>. Turn it off any time with the same button or in
+              your browser settings.
+            </p>
+          )}
+        </>
+      )
+    }
+
+    {
+      BUTTONDOWN_USERNAME && (
+        <>
+          <h2 class="pt-2 text-xl font-semibold">{bn ? 'ইমেইল' : 'Email'}</h2>
+          {bn ? (
+            <p>
+              দৈনিক ইমেইলের জন্য সাইন আপ করলে আপনার ইমেইল ঠিকানা <a href="https://buttondown.com/legal/privacy" {...ext}>Buttondown</a>-এ রাখা হয়
+              এবং শুধু এই ইমেইল পাঠাতেই ব্যবহার হয়। প্রতিটি ইমেইলে আনসাবস্ক্রাইব করার লিংক থাকে।
+            </p>
+          ) : (
+            <p>
+              If you sign up for the daily email, your address is kept by{' '}
+              <a href="https://buttondown.com/legal/privacy" {...ext}>Buttondown</a> and used only to send that email. Every email has an
+              unsubscribe link.
+            </p>
+          )}
+        </>
+      )
+    }
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'বাইরের লিংক' : 'Links to other sites'}</h2>
+    <p>
+      {
+        bn
+          ? 'প্রতিটি সংখ্যার পাশে তার উৎসের লিংক থাকে। সেসব সাইটের নিজস্ব গোপনীয়তা নীতি প্রযোজ্য।'
+          : 'Each number links to its source. Those sites have their own privacy policies.'
+      }
+    </p>
+
+    <h2 class="pt-2 text-xl font-semibold">{bn ? 'যোগাযোগ' : 'Contact'}</h2>
+    <p>
+      {bn ? 'এই নীতি নিয়ে প্রশ্ন থাকলে ' : 'Questions about this policy: '}
+      <a href={`${REPO_URL}/issues`} {...ext}>{bn ? 'GitHub-এ ইস্যু খুলুন' : 'open an issue on GitHub'}</a>
+      {
+        CONTACT_EMAIL && (
+          <>
+            {bn ? ' অথবা ইমেইল করুন ' : ' or email '}
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </>
+        )
+      }
+      {bn ? '। নীতি বদলালে এই পাতার তারিখও বদলাবে। ' : '. If this policy changes, the date above changes too. '}
+      <a href={localePath(lang, '/about')}>{s.nav.about}</a>
+    </p>
+  </div>
+</Base>
