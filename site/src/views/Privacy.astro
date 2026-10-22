@@ -1,7 +1,7 @@
 ---
 import { defaultDigits, formatDate, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { ADSENSE_CLIENT, BUTTONDOWN_USERNAME, CONTACT_EMAIL, ONESIGNAL_APP_ID, REPO_URL, SITE_NAME } from '../config';
+import { ADSENSE_CLIENT, BUTTONDOWN_USERNAME, CONTACT_EMAIL, ONESIGNAL_APP_ID, SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
@@ -173,16 +173,8 @@ const description = bn
 
     <h2 class="pt-2 text-xl font-semibold">{bn ? 'যোগাযোগ' : 'Contact'}</h2>
     <p>
-      {bn ? 'এই নীতি নিয়ে প্রশ্ন থাকলে ' : 'Questions about this policy: '}
-      <a href={`${REPO_URL}/issues`} {...ext}>{bn ? 'GitHub-এ ইস্যু খুলুন' : 'open an issue on GitHub'}</a>
-      {
-        CONTACT_EMAIL && (
-          <>
-            {bn ? ' অথবা ইমেইল করুন ' : ' or email '}
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </>
-        )
-      }
+      {bn ? 'এই নীতি নিয়ে প্রশ্ন থাকলে ইমেইল করুন: ' : 'Questions about this policy? Email '}
+      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
       {bn ? '। নীতি বদলালে এই পাতার তারিখও বদলাবে। ' : '. If this policy changes, the date above changes too. '}
       <a href={localePath(lang, '/about')}>{s.nav.about}</a>
     </p>

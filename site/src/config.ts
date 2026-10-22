@@ -1,7 +1,5 @@
 export const SITE_URL = 'https://bdrate.fyi';
 export const SITE_NAME = 'bdrate.fyi';
-/** The public source repository; its issue tracker is the contact channel on /about. */
-export const REPO_URL = 'https://github.com/zubairalamsub/bdnumbers';
 
 /** The Worker API the build reads from and the browser refreshes against. Override with API_BASE at build time. */
 // Build-time only (reads process.env): never import this file from browser scripts.
@@ -21,5 +19,5 @@ export const BUTTONDOWN_USERNAME = env('BUTTONDOWN_USERNAME');
  */
 export const ADSENSE_CLIENT = env('ADSENSE_CLIENT');
 export const ADSENSE_SLOT = env('ADSENSE_SLOT');
-/** A contact email shown on /about next to the issue tracker (optional). */
-export const CONTACT_EMAIL = env('CONTACT_EMAIL');
+/** The contact address on /about, /privacy and security.txt (forwarded by Cloudflare Email Routing). */
+export const CONTACT_EMAIL = env('CONTACT_EMAIL') || 'contact@bdrate.fyi';

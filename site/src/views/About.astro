@@ -1,7 +1,7 @@
 ---
 import { SERIES, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { CONTACT_EMAIL, REPO_URL, SITE_NAME } from '../config';
+import { CONTACT_EMAIL, SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
@@ -49,7 +49,6 @@ const title = bn
 const description = bn
   ? `${SITE_NAME} কী, প্রতিটি সংখ্যা কোন সরকারি বা মূল উৎস থেকে আসে, কত ঘন ঘন হালনাগাদ হয় এবং ভুল পেলে কীভাবে জানাবেন।`
   : `What ${SITE_NAME} is, which official or primary source each number comes from, how often it updates, and how to report a mistake.`;
-const issues = `${REPO_URL}/issues`;
 ---
 
 <Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
@@ -157,22 +156,11 @@ const issues = `${REPO_URL}/issues`;
 
     <h2 class="pt-2 text-xl font-semibold">{bn ? 'যোগাযোগ' : 'Contact'}</h2>
     <p>
-      {bn ? 'কোনো সংখ্যা ভুল দেখলে, কোনো উৎস বন্ধ হয়ে গেলে বা নতুন কিছু যোগ করার পরামর্শ থাকলে জানান: ' : 'Seen a wrong number, a source that has stopped working, or something worth adding? Tell us: '}
-      <a href={issues} rel="noopener" target="_blank">{bn ? 'GitHub-এ ইস্যু খুলুন' : 'open an issue on GitHub'}</a>
-      {
-        CONTACT_EMAIL && (
-          <>
-            {bn ? ' অথবা ইমেইল করুন ' : ' or email '}
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </>
-        )
-      }
+      {bn ? 'কোনো সংখ্যা ভুল দেখলে, কোনো উৎস বন্ধ হয়ে গেলে বা নতুন কিছু যোগ করার পরামর্শ থাকলে ইমেইল করুন: ' : 'Seen a wrong number, a source that has stopped working, or something worth adding? Email '}
+      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
       {bn ? '।' : '.'}
     </p>
     <p>
-      {bn ? 'সাইটের সম্পূর্ণ সোর্স কোড উন্মুক্ত: ' : 'The site is open source: '}
-      <a href={REPO_URL} rel="noopener" target="_blank">{REPO_URL.replace('https://', '')}</a>
-      {bn ? '। ' : '. '}
       <a href={localePath(lang, '/privacy')}>{s.nav.privacy}</a>
     </p>
   </div>
