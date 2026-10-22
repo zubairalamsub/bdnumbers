@@ -102,6 +102,8 @@ describe('GET /api/changes.json', () => {
   it("lists values fetched today that differ from the previous point", async () => {
     await seedPoints([{ series_key: 'usd_bdt_avg', date: '2026-10-20', value: 123.7 }], new Date().toISOString());
     await seedPoints([{ series_key: 'usd_bdt_low', date: '2026-10-20', value: 123.6 }], new Date().toISOString());
+    // A backfilled older day fetched today is not a change: gold's latest point is from 2026-10-22.
+    await seedPoints([{ series_key: 'gold_22k', date: '2026-10-01', value: 200_000 }], new Date().toISOString());
     await refreshCaches(env);
     const body = await (await request('/api/changes.json')).json<ChangesResponse>();
     expect(body.date).toBe(dhakaDate());

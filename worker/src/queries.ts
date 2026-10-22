@@ -271,15 +271,20 @@ function toRunSummary(r: RunRow): RunSummary {
   };
 }
 
-/** Series whose value changed in points fetched on Dhaka-local `today`. */
+/**
+ * Series whose latest value was fetched on Dhaka-local `today` and differs from the point before it.
+ * Only each series' latest point counts, so a backfill of older days fetched today isn't a "change".
+ */
 export async function buildChanges(db: D1Database, today: string): Promise<ChangesResponse> {
   const { results } = await db
     .prepare(
       `SELECT p.series_key, p.date, p.value, p.fetched_at,
          (SELECT q.value FROM points q WHERE q.series_key = p.series_key AND q.date < p.date
           ORDER BY q.date DESC LIMIT 1) AS previous
-       FROM points p WHERE p.fetched_at >= ?1
-       ORDER BY p.fetched_at DESC, p.date DESC`,
+       FROM points p
+       WHERE p.fetched_at >= ?1
+         AND p.date = (SELECT MAX(q.date) FROM points q WHERE q.series_key = p.series_key)
+       ORDER BY p.fetched_at DESC`,
     )
     .bind(dhakaDayStartUtc(today))
     .all<{ series_key: string; date: string; value: number; fetched_at: string; previous: number | null }>();
