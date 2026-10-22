@@ -203,6 +203,17 @@ Pages builds from the API at build time, so every page is complete static HTML w
 
 To add a source, create `worker/src/sources/<name>.ts` exporting a `Source` (`key`, `cadence`, `writeMode`, `fetch(env, ctx)`). Register it in `sources/index.ts` and add its series to `shared/src/series.ts`. Save the live page under `worker/test/fixtures/` and write the parser against it.
 
+## Security
+
+Everything here is on free plans. Report problems as described in [SECURITY.md](SECURITY.md).
+
+- **Site headers** ([`site/public/_headers`](site/public/_headers)): HSTS (1 year, subdomains), `nosniff`, a strict referrer policy, `Permissions-Policy` turning off camera, microphone, location, payment and device APIs, `COOP: same-origin-allow-popups`, and a CSP with `frame-ancestors 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self' https://buttondown.com` and `upgrade-insecure-requests`. Script sources stay open because AdSense loads from many Google hosts and does not support allowlists; the site is static, renders upstream text escaped, and only inserts JSON (with `<` escaped) as raw HTML.
+- **API headers** ([`worker/src/index.ts`](worker/src/index.ts)): every response gets HSTS, `nosniff`, `noindex` and a referrer policy. Embeds may be framed anywhere but load and run nothing (`default-src 'none'`); `/manual` can't be framed and may only call its own origin. The Worker is served only on `api.bdrate.fyi` (`workers_dev` and preview URLs are off).
+- **Secrets** live only in Worker secrets, Pages variables, GitHub Actions secrets and the git-ignored `worker/.dev.vars`; none are in the repository or its history. Write endpoints need a bearer token compared in constant time, and `/api/ingest` is rate-limited.
+- **Repository:** Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) and CodeQL code scanning ([`codeql.yml`](.github/workflows/codeql.yml)); every workflow's `GITHUB_TOKEN` is read-only.
+- **`/.well-known/security.txt`** is generated on each build, so its `Expires` date stays a year ahead.
+- **Account-level steps** (Cloudflare dashboard, done by hand): DNSSEC, DMARC `p=reject` (the domain sends no mail), and two-factor authentication on the Cloudflare, GitHub and Google accounts.
+
 ## Operations
 
 - **Health:** `/api/status.json` shows each source's last run, error, 24 h failures and stale series. For live logs, run `npx wrangler tail` (observability is on).
