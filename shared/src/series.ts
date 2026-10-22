@@ -1,3 +1,4 @@
+import { BPC_FUEL_URL, FUEL_ITEMS, HOLIDAYS_ICS_URL, LPG_SERIES, NSD_SCHEMES_URL, UNB_LPG_SEARCH_URL } from './catalog/periodic';
 import { TCB_ITEMS, TCB_LIST_URL } from './catalog/tcb';
 import { MET_CREDIT_URL, WEATHER_CITIES, WEATHER_METRICS, type WeatherMetric } from './catalog/weather';
 import type { SeriesDef } from './types';
@@ -150,6 +151,77 @@ const WEATHER: SeriesDef[] = WEATHER_CITIES.flatMap((city) =>
   ),
 );
 
+const FUEL: SeriesDef[] = [
+  ...FUEL_ITEMS.map(
+    (f): SeriesDef => ({
+      key: `fuel_${f.id}`,
+      name_bn: `${f.bn}`,
+      name_en: `${f.en}`,
+      unit: 'BDT/litre',
+      source_name: 'BPC',
+      source_url: BPC_FUEL_URL,
+      cadence: 'periodic',
+      category: 'fuel',
+      source_key: 'fuelPrices',
+      bounds: [f.ref / 3, f.ref * 3],
+    }),
+  ),
+  {
+    key: 'lpg_govt_12_5kg',
+    name_bn: 'সরকারি এলপিজি (১২.৫ কেজি সিলিন্ডার)',
+    name_en: 'Government LPG (12.5 kg cylinder)',
+    unit: 'BDT/cylinder',
+    source_name: 'BPC',
+    source_url: BPC_FUEL_URL,
+    cadence: 'periodic',
+    category: 'lpg',
+    source_key: 'fuelPrices',
+    bounds: [200, 5000],
+  },
+];
+
+const LPG: SeriesDef[] = LPG_SERIES.map(
+  (l): SeriesDef => ({
+    key: l.key,
+    name_bn: l.bn,
+    name_en: l.en,
+    unit: l.unit,
+    source_name: 'BERC (via UNB)',
+    source_url: UNB_LPG_SEARCH_URL,
+    cadence: 'periodic',
+    category: 'lpg',
+    source_key: 'lpgPrice',
+    bounds: l.bounds,
+  }),
+);
+
+const PERIODIC_OTHER: SeriesDef[] = [
+  {
+    key: 'savings_rates',
+    name_bn: 'সঞ্চয়পত্রের মুনাফার হার (৫ বছর মেয়াদি, সর্বোচ্চ)',
+    name_en: 'Savings certificate rate (5-year, top)',
+    unit: '%',
+    source_name: 'National Savings Directorate',
+    source_url: NSD_SCHEMES_URL,
+    cadence: 'periodic',
+    category: 'savings',
+    source_key: 'savingsRates',
+    bounds: [1, 25],
+  },
+  {
+    key: 'holidays_public',
+    name_bn: 'সরকারি ছুটি (এ বছর)',
+    name_en: 'Public holidays (this year)',
+    unit: 'days',
+    source_name: 'Google Calendar (Bangladesh holidays)',
+    source_url: HOLIDAYS_ICS_URL,
+    cadence: 'periodic',
+    category: 'holidays',
+    source_key: 'holidays',
+    bounds: [1, 120],
+  },
+];
+
 /** Display name of a currency code, e.g. ('eur', 'bn') → 'ইউরো'. Unknown codes return the code. */
 export function currencyName(ccy: string, lang: 'bn' | 'en'): string {
   return CROSS[ccy.toLowerCase()]?.[lang] ?? ccy.toUpperCase();
@@ -165,6 +237,9 @@ export const SERIES: readonly SeriesDef[] = [
   ...MARKET,
   ...STOCK,
   ...WEATHER,
+  ...FUEL,
+  ...LPG,
+  ...PERIODIC_OTHER,
 ];
 
 const BY_KEY = new Map(SERIES.map((s) => [s.key, s]));

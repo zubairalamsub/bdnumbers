@@ -4,9 +4,24 @@ import { env } from 'cloudflare:workers';
 import { vi } from 'vitest';
 import { ensureSeries, writePoints } from '../src/db';
 import worker from '../src/index';
-import { BAJUS_GOLD_URL, BB_EXCHANGE_URL, DSE_URL, MET_API_URL, TCB_LIST_URL } from '@bdnumbers/shared';
+import {
+  BAJUS_GOLD_URL,
+  BB_EXCHANGE_URL,
+  BPC_FUEL_URL,
+  DSE_URL,
+  HOLIDAYS_ICS_URL,
+  MET_API_URL,
+  NSD_SCHEMES_URL,
+  TCB_LIST_URL,
+  UNB_LPG_SEARCH_URL,
+} from '@bdnumbers/shared';
 import bajus from './fixtures/bajus-gold-price-2026-10-22.html?raw';
 import bb from './fixtures/bb-exchangerate-2026-10-19.html?raw';
+import bpcFuel from './fixtures/bpc-fuel-prices-2026-10-22.html?raw';
+import holidaysIcs from './fixtures/google-bd-holidays-2026-10-22.ics?raw';
+import nsdSchemes from './fixtures/nsd-schemes-2026-10-22.html?raw';
+import unbLpgArticle from './fixtures/unb-lpg-article-2026-10.html?raw';
+import unbLpgSearch from './fixtures/unb-search-lpg-2026-10-22.html?raw';
 import dse from './fixtures/dse-recent-market-information-2026-10-22.html?raw';
 import met from './fixtures/met-dhaka-2026-10-22.json?raw';
 import tcbList from './fixtures/tcb-daily-rmps-2026-10-22.html?raw';
@@ -15,7 +30,23 @@ import unbArticle from './fixtures/unb-gold-2026-10-13.html?raw';
 import unbSearch from './fixtures/unb-search-gold-2026-10-22.html?raw';
 
 /** Live pages saved on 2026-10-22. File names carry the data date shown on each page. */
-export const FIXTURES = { bb, bajus, unbSearch, unbArticle, tcbList, dse, met };
+export const FIXTURES = {
+  bb,
+  bajus,
+  unbSearch,
+  unbArticle,
+  tcbList,
+  dse,
+  met,
+  bpcFuel,
+  unbLpgSearch,
+  unbLpgArticle,
+  nsdSchemes,
+  holidaysIcs,
+};
+
+export const UNB_LPG_ARTICLE_URL =
+  'https://unb.com.bd/category/Bangladesh/lpg-price-rises-by-tk21-per-kg-12kg-cylinder-now-tk1837/196983';
 
 /** TCB's XLSX for 2026-10-19 (stored base64 because fixtures load as text). */
 export function tcbXlsx(): ArrayBuffer {
@@ -56,6 +87,11 @@ export function allSourceRoutes(): Record<string, Responder> {
     [TCB_FILE_HOST]: () => new Response(tcbXlsx(), { headers: { 'content-type': 'application/octet-stream' } }),
     [DSE_URL]: html(FIXTURES.dse),
     [MET_API_URL]: () => new Response(FIXTURES.met, { headers: { 'content-type': 'application/json' } }),
+    [BPC_FUEL_URL]: html(FIXTURES.bpcFuel),
+    [UNB_LPG_SEARCH_URL]: html(FIXTURES.unbLpgSearch),
+    [UNB_LPG_ARTICLE_URL]: html(FIXTURES.unbLpgArticle),
+    [NSD_SCHEMES_URL]: html(FIXTURES.nsdSchemes),
+    [HOLIDAYS_ICS_URL]: () => new Response(FIXTURES.holidaysIcs, { headers: { 'content-type': 'text/calendar' } }),
     [DEPLOY_HOOK]: () => new Response('{"success":true}', { status: 200 }),
   };
 }

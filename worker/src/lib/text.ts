@@ -31,3 +31,16 @@ export function describePage(html: string): string {
   const title = /<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1];
   return `${html.length} bytes, title "${cleanText(title ?? '').slice(0, 80)}"`;
 }
+
+/**
+ * Comparable form of Bengali text: Unicode NFC (some letters and vowel signs have two encodings and
+ * government sites mix them), no zero-width joiners, Latin digits, single spaces.
+ */
+export function normalizeBengali(s: string): string {
+  return s
+    .normalize('NFC')
+    .replace(/[\u200c\u200d]/g, '')
+    .replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6))
+    .replace(/\s+/g, ' ')
+    .trim();
+}

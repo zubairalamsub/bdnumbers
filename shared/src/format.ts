@@ -33,8 +33,10 @@ export function formatNumber(value: number, digits: Digits, maxFractionDigits = 
 /** Fraction digits for a series value: rates to 2 places (4 below 10, e.g. JPY), indices 2, weather 1, prices whole. */
 export function fractionDigits(category: Category, value: number): number {
   if (category === 'fx') return Math.abs(value) < 10 ? 4 : 2;
-  if (category === 'stock') return 2;
+  if (category === 'stock' || category === 'savings') return 2;
   if (category === 'weather') return 1;
+  // Fuel and LPG prices are usually whole taka; show paisa only when there are any (e.g. 108.78, 153.06).
+  if (category === 'fuel' || category === 'lpg') return Number.isInteger(value) ? 0 : 2;
   return 0;
 }
 
@@ -90,6 +92,8 @@ const UNIT_LABELS: Record<string, Record<Lang, string>> = {
   '%': { bn: '%', en: '%' },
   mm: { bn: 'মিমি', en: 'mm' },
   'km/h': { bn: 'কিমি/ঘণ্টা', en: 'km/h' },
+  'BDT/cylinder': { bn: 'টাকা/সিলিন্ডার', en: 'Tk/cylinder' },
+  days: { bn: 'দিন', en: 'days' },
 };
 
 export function unitLabel(unit: string, lang: Lang): string {
@@ -104,6 +108,10 @@ export const CATEGORY_PAGE: Record<Category, string> = {
   market: '/market-price-today',
   stock: '/share-market-today',
   weather: '/weather',
+  fuel: '/fuel-price',
+  lpg: '/lpg-price',
+  savings: '/savings-rates',
+  holidays: '/holidays',
 };
 
 export function pageUrl(siteUrl: string, category: Category, lang: Lang): string {

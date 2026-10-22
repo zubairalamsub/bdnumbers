@@ -1,7 +1,7 @@
 /** How often a source is fetched. `periodic` sources are fetched daily but change rarely. */
 export type Cadence = 'daily' | 'hourly' | 'periodic';
 
-export type Category = 'fx' | 'gold' | 'silver' | 'market' | 'stock' | 'weather';
+export type Category = 'fx' | 'gold' | 'silver' | 'market' | 'stock' | 'weather' | 'fuel' | 'lpg' | 'savings' | 'holidays';
 
 /** Static description of a series. Mirrors the D1 `series` table plus catalog-only fields. */
 export interface SeriesDef {

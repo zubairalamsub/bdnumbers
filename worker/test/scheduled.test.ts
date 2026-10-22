@@ -181,6 +181,10 @@ describe('runBatch', () => {
       bajusGold: [true, 8],
       tcbMarketPrices: [true, tcbPoints],
       dseIndex: [true, 32 * 4],
+      fuelPrices: [true, 6],
+      lpgPrice: [true, 2],
+      savingsRates: [true, 1],
+      holidays: [true, 1],
     });
     expect(first.deploy).toBe('triggered');
 

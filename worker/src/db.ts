@@ -32,6 +32,7 @@ interface StoredLatest {
   series_key: string;
   date: string;
   value: number;
+  meta: string | null;
   stale: number;
 }
 
@@ -39,7 +40,7 @@ interface StoredLatest {
 export async function latestStored(db: D1Database, keys: readonly string[]): Promise<Map<string, StoredLatest>> {
   const { results } = await db
     .prepare(
-      `SELECT p.series_key, p.date, p.value, p.stale FROM points p
+      `SELECT p.series_key, p.date, p.value, p.meta, p.stale FROM points p
        WHERE p.series_key IN (SELECT value FROM json_each(?1))
          AND p.date = (SELECT MAX(q.date) FROM points q WHERE q.series_key = p.series_key)`,
     )
@@ -62,8 +63,9 @@ const UPSERT_POINT = `
 
 /**
  * Store points and return the number of rows inserted or updated.
- * `upsert` writes every point; `on-change` skips a point whose value equals the latest stored value
- * (clearing that point's stale flag instead) or whose date is older than the latest stored date.
+ * `upsert` writes every point; `on-change` skips a point whose value and meta equal the latest stored
+ * point's (clearing that point's stale flag instead) or whose date is older than the latest stored date.
+ * Meta counts because some series carry their data there (the holiday list, the savings rate table).
  */
 export async function writePoints(
   db: D1Database,
@@ -78,12 +80,13 @@ export async function writePoints(
 
   for (const p of points) {
     const prior = latest?.get(p.series_key);
+    const meta = p.meta ? JSON.stringify(p.meta) : null;
     if (prior && p.date < prior.date) continue;
-    if (prior && p.value === prior.value) {
+    if (prior && p.value === prior.value && meta === prior.meta) {
       if (prior.stale) statements.push(clearStale.bind(p.series_key, prior.date));
       continue;
     }
-    statements.push(upsert.bind(p.series_key, p.date, p.value, p.meta ? JSON.stringify(p.meta) : null, fetchedAt));
+    statements.push(upsert.bind(p.series_key, p.date, p.value, meta, fetchedAt));
   }
   return runBatched(db, statements);
 }
