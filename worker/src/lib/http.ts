@@ -10,12 +10,26 @@ const RETRY_STATUSES = new Set([403, 429, 500, 502, 503, 504, 520, 521, 522, 523
  * status and any Cloudflare mitigation/page title, so a block is easy to tell from an outage.
  */
 export async function fetchText(env: Env, url: string): Promise<string> {
+  return (await fetchWithRetry(env, url, 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8')).text();
+}
+
+/** GET binary content (e.g. an XLSX file), with the same retry and error reporting as fetchText. */
+export async function fetchBytes(env: Env, url: string): Promise<ArrayBuffer> {
+  return (await fetchWithRetry(env, url, '*/*')).arrayBuffer();
+}
+
+/** GET and parse JSON, with the same retry and error reporting as fetchText. */
+export async function fetchJson<T>(env: Env, url: string): Promise<T> {
+  return (await fetchWithRetry(env, url, 'application/json')).json<T>();
+}
+
+async function fetchWithRetry(env: Env, url: string, accept: string): Promise<Response> {
   try {
-    return await fetchOnce(env, url);
+    return await fetchOnce(env, url, accept);
   } catch (err) {
     if (!(err instanceof FetchError) || !err.retryable) throw err;
     await new Promise((resolve) => setTimeout(resolve, Number(env.RETRY_DELAY_MS ?? 3000)));
-    return fetchOnce(env, url);
+    return fetchOnce(env, url, accept);
   }
 }
 
@@ -29,13 +43,13 @@ class FetchError extends Error {
   }
 }
 
-async function fetchOnce(env: Env, url: string): Promise<string> {
+async function fetchOnce(env: Env, url: string, accept: string): Promise<Response> {
   let res: Response;
   try {
     res = await fetch(url, {
       headers: {
         'user-agent': env.USER_AGENT,
-        accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+        accept,
         'accept-language': 'en-US,en;q=0.9,bn;q=0.8',
       },
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -43,7 +57,7 @@ async function fetchOnce(env: Env, url: string): Promise<string> {
   } catch (err) {
     throw new FetchError(`GET ${url} failed: ${err instanceof Error ? err.message : String(err)}`, true);
   }
-  if (res.ok) return res.text();
+  if (res.ok) return res;
 
   const details: string[] = [];
   const mitigated = res.headers.get('cf-mitigated');

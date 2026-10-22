@@ -2,3 +2,5 @@ export * from './types';
 export * from './series';
 export * from './dates';
 export * from './format';
+export * from './catalog/tcb';
+export * from './catalog/weather';

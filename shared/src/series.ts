@@ -1,3 +1,5 @@
+import { TCB_ITEMS, TCB_LIST_URL } from './catalog/tcb';
+import { MET_CREDIT_URL, WEATHER_CITIES, WEATHER_METRICS, type WeatherMetric } from './catalog/weather';
 import type { SeriesDef } from './types';
 
 /** Grams in one bhori (tola), the unit Bangladeshi gold prices are quoted in. */
@@ -91,6 +93,63 @@ const SILVER: SeriesDef[] = KARATS.map(({ k, bn, en }) => ({
   bounds: [500, 50_000],
 }));
 
+const TCB = {
+  source_name: 'TCB',
+  source_url: TCB_LIST_URL,
+  cadence: 'daily',
+  category: 'market',
+  source_key: 'tcbMarketPrices',
+} as const;
+
+const MARKET: SeriesDef[] = TCB_ITEMS.flatMap((i) =>
+  (['min', 'max'] as const).map(
+    (side): SeriesDef => ({
+      ...TCB,
+      key: `tcb_${i.id}_${side}`,
+      name_bn: `${i.bn} (${side === 'min' ? 'সর্বনিম্ন' : 'সর্বোচ্চ'})`,
+      name_en: `${i.en} (${side === 'min' ? 'lowest' : 'highest'})`,
+      unit: `BDT/${i.unit}`,
+      group: i.group,
+      bounds: [i.ref / 5, i.ref * 5],
+    }),
+  ),
+);
+
+export const DSE_URL = 'https://www.dse.com.bd/recent-market-information';
+
+const DSE = {
+  source_name: 'Dhaka Stock Exchange',
+  source_url: DSE_URL,
+  cadence: 'daily',
+  category: 'stock',
+  source_key: 'dseIndex',
+} as const;
+
+const STOCK: SeriesDef[] = [
+  { ...DSE, key: 'dse_dsex', name_bn: 'ডিএসইএক্স সূচক', name_en: 'DSEX index', unit: 'points', bounds: [1000, 20000] },
+  { ...DSE, key: 'dse_dses', name_bn: 'ডিএসইএস (শরিয়াহ) সূচক', name_en: 'DSES (Shariah) index', unit: 'points', bounds: [200, 5000] },
+  { ...DSE, key: 'dse_ds30', name_bn: 'ডিএস৩০ সূচক', name_en: 'DS30 index', unit: 'points', bounds: [500, 8000] },
+  { ...DSE, key: 'dse_turnover', name_bn: 'ডিএসইতে লেনদেন', name_en: 'DSE turnover', unit: 'BDT crore', bounds: [1, 20000] },
+];
+
+const WEATHER: SeriesDef[] = WEATHER_CITIES.flatMap((city) =>
+  (Object.keys(WEATHER_METRICS) as WeatherMetric[]).map(
+    (metric): SeriesDef => ({
+      key: `weather_${city.id}_${metric}`,
+      name_bn: `${city.bn}: ${WEATHER_METRICS[metric].bn}`,
+      name_en: `${city.en}: ${WEATHER_METRICS[metric].en}`,
+      unit: WEATHER_METRICS[metric].unit,
+      source_name: 'MET Norway',
+      source_url: MET_CREDIT_URL,
+      cadence: 'hourly',
+      category: 'weather',
+      source_key: 'weather',
+      group: city.id,
+      bounds: WEATHER_METRICS[metric].bounds,
+    }),
+  ),
+);
+
 /** Display name of a currency code, e.g. ('eur', 'bn') → 'ইউরো'. Unknown codes return the code. */
 export function currencyName(ccy: string, lang: 'bn' | 'en'): string {
   return CROSS[ccy.toLowerCase()]?.[lang] ?? ccy.toUpperCase();
@@ -103,6 +162,9 @@ export const SERIES: readonly SeriesDef[] = [
     .flatMap((c) => [crossRateDef(c, 'bid'), crossRateDef(c, 'ask')]),
   ...GOLD,
   ...SILVER,
+  ...MARKET,
+  ...STOCK,
+  ...WEATHER,
 ];
 
 const BY_KEY = new Map(SERIES.map((s) => [s.key, s]));

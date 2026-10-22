@@ -1,25 +1,27 @@
-import { BAJUS_GOLD_URL, BB_EXCHANGE_URL } from '@bdnumbers/shared';
+import { BAJUS_GOLD_URL, BB_EXCHANGE_URL, DSE_URL, TCB_LIST_URL } from '@bdnumbers/shared';
 import { createScheduledController } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getLatest } from '../src/cache';
 import { DAILY_CRON, HOURLY_CRON, fanoutInvoker, runBatch } from '../src/cron';
 import worker from '../src/index';
+import { readFirstSheet } from '../src/lib/xlsx';
 import { UNB_SEARCH_URL } from '../src/sources/bajusMirror';
 import { bajusGold } from '../src/sources/bajusGold';
+import { parseTcbSheet } from '../src/sources/tcbMarketPrices';
 import {
+  DEPLOY_HOOK,
   FIXTURES,
   UNB_ARTICLE_URL,
+  allSourceRoutes,
   calledUrls,
   html,
   httpStatus,
   mockFetch,
   resetStorage,
   seedPoints,
+  tcbXlsx,
 } from './helpers';
-
-const DEPLOY_HOOK = 'https://deploy-hook.test/hook';
-const deployOk = () => new Response('{"success":true}', { status: 200 });
 
 interface RunRow {
   source: string;
@@ -44,6 +46,9 @@ async function latestPoint(key: string) {
     .first<{ date: string; value: number; stale: number; meta: string | null }>();
 }
 
+/** Every source working, with some routes replaced. */
+const routes = (overrides: Parameters<typeof mockFetch>[0] = {}) => mockFetch({ ...allSourceRoutes(), ...overrides });
+
 beforeEach(async () => {
   await resetStorage();
 });
@@ -53,14 +58,9 @@ afterEach(() => {
 });
 
 describe('scheduled()', () => {
-  it('completes with one source failing: the other is stored, the failure is logged and flagged stale', async () => {
+  it('completes with one source failing: the others are stored, the failure is logged and flagged stale', async () => {
     await seedPoints([{ series_key: 'gold_22k', date: '2026-10-20', value: 230_000 }]);
-    const fetchSpy = mockFetch({
-      [BB_EXCHANGE_URL]: html(FIXTURES.bb),
-      [BAJUS_GOLD_URL]: httpStatus(503),
-      [UNB_SEARCH_URL]: httpStatus(500),
-      [DEPLOY_HOOK]: deployOk,
-    });
+    const fetchSpy = routes({ [BAJUS_GOLD_URL]: httpStatus(503), [UNB_SEARCH_URL]: httpStatus(500) });
 
     await worker.scheduled(createScheduledController({ cron: DAILY_CRON }), env);
 
@@ -69,8 +69,11 @@ describe('scheduled()', () => {
       expect.arrayContaining([
         ['bangladeshBank', 1],
         ['bajusGold', 0],
+        ['tcbMarketPrices', 1],
+        ['dseIndex', 1],
       ]),
     );
+    expect(log.some((r) => r.source === 'weather')).toBe(false);
     const bajusRun = log.find((r) => r.source === 'bajusGold')!;
     expect(bajusRun.error).toMatch(/BAJUS: GET https:\/\/www\.bajus\.org\/gold-price returned HTTP 503; UNB mirror: .*HTTP 500/);
     expect(log.every((r) => r.finished_at !== null)).toBe(true);
@@ -86,11 +89,14 @@ describe('scheduled()', () => {
     expect(calledUrls(fetchSpy).filter((u) => u === DEPLOY_HOOK)).toHaveLength(1);
   });
 
-  it('does nothing for the hourly cron until hourly sources exist', async () => {
-    const fetchSpy = mockFetch({});
+  it('runs weather on the hourly cron, without rebuilding the site', async () => {
+    const fetchSpy = routes();
     await worker.scheduled(createScheduledController({ cron: HOURLY_CRON }), env);
-    expect(await runs()).toEqual([]);
-    expect(fetchSpy).not.toHaveBeenCalled();
+
+    expect((await runs()).map((r) => [r.source, r.ok, r.points_written])).toEqual([['weather', 1, 32]]);
+    expect(calledUrls(fetchSpy).filter((u) => u.startsWith('https://api.met.no/'))).toHaveLength(8);
+    expect(calledUrls(fetchSpy)).not.toContain(DEPLOY_HOOK);
+    expect((await getLatest(env)).series.filter((s) => s.category === 'weather')).toHaveLength(32);
   });
 
   it('ignores an unknown cron expression', async () => {
@@ -103,12 +109,10 @@ describe('scheduled()', () => {
 
 describe('runBatch', () => {
   it('falls back to the UNB mirror when BAJUS is down', async () => {
-    mockFetch({
-      [BB_EXCHANGE_URL]: html(FIXTURES.bb),
+    routes({
       [BAJUS_GOLD_URL]: httpStatus(502),
       [UNB_SEARCH_URL]: html(FIXTURES.unbSearch),
       [UNB_ARTICLE_URL]: html(FIXTURES.unbArticle),
-      [DEPLOY_HOOK]: deployOk,
     });
 
     const result = await runBatch(env, 'daily', 'test');
@@ -130,12 +134,10 @@ describe('runBatch', () => {
       { series_key: 'gold_18k', date: '2026-10-22', value: 185_691 },
       { series_key: 'gold_traditional', date: '2026-10-22', value: 151_690 },
     ]);
-    mockFetch({
-      [BB_EXCHANGE_URL]: html(FIXTURES.bb),
+    routes({
       [BAJUS_GOLD_URL]: httpStatus(403),
       [UNB_SEARCH_URL]: html(FIXTURES.unbSearch),
       [UNB_ARTICLE_URL]: html(FIXTURES.unbArticle),
-      [DEPLOY_HOOK]: deployOk,
     });
 
     const result = await runBatch(env, 'daily', 'test');
@@ -147,11 +149,9 @@ describe('runBatch', () => {
 
   it('retries a transient failure once', async () => {
     let bajusCalls = 0;
-    mockFetch({
-      [BB_EXCHANGE_URL]: html(FIXTURES.bb),
+    routes({
       // 520: Cloudflare's "origin returned an unknown error", seen from bb.org.bd during an outage.
       [BAJUS_GOLD_URL]: () => (++bajusCalls === 1 ? new Response('busy', { status: 520 }) : html(FIXTURES.bajus)()),
-      [DEPLOY_HOOK]: deployOk,
     });
     const result = await runBatch(env, 'daily', 'test');
     expect(bajusCalls).toBe(2);
@@ -164,23 +164,24 @@ describe('runBatch', () => {
         status: 403,
         headers: { 'cf-mitigated': 'challenge' },
       });
-    mockFetch({ [BB_EXCHANGE_URL]: challenge, [BAJUS_GOLD_URL]: html(FIXTURES.bajus), [DEPLOY_HOOK]: deployOk });
+    routes({ [BB_EXCHANGE_URL]: challenge });
     const result = await runBatch(env, 'daily', 'test');
     expect(result.results.find((r) => r.source === 'bangladeshBank')!.error).toBe(
       'GET https://www.bb.org.bd/en/index.php/econdata/exchangerate returned HTTP 403 (cf-mitigated: challenge, title "Just a moment...")',
     );
   });
 
-  it('writes BAJUS prices only when they change, and rebuilds the site only when something was written', async () => {
-    const fetchSpy = mockFetch({
-      [BB_EXCHANGE_URL]: html(FIXTURES.bb),
-      [BAJUS_GOLD_URL]: html(FIXTURES.bajus),
-      [DEPLOY_HOOK]: deployOk,
-    });
+  it('writes only what changed, and rebuilds the site only when something was written', async () => {
+    const fetchSpy = routes();
+    const tcbPoints = parseTcbSheet(await readFirstSheet(tcbXlsx())).points.length;
 
     const first = await runBatch(env, 'daily', 'test');
-    expect(first.results.every((r) => r.ok)).toBe(true);
-    expect(first.written).toBe(23 + 8);
+    expect(Object.fromEntries(first.results.map((r) => [r.source, [r.ok, r.written]]))).toEqual({
+      bangladeshBank: [true, 23],
+      bajusGold: [true, 8],
+      tcbMarketPrices: [true, tcbPoints],
+      dseIndex: [true, 32 * 4],
+    });
     expect(first.deploy).toBe('triggered');
 
     const second = await runBatch(env, 'daily', 'test');
@@ -190,19 +191,28 @@ describe('runBatch', () => {
   });
 
   it('clears the stale flag when a failed source recovers with the same value', async () => {
-    mockFetch({ [BB_EXCHANGE_URL]: httpStatus(500), [BAJUS_GOLD_URL]: html(FIXTURES.bajus), [DEPLOY_HOOK]: deployOk });
+    routes({ [BB_EXCHANGE_URL]: httpStatus(500) });
     await runBatch(env, 'daily', 'test');
     vi.restoreAllMocks();
 
-    mockFetch({ [BB_EXCHANGE_URL]: html(FIXTURES.bb), [BAJUS_GOLD_URL]: httpStatus(500), [UNB_SEARCH_URL]: httpStatus(500), [DEPLOY_HOOK]: deployOk });
+    routes({ [BAJUS_GOLD_URL]: httpStatus(500), [UNB_SEARCH_URL]: httpStatus(500) });
     await runBatch(env, 'daily', 'test');
     expect((await latestPoint('gold_22k'))!.stale).toBe(1);
     vi.restoreAllMocks();
 
-    mockFetch({ [BB_EXCHANGE_URL]: html(FIXTURES.bb), [BAJUS_GOLD_URL]: html(FIXTURES.bajus), [DEPLOY_HOOK]: deployOk });
+    routes();
     const recovered = await runBatch(env, 'daily', 'test');
     expect((await latestPoint('gold_22k'))!.stale).toBe(0);
     expect(recovered.deploy).toBe('triggered');
+  });
+
+  it('keeps DSE and TCB failures independent of each other', async () => {
+    routes({ [DSE_URL]: httpStatus(500), [TCB_LIST_URL]: html('<html><title>Maintenance</title></html>') });
+    const result = await runBatch(env, 'daily', 'test');
+    const bySource = Object.fromEntries(result.results.map((r) => [r.source, r]));
+    expect(bySource.dseIndex).toMatchObject({ ok: false, error: expect.stringMatching(/HTTP 500/) });
+    expect(bySource.tcbMarketPrices).toMatchObject({ ok: false, error: expect.stringMatching(/no XLSX files in the TCB list/) });
+    expect(bySource.bangladeshBank!.ok).toBe(true);
   });
 });
 

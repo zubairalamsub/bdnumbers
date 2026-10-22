@@ -1,7 +1,7 @@
 /** How often a source is fetched. `periodic` sources are fetched daily but change rarely. */
 export type Cadence = 'daily' | 'hourly' | 'periodic';
 
-export type Category = 'fx' | 'gold' | 'silver';
+export type Category = 'fx' | 'gold' | 'silver' | 'market' | 'stock' | 'weather';
 
 /** Static description of a series. Mirrors the D1 `series` table plus catalog-only fields. */
 export interface SeriesDef {
@@ -17,6 +17,8 @@ export interface SeriesDef {
   source_key: string;
   /** Plausible [min, max]. A value outside fails the run instead of being stored. */
   bounds?: readonly [number, number];
+  /** Sub-grouping for display: a market group (rice, oil…) or a weather city id. */
+  group?: string;
 }
 
 export type PointMeta = Record<string, unknown>;

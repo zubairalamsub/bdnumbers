@@ -4,13 +4,26 @@ import { env } from 'cloudflare:workers';
 import { vi } from 'vitest';
 import { ensureSeries, writePoints } from '../src/db';
 import worker from '../src/index';
+import { BAJUS_GOLD_URL, BB_EXCHANGE_URL, DSE_URL, MET_API_URL, TCB_LIST_URL } from '@bdnumbers/shared';
 import bajus from './fixtures/bajus-gold-price-2026-10-22.html?raw';
 import bb from './fixtures/bb-exchangerate-2026-10-19.html?raw';
+import dse from './fixtures/dse-recent-market-information-2026-10-22.html?raw';
+import met from './fixtures/met-dhaka-2026-10-22.json?raw';
+import tcbList from './fixtures/tcb-daily-rmps-2026-10-22.html?raw';
+import tcbXlsxBase64 from './fixtures/tcb-2026-10-19.xlsx.b64?raw';
 import unbArticle from './fixtures/unb-gold-2026-10-13.html?raw';
 import unbSearch from './fixtures/unb-search-gold-2026-10-22.html?raw';
 
 /** Live pages saved on 2026-10-22. File names carry the data date shown on each page. */
-export const FIXTURES = { bb, bajus, unbSearch, unbArticle };
+export const FIXTURES = { bb, bajus, unbSearch, unbArticle, tcbList, dse, met };
+
+/** TCB's XLSX for 2026-10-19 (stored base64 because fixtures load as text). */
+export function tcbXlsx(): ArrayBuffer {
+  return Uint8Array.from(atob(tcbXlsxBase64.replace(/\s+/g, '')), (c) => c.charCodeAt(0)).buffer;
+}
+
+/** TCB serves its XLSX files from Oracle object storage. */
+export const TCB_FILE_HOST = 'https://objectstorage.';
 
 export const UNB_ARTICLE_URL =
   'https://unb.com.bd/category/Business/gold-prices-fall-by-tk-3266-per-bhori-in-bangladesh/197733';
@@ -30,6 +43,21 @@ export function mockFetch(routes: Record<string, Responder>) {
     }
     return new Response(`unmocked ${url}`, { status: 599 });
   });
+}
+
+export const DEPLOY_HOOK = 'https://deploy-hook.test/hook';
+
+/** Working responses for every source plus the deploy hook; override entries to break one. */
+export function allSourceRoutes(): Record<string, Responder> {
+  return {
+    [BB_EXCHANGE_URL]: html(FIXTURES.bb),
+    [BAJUS_GOLD_URL]: html(FIXTURES.bajus),
+    [TCB_LIST_URL]: html(FIXTURES.tcbList),
+    [TCB_FILE_HOST]: () => new Response(tcbXlsx(), { headers: { 'content-type': 'application/octet-stream' } }),
+    [DSE_URL]: html(FIXTURES.dse),
+    [MET_API_URL]: () => new Response(FIXTURES.met, { headers: { 'content-type': 'application/json' } }),
+    [DEPLOY_HOOK]: () => new Response('{"success":true}', { status: 200 }),
+  };
 }
 
 /** URLs the stubbed fetch was called with. */

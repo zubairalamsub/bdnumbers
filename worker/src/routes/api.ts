@@ -11,7 +11,14 @@ export const api = new Hono<AppEnv>();
 api.use('*', cors({ origin: '*', allowMethods: ['GET', 'HEAD', 'OPTIONS'], maxAge: 86400 }));
 api.use('*', edgeCache);
 
-api.get('/latest.json', async (c) => c.json(await getLatest(c.env), 200, { 'cache-control': CACHE_CONTROL }));
+// ?keys=a,b,c returns only those series, so a page's live refresh downloads what it shows, not all of them.
+api.get('/latest.json', async (c) => {
+  const latest = await getLatest(c.env);
+  const keys = c.req.query('keys');
+  if (!keys) return c.json(latest, 200, { 'cache-control': CACHE_CONTROL });
+  const wanted = new Set(keys.split(',').slice(0, 500));
+  return c.json({ ...latest, series: latest.series.filter((s) => wanted.has(s.key)) }, 200, { 'cache-control': CACHE_CONTROL });
+});
 
 api.get('/status.json', async (c) => c.json(await getStatus(c.env), 200, { 'cache-control': CACHE_CONTROL }));
 
