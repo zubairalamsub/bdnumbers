@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractBhoriPrices, parseUnbArticle, parseUnbSearch } from '../src/sources/bajusMirror';
+import { effectiveDate, extractBhoriPrices, parseUnbArticle, parseUnbSearch } from '../src/sources/bajusMirror';
 import { FIXTURES, UNB_ARTICLE_URL } from './helpers';
 
 describe('parseUnbSearch', () => {
@@ -49,5 +49,19 @@ describe('extractBhoriPrices', () => {
       '18k': 160_000,
       traditional: 130_000,
     });
+  });
+});
+
+describe('effectiveDate', () => {
+  // 2026-10-13 was a Tuesday.
+  it('resolves the weekday named in the article around the publish date', () => {
+    expect(effectiveDate('The new prices took effect from 10am Tuesday.', '2026-10-13')).toBe('2026-10-13');
+    expect(effectiveDate('The new prices will be effective across the country from Thursday.', '2026-10-13')).toBe('2026-10-15');
+    expect(effectiveDate('The prices took effect from Monday.', '2026-10-13')).toBe('2026-10-12');
+  });
+  it('handles today, tomorrow and no mention', () => {
+    expect(effectiveDate('effective from tomorrow', '2026-10-13')).toBe('2026-10-14');
+    expect(effectiveDate('effective from today', '2026-10-13')).toBe('2026-10-13');
+    expect(effectiveDate('BAJUS cut prices.', '2026-10-13')).toBe('2026-10-13');
   });
 });

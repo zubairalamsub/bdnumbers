@@ -1,9 +1,12 @@
-import { KARAT_ORDER, toIsoDate, type Karat, type Point } from '@bdnumbers/shared';
+import { KARAT_ORDER, toIsoDate, type Point } from '@bdnumbers/shared';
 import { ParseError, errorMessage } from '../lib/errors';
 import { Extractor } from '../lib/html';
 import { fetchText } from '../lib/http';
 import type { Env } from '../env';
-import { assertKaratLadder, type Metal } from './metals';
+import { effectiveDate, extractBhoriPrices } from './bajusMirrorParse';
+import { assertKaratLadder } from './metals';
+
+export { effectiveDate, extractBhoriPrices };
 
 /** UNB (United News of Bangladesh) reports every BAJUS price change, quoting per-bhori prices. */
 export const UNB_SEARCH_URL = 'https://unb.com.bd/search?q=gold+price';
@@ -48,8 +51,9 @@ export async function parseUnbArticle(html: string, url: string): Promise<Mirror
   const body = paragraphs.join(' ');
   if (!/BAJUS|Bangladesh Jewellers/i.test(body)) throw new ParseError(`article does not mention BAJUS (${url})`);
   const published = postMeta.map((t) => /Publish-\s*([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/.exec(t)).find((m) => m !== null);
-  const date = published ? toIsoDate(published[3]!, published[1]!, published[2]!) : null;
-  if (!date) throw new ParseError(`publish date not found (${url})`);
+  const publishedOn = published ? toIsoDate(published[3]!, published[1]!, published[2]!) : null;
+  if (!publishedOn) throw new ParseError(`publish date not found (${url})`);
+  const date = effectiveDate(body, publishedOn);
 
   const prices = extractBhoriPrices(body);
   const points: Point[] = [];
@@ -66,40 +70,10 @@ export async function parseUnbArticle(html: string, url: string): Promise<Mirror
         series_key: `${metal}_${k}`,
         date,
         value: prices[metal].get(k)!,
-        meta: { source: 'mirror', mirror: 'unb', url, article_date: date },
+        meta: { source: 'mirror', mirror: 'unb', url, article_date: publishedOn },
       });
     }
   }
   if (points.length === 0) throw new ParseError(`no usable prices in ${url}: ${warnings.join('; ')}`);
   return { url, points, warnings };
-}
-
-const MENTION =
-  /\b(22|21|18)[- ]?(?:carat|karat)\s+(gold|silver)\b|\b(gold|silver)\s+of\s+the\s+traditional\s+method\b|\btraditional(?:[- ]method)?\s+(gold|silver)\b/gi;
-const AMOUNT = /(?:Tk\.?|BDT)\s*(\d[\d,]*(?:\.\d+)?)/gi;
-
-/**
- * Pull per-bhori prices out of news prose such as "cutting the price of 22-carat gold by Tk 3,266 per
- * bhori to Tk 228,031". For each karat the first mention wins (later ones are usually past prices), and
- * the price is the largest amount between that mention and the next mention or the end of the sentence
- * (the other amounts are the size of the change).
- */
-export function extractBhoriPrices(text: string): Record<Metal, Map<Karat, number>> {
-  const out: Record<Metal, Map<Karat, number>> = { gold: new Map(), silver: new Map() };
-  const mentions = [...text.matchAll(MENTION)].map((m) => ({
-    start: m.index,
-    end: m.index + m[0].length,
-    metal: (m[2] ?? m[3] ?? m[4])!.toLowerCase() as Metal,
-    karat: (m[1] ? `${m[1]}k` : 'traditional') as Karat,
-  }));
-
-  mentions.forEach((mention, i) => {
-    if (out[mention.metal].has(mention.karat)) return;
-    let segment = text.slice(mention.end, mentions[i + 1]?.start ?? text.length);
-    const sentenceEnd = segment.search(/\.\s+[A-Z]/);
-    if (sentenceEnd >= 0) segment = segment.slice(0, sentenceEnd + 1);
-    const amounts = [...segment.matchAll(AMOUNT)].map((a) => Number(a[1]!.replace(/,/g, ''))).filter(Number.isFinite);
-    if (amounts.length > 0) out[mention.metal].set(mention.karat, Math.max(...amounts));
-  });
-  return out;
 }
