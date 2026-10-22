@@ -1,0 +1,11 @@
+---
+import { DISTRICTS, type District } from '@bdnumbers/shared';
+import type { GetStaticPaths } from 'astro';
+import PrayerDistrict from '../../views/PrayerDistrict.astro';
+
+export const getStaticPaths = (() => DISTRICTS.map((district) => ({ params: { district: district.id }, props: { district } }))) satisfies GetStaticPaths;
+
+const { district } = Astro.props as { district: District };
+---
+
+<PrayerDistrict lang="bn" district={district} />

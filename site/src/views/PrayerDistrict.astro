@@ -1,0 +1,220 @@
+---
+import { DISTRICTS, DIVISIONS, defaultDigits, dhakaDate, formatDate, type District, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+import { PRAYERS, formatTime, monthTimes, prayerTimes, ramadanDates } from '../lib/prayer';
+
+interface Props {
+  lang: Lang;
+  district: District;
+}
+
+/** Days to shift the Umm al-Qura Ramadan dates for Bangladesh's moon sighting; set once it is announced. */
+const RAMADAN_OFFSET_DAYS = 0;
+
+const { lang, district } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const today = dhakaDate();
+const day = prayerTimes(district.lat, district.lon, today);
+const month = monthTimes(district.lat, district.lon, today);
+const ramadan = ramadanDates(today, RAMADAN_OFFSET_DAYS);
+const ramadanTimes = ramadan.dates.map((d) => prayerTimes(district.lat, district.lon, d));
+const name = lang === 'bn' ? district.bn : district.en;
+const t = (iso: string) => formatTime(iso, lang, digits);
+
+const LABELS = {
+  bn: { fajr: 'ফজর', sunrise: 'সূর্যোদয়', dhuhr: 'যোহর', asr: 'আসর', maghrib: 'মাগরিব', isha: 'এশা' },
+  en: { fajr: 'Fajr', sunrise: 'Sunrise', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' },
+}[lang];
+const title =
+  lang === 'bn'
+    ? `${name} নামাজের সময়: আজ ফজর ${t(day.times.fajr)}, মাগরিব ${t(day.times.maghrib)} | ${SITE_NAME}`
+    : `${name} prayer times today: Fajr ${t(day.times.fajr)}, Maghrib ${t(day.times.maghrib)} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `${name} জেলায় আজকের নামাজের সময়, মাসিক সময়সূচি এবং রমজানের সাহরি ও ইফতারের সময় (করাচি পদ্ধতি, হানাফি আসর)।`
+    : `${name}: today's prayer times, the month's timetable, and Ramadan sehri and iftar times (Karachi method, Hanafi Asr).`;
+const path = `/prayer-times/${district.id}`;
+const neighbours = DISTRICTS.filter((d) => d.division === district.division && d.id !== district.id);
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.prayer, path: '/prayer-times' }, { label: name, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? `${name} জেলার নামাজের সময়সূচি` : `Prayer times in ${name}`}</h1>
+
+  <div
+    data-prayer
+    data-lat={district.lat}
+    data-lon={district.lon}
+    data-labels={JSON.stringify(LABELS)}
+  >
+    <section class="card mt-5 p-4 sm:p-5">
+      <p class="text-[0.9375rem] font-semibold text-ink-2">
+        {lang === 'bn' ? 'আজ' : 'Today'}, <span data-prayer-date>{formatDate(today, lang, digits)}</span>
+      </p>
+      <ul class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" data-prayer-today>
+        {
+          PRAYERS.map((p) => (
+            <li class="rounded-lg border border-hairline px-3 py-2 data-[next]:border-accent data-[next]:bg-page" data-prayer-name={p}>
+              <span class="block text-sm text-ink-2">{LABELS[p]}</span>
+              <span class="block text-2xl font-semibold" data-prayer-time>
+                {t(day.times[p])}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-3 text-sm text-ink-2">
+        {lang === 'bn' ? 'সাহরির শেষ সময়' : 'Sehri ends'}: <strong class="text-ink" data-sehri>{t(day.times.fajr)}</strong> ·{' '}
+        {lang === 'bn' ? 'ইফতার' : 'Iftar'}: <strong class="text-ink" data-iftar>{t(day.times.maghrib)}</strong>
+      </p>
+    </section>
+
+    <section class="mt-6">
+      <h2 class="mb-2 text-lg font-semibold">{lang === 'bn' ? 'এই মাসের সময়সূচি' : "This month's timetable"}</h2>
+      <div class="card overflow-x-auto">
+        <table class="data-table text-sm" data-prayer-month>
+          <thead>
+            <tr>
+              <th scope="col">{s.table.date}</th>
+              {PRAYERS.map((p) => <th scope="col">{LABELS[p]}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {
+              month.map((d) => (
+                <tr data-day={d.date}>
+                  <th scope="row" class="font-normal">
+                    {formatDate(d.date, lang, digits)}
+                  </th>
+                  {PRAYERS.map((p) => (
+                    <td>{t(d.times[p])}</td>
+                  ))}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  {
+    ramadanTimes.length > 0 && (
+      <section class="mt-6">
+        <h2 class="mb-2 text-lg font-semibold">
+          {lang === 'bn' ? `রমজানের সাহরি ও ইফতারের সময় (${formatDate(ramadan.dates[0]!, lang, digits)} থেকে)` : `Ramadan sehri and iftar (from ${formatDate(ramadan.dates[0]!, lang, digits)})`}
+        </h2>
+        <div class="card overflow-x-auto">
+          <table class="data-table text-[0.9375rem]">
+            <thead>
+              <tr>
+                <th scope="col">{lang === 'bn' ? 'রমজান' : 'Ramadan'}</th>
+                <th scope="col">{s.table.date}</th>
+                <th scope="col">{lang === 'bn' ? 'সাহরির শেষ' : 'Sehri ends'}</th>
+                <th scope="col">{lang === 'bn' ? 'ইফতার' : 'Iftar'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ramadanTimes.map((d, i) => (
+                <tr data-day={d.date}>
+                  <th scope="row" class="font-normal">
+                    {(i + 1).toLocaleString(`${lang}-u-nu-${digits}`)}
+                  </th>
+                  <td>{formatDate(d.date, lang, digits)}</td>
+                  <td class="font-semibold">{t(d.times.fajr)}</td>
+                  <td class="font-semibold">{t(d.times.maghrib)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2 text-sm text-ink-2">
+          {lang === 'bn'
+            ? 'তারিখ উম্মুল কুরা ক্যালেন্ডার অনুযায়ী; বাংলাদেশে চাঁদ দেখার ওপর রমজান এক দিন পরে শুরু হতে পারে।'
+            : 'Dates follow the Umm al-Qura calendar; in Bangladesh Ramadan may begin a day later, depending on the moon sighting.'}
+        </p>
+      </section>
+    )
+  }
+
+  <p class="mt-6 max-w-3xl text-sm text-ink-2">
+    {
+      lang === 'bn'
+        ? `সময় জেলা সদরের অবস্থান থেকে হিসাব করা (করাচি পদ্ধতি: ফজর ও এশা ১৮°, আসর হানাফি মাজহাব অনুযায়ী)। স্থানীয় মসজিদের সময়সূচির সঙ্গে কয়েক মিনিট পার্থক্য হতে পারে; সাবধানতার জন্য সাহরি কয়েক মিনিট আগে শেষ করুন।`
+        : `Times are calculated for the district headquarters (Karachi method: Fajr and Isha at 18°, Hanafi Asr). They may differ by a few minutes from your local mosque; finish sehri a few minutes early to be safe.`
+    }
+  </p>
+
+  <section class="mt-8">
+    <h2 class="mb-2 text-lg font-semibold">
+      {lang === 'bn' ? `${DIVISIONS[district.division].bn} বিভাগের অন্য জেলা` : `Other districts in ${DIVISIONS[district.division].en} Division`}
+    </h2>
+    <ul class="flex flex-wrap gap-2">
+      {neighbours.map((d) => (
+        <li>
+          <a href={localePath(lang, `/prayer-times/${d.id}`)} class="card inline-block px-3 py-1 text-sm no-underline hover:underline">
+            {lang === 'bn' ? d.bn : d.en}
+          </a>
+        </li>
+      ))}
+      <li>
+        <a href={localePath(lang, '/prayer-times')} class="inline-block px-3 py-1 text-sm">{lang === 'bn' ? 'সব জেলা →' : 'All districts →'}</a>
+      </li>
+    </ul>
+  </section>
+
+  <script>
+    import { dhakaDate, formatDate } from '@bdnumbers/shared';
+    import { pageLang, readDigits } from '../lib/prefs';
+    import { PRAYERS, formatTime, monthTimes, prayerTimes } from '../lib/prayer';
+
+    // The page may have been built days ago: recompute today and this month for the visitor's date, and mark
+    // the next prayer.
+    const root = document.querySelector<HTMLElement>('[data-prayer]');
+    if (root) {
+      const lang = pageLang();
+      const lat = Number(root.dataset.lat);
+      const lon = Number(root.dataset.lon);
+      const render = () => {
+        const digits = readDigits(lang);
+        const today = dhakaDate();
+        const day = prayerTimes(lat, lon, today);
+        const t = (iso: string) => formatTime(iso, lang, digits);
+        root.querySelector('[data-prayer-date]')!.textContent = formatDate(today, lang, digits);
+        const now = Date.now();
+        const next = PRAYERS.find((p) => Date.parse(day.times[p]) > now);
+        for (const li of root.querySelectorAll<HTMLElement>('[data-prayer-name]')) {
+          const p = li.dataset.prayerName as (typeof PRAYERS)[number];
+          li.querySelector('[data-prayer-time]')!.textContent = t(day.times[p]);
+          li.toggleAttribute('data-next', p === next);
+        }
+        root.querySelector('[data-sehri]')!.textContent = t(day.times.fajr);
+        root.querySelector('[data-iftar]')!.textContent = t(day.times.maghrib);
+        const body = root.querySelector('[data-prayer-month] tbody')!;
+        body.replaceChildren(
+          ...monthTimes(lat, lon, today).map((d) => {
+            const tr = document.createElement('tr');
+            tr.dataset.day = d.date;
+            if (d.date < today) tr.className = 'opacity-50';
+            if (d.date === today) tr.className = 'font-semibold';
+            const th = document.createElement('th');
+            th.scope = 'row';
+            th.className = 'font-normal';
+            th.textContent = formatDate(d.date, lang, digits);
+            tr.append(th, ...PRAYERS.map((p) => Object.assign(document.createElement('td'), { textContent: t(d.times[p]) })));
+            return tr;
+          }),
+        );
+      };
+      render();
+      setInterval(render, 60_000);
+      document.addEventListener('bdrate:digits', render);
+    }
+  </script>
+</Base>

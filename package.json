@@ -8,7 +8,7 @@
     "site"
   ],
   "scripts": {
-    "test": "npm test -w worker",
+    "test": "npm test -w worker && npm test -w site",
     "build:site": "npm run build -w site",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

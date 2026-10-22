@@ -1,0 +1,48 @@
+---
+import { DISTRICTS, DIVISIONS, type DivisionId, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const latest = await getLatest();
+const divisions = Object.keys(DIVISIONS) as DivisionId[];
+const title = lang === 'bn' ? `নামাজের সময়সূচি: ৬৪ জেলা | ${SITE_NAME}` : `Prayer times for all 64 districts | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? 'বাংলাদেশের ৬৪ জেলার আজকের নামাজের সময়, সাহরি ও ইফতারের সময়সূচি। হানাফি মাজহাব অনুযায়ী আসর।'
+    : "Today's prayer times, sehri and iftar for all 64 districts of Bangladesh, with Hanafi Asr.";
+const path = '/prayer-times';
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.prayer, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'নামাজের সময়সূচি' : 'Prayer times'}</h1>
+  <p class="mt-2 text-ink-2">{lang === 'bn' ? 'আপনার জেলা বেছে নিন।' : 'Choose your district.'}</p>
+
+  {
+    divisions.map((div) => (
+      <section class="mt-6">
+        <h2 class="mb-2 text-lg font-semibold">
+          {lang === 'bn' ? `${DIVISIONS[div].bn} বিভাগ` : `${DIVISIONS[div].en} Division`}
+        </h2>
+        <ul class="flex flex-wrap gap-2">
+          {DISTRICTS.filter((d) => d.division === div).map((d) => (
+            <li>
+              <a href={localePath(lang, `/prayer-times/${d.id}`)} class="card inline-block px-3 py-1.5 text-[0.9375rem] no-underline hover:underline">
+                {lang === 'bn' ? d.bn : d.en}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</Base>

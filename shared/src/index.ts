@@ -5,3 +5,4 @@ export * from './format';
 export * from './catalog/tcb';
 export * from './catalog/weather';
 export * from './catalog/periodic';
+export * from './catalog/districts';
