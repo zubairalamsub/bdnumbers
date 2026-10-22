@@ -1,0 +1,98 @@
+---
+import { currencyName, defaultDigits, formatDate, toBengaliDigits, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import Field from '../../components/calc/Field.astro';
+import Result from '../../components/calc/Result.astro';
+import Select from '../../components/calc/Select.astro';
+import Shell from '../../components/calc/Shell.astro';
+
+interface Props {
+  lang: Lang;
+  series: LatestEntry[];
+}
+
+const { lang, series } = Astro.props;
+const bn = lang === 'bn';
+const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
+const byKey = new Map(series.map((e) => [e.key, e.value]));
+// Taka per unit, bank buying (bid) and selling (ask). USD uses BB's low/high/WAR series.
+const rates: Record<string, { bid: number; ask: number; avg?: number }> = {};
+if (byKey.has('usd_bdt_low')) rates.usd = { bid: byKey.get('usd_bdt_low')!, ask: byKey.get('usd_bdt_high')!, avg: byKey.get('usd_bdt_avg') };
+for (const e of series) {
+  const code = /^([a-z]{3})_bdt_bid$/.exec(e.key)?.[1];
+  if (code && byKey.has(`${code}_bdt_ask`)) rates[code] = { bid: e.value, ask: byKey.get(`${code}_bdt_ask`)! };
+}
+const usdDate = series.find((e) => e.key === 'usd_bdt_avg')?.date;
+---
+
+<Shell
+  lang={lang}
+  slug="currency-converter"
+  title={bn ? 'মুদ্রা রূপান্তর' : 'Currency converter'}
+  intro={bn ? 'বাংলাদেশ ব্যাংকের প্রকাশিত রেটে টাকা ও বিদেশি মুদ্রার রূপান্তর।' : 'Convert between taka and foreign currencies at the rates Bangladesh Bank publishes.'}
+>
+  <form data-calc="currency" data-rates={JSON.stringify(rates)} class="grid gap-6 md:grid-cols-2">
+    <div class="space-y-4">
+      <Field name="amount" label={bn ? 'পরিমাণ' : 'Amount'} value={d(100)} />
+      <Select
+        name="currency"
+        label={bn ? 'মুদ্রা' : 'Currency'}
+        options={Object.keys(rates).map((c) => ({ value: c, label: `${currencyName(c, lang)} (${c.toUpperCase()})`, selected: c === 'usd' }))}
+      />
+      <Select
+        name="direction"
+        label={bn ? 'রূপান্তর' : 'Convert'}
+        options={[
+          { value: 'to_bdt', label: bn ? 'বিদেশি মুদ্রা → টাকা' : 'Foreign currency → taka', selected: true },
+          { value: 'from_bdt', label: bn ? 'টাকা → বিদেশি মুদ্রা' : 'Taka → foreign currency' },
+        ]}
+      />
+      <Select
+        name="rate"
+        label={bn ? 'কোন রেট' : 'Which rate'}
+        options={[
+          { value: 'avg', label: bn ? 'গড় (ডলারের ক্ষেত্রে WAR, অন্যগুলোয় বিড-আস্কের মাঝামাঝি)' : 'Average (WAR for the dollar, else mid of bid and ask)', selected: true },
+          { value: 'bid', label: bn ? 'বিড (ব্যাংক কেনে)' : 'Bid (bank buys)' },
+          { value: 'ask', label: bn ? 'আস্ক (ব্যাংক বেচে)' : 'Ask (bank sells)' },
+        ]}
+      />
+    </div>
+    <dl class="space-y-4">
+      <Result name="result" label={bn ? 'ফলাফল' : 'Result'} primary />
+      <Result name="rateUsed" label={bn ? 'ব্যবহৃত রেট' : 'Rate used'} />
+    </dl>
+  </form>
+  <p slot="notes">
+    {
+      bn
+        ? `রেট বাংলাদেশ ব্যাংকের আন্তঃব্যাংক রেট${usdDate ? ` (${formatDate(usdDate, lang, defaultDigits(lang))})` : ''}। ব্যাংকের কাউন্টার, মানি এক্সচেঞ্জ বা রেমিট্যান্সের রেট ভিন্ন হতে পারে।`
+        : `Rates are Bangladesh Bank's interbank rates${usdDate ? ` (${formatDate(usdDate, lang, defaultDigits(lang))})` : ''}. Bank counter, money changer and remittance rates can differ.`
+    }
+  </p>
+</Shell>
+
+<script>
+  import { formatNumber } from '@bdnumbers/shared';
+  import { bindCalculator } from '../../lib/calc-ui';
+
+  const form = document.querySelector<HTMLFormElement>('[data-calc="currency"]');
+  if (form) {
+    const rates = JSON.parse(form.dataset.rates!) as Record<string, { bid: number; ask: number; avg?: number }>;
+    bindCalculator(form, (c) => {
+      const code = c.str('currency');
+      const r = rates[code];
+      const amount = c.num('amount');
+      if (!r || !Number.isFinite(amount)) {
+        c.out('result', '—');
+        c.out('rateUsed', '—');
+        return;
+      }
+      const which = c.str('rate');
+      const rate = which === 'bid' ? r.bid : which === 'ask' ? r.ask : (r.avg ?? (r.bid + r.ask) / 2);
+      const toBdt = c.str('direction') === 'to_bdt';
+      const value = toBdt ? amount * rate : amount / rate;
+      const cc = code.toUpperCase();
+      c.out('result', toBdt ? c.taka(value) : `${formatNumber(value, c.digits, 2)} ${cc}`);
+      c.out('rateUsed', c.lang === 'bn' ? `১ ${cc} = ${formatNumber(rate, c.digits, 4)} টাকা` : `1 ${cc} = Tk ${formatNumber(rate, c.digits, 4)}`);
+    });
+  }
+</script>

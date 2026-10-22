@@ -1,0 +1,92 @@
+---
+import { KARAT_ORDER, formatDate, defaultDigits, toBengaliDigits, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import Field from '../../components/calc/Field.astro';
+import Result from '../../components/calc/Result.astro';
+import Select from '../../components/calc/Select.astro';
+import Shell from '../../components/calc/Shell.astro';
+import { STRINGS } from '../../i18n';
+
+interface Props {
+  lang: Lang;
+  /** gold_* and silver_* latest entries (per bhori). */
+  metals: LatestEntry[];
+}
+
+const { lang, metals } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
+const prices = Object.fromEntries(metals.map((e) => [e.key, e.value]));
+const options = (['gold', 'silver'] as const).flatMap((metal) =>
+  KARAT_ORDER.map((k) => ({
+    value: `${metal}_${k}`,
+    label: `${metal === 'gold' ? (bn ? 'সোনা' : 'Gold') : bn ? 'রুপা' : 'Silver'} · ${s.karats[k]}`,
+    selected: metal === 'gold' && k === '22k',
+  })),
+);
+const asOf = metals[0] ? formatDate(metals[0].date, lang, defaultDigits(lang)) : '';
+---
+
+<Shell
+  lang={lang}
+  slug="gold"
+  title={bn ? 'সোনা-রুপার ওজন ও দাম ক্যালকুলেটর' : 'Gold and silver weight and value'}
+  intro={bn ? 'ভরি-আনা-রতি বা গ্রামে ওজন দিন; অন্য এককে রূপান্তর ও বাজুসের আজকের দামে মূল্য দেখুন।' : 'Enter a weight in bhori/ana/rati or grams; see it in the other units and its value at BAJUS’s price today.'}
+>
+  <form data-calc="gold" data-prices={JSON.stringify(prices)} class="grid gap-6 md:grid-cols-2">
+    <div class="space-y-4">
+      <Select name="metal" label={bn ? 'ধাতু ও মান' : 'Metal and purity'} options={options} />
+      <div class="grid grid-cols-3 gap-2">
+        <Field name="bhori" label={bn ? 'ভরি' : 'Bhori'} value={d(1)} />
+        <Field name="ana" label={bn ? 'আনা' : 'Ana'} value={d(0)} />
+        <Field name="rati" label={bn ? 'রতি' : 'Rati'} value={d(0)} />
+      </div>
+      <Field name="grams" label={bn ? 'অথবা গ্রামে' : 'Or in grams'} hint={bn ? 'গ্রাম দিলে ভরি-আনা-রতির ঘর উপেক্ষা হবে' : 'Grams, if given, override bhori/ana/rati'} />
+      <Field name="making" label={bn ? 'মজুরি (ঐচ্ছিক)' : 'Making charge (optional)'} value={d(0)} suffix="%" />
+    </div>
+    <dl class="space-y-4">
+      <Result name="value" label={bn ? 'আজকের দামে মূল্য' : 'Value at today’s price'} primary />
+      <Result name="weight" label={bn ? 'ওজন' : 'Weight'} />
+      <Result name="price" label={bn ? 'প্রতি ভরির দাম' : 'Price per bhori'} />
+      <Result name="purity" label={bn ? 'বিশুদ্ধতা' : 'Purity'} />
+    </dl>
+  </form>
+  <p slot="notes">
+    {
+      bn
+        ? `১ ভরি = ১৬ আনা = ৯৬ রতি = ১১.৬৬৪ গ্রাম। দাম বাজুসের (${asOf})। বিক্রির সময় দোকান সাধারণত কিছু অংশ কেটে রাখে, তাই বিক্রয়মূল্য কম হয়।`
+        : `1 bhori = 16 ana = 96 rati = 11.664 g. Prices are BAJUS’s (${asOf}). Shops usually deduct a share when buying back, so resale value is lower.`
+    }
+  </p>
+</Shell>
+
+<script>
+  import { formatNumber } from '@bdnumbers/shared';
+  import { fromGrams, goldValue, toGrams } from '../../lib/calc';
+  import { bindCalculator } from '../../lib/calc-ui';
+
+  const KARATS: Record<string, number | null> = { '22k': 22, '21k': 21, '18k': 18, traditional: null };
+  const form = document.querySelector<HTMLFormElement>('[data-calc="gold"]');
+  if (form) {
+    const prices = JSON.parse(form.dataset.prices!) as Record<string, number>;
+    bindCalculator(form, (c) => {
+      const key = c.str('metal');
+      const price = prices[key];
+      const typed = c.num('grams');
+      const grams = Number.isFinite(typed) && typed > 0 ? typed : toGrams(c.num('bhori') || 0, c.num('ana') || 0, c.num('rati') || 0);
+      const w = fromGrams(grams);
+      const n = (x: number, fd = 0) => formatNumber(x, c.digits, fd);
+      c.out(
+        'weight',
+        c.lang === 'bn'
+          ? `${n(grams, 3)} গ্রাম = ${n(w.bhori)} ভরি ${n(w.ana)} আনা ${n(w.rati, 2)} রতি`
+          : `${n(grams, 3)} g = ${n(w.bhori)} bhori ${n(w.ana)} ana ${n(w.rati, 2)} rati`,
+      );
+      c.out('price', price ? c.taka(price) : '—');
+      const making = Math.max(0, c.num('making') || 0);
+      c.out('value', price && grams > 0 ? c.taka(goldValue(grams, price) * (1 + making / 100)) : '—');
+      const karat = KARATS[key.split('_').slice(1).join('_')];
+      c.out('purity', karat ? `${formatNumber((karat / 24) * 100, c.digits, 1)}% (${formatNumber(karat, c.digits)}K)` : '—');
+    });
+  }
+</script>

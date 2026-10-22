@@ -1,0 +1,26 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../Breadcrumbs.astro';
+import { STRINGS } from '../../i18n';
+
+interface Props {
+  lang: Lang;
+  slug: string;
+  title: string;
+  intro: string;
+}
+
+// Page frame for a calculator: breadcrumbs, heading, intro, then a two-column form/results card.
+const { lang, slug, title, intro } = Astro.props;
+const s = STRINGS[lang];
+---
+
+<Breadcrumbs lang={lang} items={[{ label: s.nav.calculators, path: '/calculators' }, { label: title, path: `/calculators/${slug}` }]} />
+<h1 class="text-2xl font-semibold sm:text-3xl">{title}</h1>
+<p class="mt-2 max-w-3xl text-ink-2">{intro}</p>
+<div class="card mt-5 p-4 sm:p-6">
+  <slot />
+</div>
+<div class="mt-4 max-w-3xl space-y-2 text-sm text-ink-2">
+  <slot name="notes" />
+</div>

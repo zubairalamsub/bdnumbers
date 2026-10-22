@@ -1,0 +1,56 @@
+---
+import { toBengaliDigits, type Lang } from '@bdnumbers/shared';
+import Field from '../../components/calc/Field.astro';
+import Result from '../../components/calc/Result.astro';
+import Shell from '../../components/calc/Shell.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const bn = lang === 'bn';
+const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
+---
+
+<Shell
+  lang={lang}
+  slug="emi"
+  title={bn ? 'ঋণের কিস্তি (EMI) ক্যালকুলেটর' : 'Loan EMI calculator'}
+  intro={bn ? 'ঋণের পরিমাণ, সুদের হার ও মেয়াদ দিন; মাসিক কিস্তি ও মোট সুদ দেখুন।' : 'Enter the loan, rate and tenure to see the monthly instalment and total interest.'}
+>
+  <form data-calc="emi" class="grid gap-6 md:grid-cols-2">
+    <div class="space-y-4">
+      <Field name="principal" label={bn ? 'ঋণের পরিমাণ' : 'Loan amount'} value={d(500000)} suffix={bn ? 'টাকা' : 'Tk'} />
+      <Field name="rate" label={bn ? 'বার্ষিক সুদের হার' : 'Annual interest rate'} value={d(12)} suffix="%" />
+      <Field name="years" label={bn ? 'মেয়াদ' : 'Tenure'} value={d(5)} suffix={bn ? 'বছর' : 'years'} />
+    </div>
+    <dl class="space-y-4">
+      <Result name="instalment" label={bn ? 'মাসিক কিস্তি' : 'Monthly instalment'} primary />
+      <Result name="interest" label={bn ? 'মোট সুদ' : 'Total interest'} />
+      <Result name="total" label={bn ? 'মোট পরিশোধ' : 'Total repayment'} />
+    </dl>
+  </form>
+  <p slot="notes">
+    {
+      bn
+        ? 'হ্রাসমান স্থিতিতে সমান মাসিক কিস্তির প্রচলিত সূত্রে হিসাব। ব্যাংকের প্রসেসিং ফি বা অন্য চার্জ এতে ধরা নেই।'
+        : 'Uses the standard equal-instalment (reducing balance) formula. Bank processing fees and other charges are not included.'
+    }
+  </p>
+</Shell>
+
+<script>
+  import { emi } from '../../lib/calc';
+  import { bindCalculator } from '../../lib/calc-ui';
+
+  const form = document.querySelector<HTMLFormElement>('[data-calc="emi"]');
+  if (form) {
+    bindCalculator(form, (c) => {
+      const r = emi(c.num('principal'), c.num('rate'), Math.round(c.num('years') * 12));
+      c.out('instalment', r ? c.taka(r.instalment) : '—');
+      c.out('interest', r ? c.taka(r.interest) : '—');
+      c.out('total', r ? c.taka(r.total) : '—');
+    });
+  }
+</script>

@@ -1,0 +1,11 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { CALCULATORS } from '../../../lib/calculators';
+import CalculatorPage from '../../../views/CalculatorPage.astro';
+
+export const getStaticPaths = (() => CALCULATORS.map((c) => ({ params: { slug: c.slug } }))) satisfies GetStaticPaths;
+
+const { slug } = Astro.params;
+---
+
+<CalculatorPage lang="en" slug={slug!} />

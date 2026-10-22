@@ -3,6 +3,8 @@ import {
   KARAT_ORDER,
   currencyName,
   defaultDigits,
+  dhakaDate,
+  formatDate,
   formatSeriesValue,
   fractionDigits,
   getSeriesDef,
@@ -10,6 +12,7 @@ import {
   WEATHER_CITIES,
   unitLabel,
   weatherCondition,
+  type Holiday,
   type Lang,
 } from '@bdnumbers/shared';
 import ChangeText from '../components/ChangeText.astro';
@@ -18,6 +21,7 @@ import NumberCard from '../components/NumberCard.astro';
 import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
+import { CALCULATORS } from '../lib/calculators';
 import { getChanges, getEntries, getLatest } from '../lib/data';
 
 interface Props {
@@ -46,6 +50,10 @@ const weatherCities = ['dhaka', 'chattogram', 'sylhet', 'rajshahi']
   .map((id) => ({ city: WEATHER_CITIES.find((c) => c.id === id)!, temp: byKey.get(`weather_${id}_temp`) }))
   .filter((c) => c.temp !== undefined);
 const [silver, ...silverRest] = await getEntries(KARAT_ORDER.map((k) => `silver_${k}`));
+const today = dhakaDate();
+const holidays = (byKey.get('holidays_public')?.meta?.holidays as Holiday[] | undefined) ?? [];
+const nextHolidays = holidays.filter((h) => h.type === 'public' && h.date >= today).slice(0, 3);
+const fuels = ['fuel_diesel', 'fuel_octane', 'fuel_petrol', 'lpg_12kg'].map((k) => byKey.get(k)).filter((e) => e !== undefined);
 
 const usdText = formatSeriesValue(usd!.value, 'fx', digits);
 const goldText = formatSeriesValue(gold[0]!.value, 'gold', digits);
@@ -202,6 +210,70 @@ const description =
         </section>
       )
     }
+  </div>
+
+  <div class="mt-4 grid gap-4 md:grid-cols-3">
+    {
+      nextHolidays.length > 0 && (
+        <section class="card p-4 sm:p-5">
+          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
+            <a href={localePath(lang, '/holidays')} class="text-ink-2 no-underline hover:underline">
+              {lang === 'bn' ? 'পরের সরকারি ছুটি' : 'Next public holidays'}
+            </a>
+          </h2>
+          <ul class="divide-y divide-grid text-[0.9375rem]">
+            {nextHolidays.map((h, i) => (
+              <li class="flex justify-between gap-3 py-1" data-day={h.date}>
+                <span class:list={[i === 0 && 'font-semibold']}>{lang === 'bn' ? (h.name_bn ?? h.name) : h.name}</span>
+                <span class="whitespace-nowrap text-right">
+                  {formatDate(h.date, lang, digits)}
+                  {i === 0 && <span class="block text-xs text-muted" data-countdown={h.date} />}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      fuels.length > 0 && (
+        <section class="card p-4 sm:p-5">
+          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
+            <a href={localePath(lang, '/fuel-price')} class="text-ink-2 no-underline hover:underline">
+              {lang === 'bn' ? 'জ্বালানি ও এলপিজি' : 'Fuel and LPG'}
+            </a>
+          </h2>
+          <ul class="divide-y divide-grid text-[0.9375rem]">
+            {fuels.map((e) => (
+              <li class="flex justify-between gap-3 py-1" data-series={e.key}>
+                <span>{lang === 'bn' ? e.name_bn : e.name_en}</span>
+                <span class="whitespace-nowrap text-right">
+                  <Num value={e.value} fd={fractionDigits(e.category, e.value)} lang={lang} field="value" class="font-semibold" />
+                  <span class="block text-xs text-muted">{unitLabel(e.unit, lang)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    <section class="card p-4 sm:p-5">
+      <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
+        <a href={localePath(lang, '/calculators')} class="text-ink-2 no-underline hover:underline">{s.nav.calculators}</a>
+      </h2>
+      <ul class="divide-y divide-grid text-[0.9375rem]">
+        {CALCULATORS.slice(0, 5).map((c) => (
+          <li class="py-1">
+            <a href={localePath(lang, `/calculators/${c.slug}`)}>{lang === 'bn' ? c.bn : c.en}</a>
+          </li>
+        ))}
+        <li class="py-1">
+          <a href={localePath(lang, '/prayer-times')}>{s.nav.prayer}</a>
+        </li>
+      </ul>
+    </section>
   </div>
 
   {

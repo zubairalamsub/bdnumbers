@@ -1,0 +1,65 @@
+---
+import { toBengaliDigits, type Lang } from '@bdnumbers/shared';
+import Field from '../../components/calc/Field.astro';
+import Result from '../../components/calc/Result.astro';
+import Select from '../../components/calc/Select.astro';
+import Shell from '../../components/calc/Shell.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const bn = lang === 'bn';
+const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
+---
+
+<Shell
+  lang={lang}
+  slug="dps"
+  title={bn ? 'ডিপিএস মেয়াদপূর্তি ক্যালকুলেটর' : 'DPS maturity calculator'}
+  intro={bn ? 'প্রতি মাসে জমা, সুদের হার ও মেয়াদ দিন; মেয়াদ শেষে কত পাবেন দেখুন।' : 'Enter the monthly deposit, rate and term to see the amount at maturity.'}
+>
+  <form data-calc="dps" class="grid gap-6 md:grid-cols-2">
+    <div class="space-y-4">
+      <Field name="deposit" label={bn ? 'মাসিক জমা' : 'Monthly deposit'} value={d(2000)} suffix={bn ? 'টাকা' : 'Tk'} />
+      <Field name="rate" label={bn ? 'বার্ষিক সুদের হার' : 'Annual interest rate'} value={d(9)} suffix="%" />
+      <Field name="years" label={bn ? 'মেয়াদ' : 'Term'} value={d(5)} suffix={bn ? 'বছর' : 'years'} />
+      <Select
+        name="credits"
+        label={bn ? 'সুদ যোগ হয়' : 'Interest is credited'}
+        options={[
+          { value: '12', label: bn ? 'প্রতি মাসে' : 'Monthly', selected: true },
+          { value: '4', label: bn ? 'প্রতি তিন মাসে' : 'Quarterly' },
+        ]}
+      />
+    </div>
+    <dl class="space-y-4">
+      <Result name="maturity" label={bn ? 'মেয়াদ শেষে পাবেন' : 'At maturity'} primary />
+      <Result name="deposited" label={bn ? 'মোট জমা' : 'Total deposited'} />
+      <Result name="profit" label={bn ? 'মোট মুনাফা (করের আগে)' : 'Total profit (before tax)'} />
+    </dl>
+  </form>
+  <p slot="notes">
+    {
+      bn
+        ? 'প্রতি মাসের শুরুতে জমা ধরে হ্রাসমান স্থিতিতে হিসাব। ব্যাংকভেদে নিয়ম, উৎস কর ও আবগারি শুল্ক আলাদা; প্রকৃত অঙ্কের জন্য ব্যাংকের সঙ্গে মিলিয়ে নিন।'
+        : 'Assumes a deposit at the start of every month. Banks differ in their rules, source tax and excise duty; check the exact figure with your bank.'
+    }
+  </p>
+</Shell>
+
+<script>
+  import { dpsMaturity } from '../../lib/calc';
+  import { bindCalculator } from '../../lib/calc-ui';
+
+  const form = document.querySelector<HTMLFormElement>('[data-calc="dps"]');
+  if (form) {
+    bindCalculator(form, (c) => {
+      const r = dpsMaturity(c.num('deposit'), c.num('rate'), c.num('years'), c.str('credits') === '4' ? 4 : 12);
+      c.out('maturity', r ? c.taka(r.maturity) : '—');
+      c.out('deposited', r ? c.taka(r.deposited) : '—');
+      c.out('profit', r ? c.taka(r.profit) : '—');
+    });
+  }
+</script>

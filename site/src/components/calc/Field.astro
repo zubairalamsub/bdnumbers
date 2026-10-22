@@ -1,0 +1,27 @@
+---
+interface Props {
+  name: string;
+  label: string;
+  value?: string | number;
+  suffix?: string;
+  hint?: string;
+}
+
+// Text input with inputmode=decimal: type=number would reject Bengali digits (০-৯) and commas.
+const { name, label, value, suffix, hint } = Astro.props;
+---
+
+<label class="block">
+  <span class="mb-1 block text-sm font-semibold text-ink-2">{label}</span>
+  <span class="flex items-center gap-2">
+    <input
+      name={name}
+      value={value}
+      inputmode="decimal"
+      autocomplete="off"
+      class="w-full min-w-0 rounded-md border border-hairline bg-page px-3 py-2 text-ink"
+    />
+    {suffix && <span class="whitespace-nowrap text-sm text-ink-2">{suffix}</span>}
+  </span>
+  {hint && <span class="mt-1 block text-xs text-muted">{hint}</span>}
+</label>

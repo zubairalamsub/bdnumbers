@@ -1,0 +1,91 @@
+---
+import { SAVINGS_NOTICE, toBengaliDigits, type Lang, type SavingsNotice } from '@bdnumbers/shared';
+import Field from '../../components/calc/Field.astro';
+import Result from '../../components/calc/Result.astro';
+import Select from '../../components/calc/Select.astro';
+import Shell from '../../components/calc/Shell.astro';
+import { localePath } from '../../i18n';
+
+interface Props {
+  lang: Lang;
+  notice?: SavingsNotice;
+}
+
+const { lang, notice = SAVINGS_NOTICE } = Astro.props;
+const bn = lang === 'bn';
+const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
+const maxYears = Math.max(...notice.schemes.map((s) => s.upTo7_5Lakh.length));
+---
+
+<Shell
+  lang={lang}
+  slug="sanchayapatra"
+  title={bn ? 'সঞ্চয়পত্রের মুনাফা ক্যালকুলেটর' : 'Sanchayapatra return calculator'}
+  intro={bn ? 'স্কিম, বিনিয়োগ ও মেয়াদ দিন; সরকারি হারে মুনাফা ও উৎস কর বাদে কত পাবেন দেখুন।' : 'Pick a scheme, amount and holding period to see the profit at the official rate, after source tax.'}
+>
+  <form data-calc="sanchayapatra" data-notice={JSON.stringify(notice)} class="grid gap-6 md:grid-cols-2">
+    <div class="space-y-4">
+      <Select name="scheme" label={bn ? 'স্কিম' : 'Scheme'} options={notice.schemes.map((s, i) => ({ value: s.id, label: bn ? s.bn : s.en, selected: i === 0 }))} />
+      <Field name="amount" label={bn ? 'বিনিয়োগ' : 'Investment'} value={d(500000)} suffix={bn ? 'টাকা' : 'Tk'} />
+      <Select
+        name="years"
+        label={bn ? 'কত বছর রাখবেন' : 'Held for'}
+        options={Array.from({ length: maxYears }, (_, i) => ({
+          value: String(i + 1),
+          label: bn ? `${d(i + 1)} বছর` : `${i + 1} year${i ? 's' : ''}`,
+          selected: i === maxYears - 1,
+        }))}
+      />
+      <Select
+        name="tier"
+        label={bn ? 'সব স্কিম মিলিয়ে মোট বিনিয়োগ' : 'Your total across all schemes'}
+        options={[
+          { value: 'low', label: bn ? '৭.৫ লাখ টাকা বা কম' : 'Tk 7.5 lakh or less', selected: true },
+          { value: 'high', label: bn ? '৭.৫ লাখ টাকার বেশি' : 'More than Tk 7.5 lakh' },
+        ]}
+      />
+      <Field name="tax" label={bn ? 'উৎস কর (মুনাফার ওপর)' : 'Source tax on profit'} value={d(10)} suffix="%" hint={bn ? 'আপনার ক্ষেত্রে প্রযোজ্য হার দিন' : 'Enter the rate that applies to you'} />
+    </div>
+    <dl class="space-y-4">
+      <Result name="net" label={bn ? 'কর বাদে মুনাফা' : 'Profit after tax'} primary />
+      <Result name="rate" label={bn ? 'প্রযোজ্য হার' : 'Rate used'} />
+      <Result name="gross" label={bn ? 'মোট মুনাফা (করের আগে)' : 'Profit before tax'} />
+      <Result name="tax" label={bn ? 'উৎস কর' : 'Source tax'} />
+      <Result name="total" label={bn ? 'মেয়াদ শেষে মোট' : 'Total at the end'} />
+    </dl>
+  </form>
+  <Fragment slot="notes">
+    <p>
+      {
+        bn
+          ? `হার ${notice.periodBn} মেয়াদের সরকারি প্রজ্ঞাপন থেকে; এরপর পরিবর্তন হয়ে থাকতে পারে। মুনাফা সরলভাবে হিসাব করা; স্কিমভেদে মুনাফা মাসিক, ত্রৈমাসিক বা মেয়াদ শেষে পরিশোধ হয়।`
+          : `Rates are from the official notice for ${notice.periodEn} and may have changed since. Profit is simple interest; schemes pay monthly, quarterly or at maturity.`
+      }
+    </p>
+    <p><a href={localePath(lang, '/savings-rates')}>{bn ? 'সব হার দেখুন' : 'See all rates'}</a></p>
+  </Fragment>
+</Shell>
+
+<script>
+  import type { SavingsNotice } from '@bdnumbers/shared';
+  import { formatNumber } from '@bdnumbers/shared';
+  import { savingsReturn } from '../../lib/calc';
+  import { bindCalculator } from '../../lib/calc-ui';
+
+  const form = document.querySelector<HTMLFormElement>('[data-calc="sanchayapatra"]');
+  if (form) {
+    const notice = JSON.parse(form.dataset.notice!) as SavingsNotice;
+    bindCalculator(form, (c) => {
+      const scheme = notice.schemes.find((s) => s.id === c.str('scheme')) ?? notice.schemes[0]!;
+      const rates = c.str('tier') === 'high' ? scheme.above7_5Lakh : scheme.upTo7_5Lakh;
+      const years = Math.min(Number(c.str('years')), rates.length);
+      const rate = rates[years - 1]!;
+      const r = savingsReturn(c.num('amount'), rate, years, c.num('tax'));
+      c.out('rate', `${formatNumber(rate, c.digits, 2, 2)}%`);
+      c.out('net', r ? c.taka(r.net) : '—');
+      c.out('gross', r ? c.taka(r.gross) : '—');
+      c.out('tax', r ? c.taka(r.tax) : '—');
+      c.out('total', r ? c.taka(r.total) : '—');
+    });
+  }
+</script>

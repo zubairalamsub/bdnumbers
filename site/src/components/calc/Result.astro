@@ -1,0 +1,15 @@
+---
+interface Props {
+  name: string;
+  label: string;
+  /** The main answer: shown large. */
+  primary?: boolean;
+}
+
+const { name, label, primary = false } = Astro.props;
+---
+
+<div>
+  <dt class="text-sm text-ink-2">{label}</dt>
+  <dd class:list={['font-semibold', primary ? 'text-3xl' : 'text-xl']} data-out={name} aria-live="polite">—</dd>
+</div>

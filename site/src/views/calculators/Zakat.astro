@@ -1,0 +1,93 @@
+---
+import { KARAT_ORDER, toBengaliDigits, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import Field from '../../components/calc/Field.astro';
+import Result from '../../components/calc/Result.astro';
+import Select from '../../components/calc/Select.astro';
+import Shell from '../../components/calc/Shell.astro';
+import { STRINGS } from '../../i18n';
+
+interface Props {
+  lang: Lang;
+  metals: LatestEntry[];
+}
+
+const { lang, metals } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
+const prices = Object.fromEntries(metals.map((e) => [e.key, e.value]));
+const karatOptions = (metal: 'gold' | 'silver') =>
+  KARAT_ORDER.map((k) => ({ value: `${metal}_${k}`, label: s.karats[k], selected: k === '22k' }));
+---
+
+<Shell
+  lang={lang}
+  slug="zakat"
+  title={bn ? 'যাকাত ক্যালকুলেটর' : 'Zakat calculator'}
+  intro={bn ? 'আপনার যাকাতযোগ্য সম্পদ ও পরিশোধযোগ্য দেনা দিন; আজকের সোনা-রুপার দামে নিসাব ও যাকাতের পরিমাণ দেখুন।' : 'Enter your zakatable wealth and debts due; see the nisab and the zakat due at today’s gold and silver prices.'}
+>
+  <form data-calc="zakat" data-prices={JSON.stringify(prices)} class="grid gap-6 md:grid-cols-2">
+    <div class="space-y-4">
+      <Field name="cash" label={bn ? 'নগদ ও ব্যাংকে জমা' : 'Cash and bank balances'} value={d(0)} suffix={bn ? 'টাকা' : 'Tk'} />
+      <div class="grid grid-cols-2 gap-2">
+        <Field name="gold" label={bn ? 'সোনা' : 'Gold'} value={d(0)} suffix={bn ? 'ভরি' : 'bhori'} />
+        <Select name="goldKarat" label={bn ? 'সোনার মান' : 'Gold purity'} options={karatOptions('gold')} />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <Field name="silver" label={bn ? 'রুপা' : 'Silver'} value={d(0)} suffix={bn ? 'ভরি' : 'bhori'} />
+        <Select name="silverKarat" label={bn ? 'রুপার মান' : 'Silver purity'} options={karatOptions('silver')} />
+      </div>
+      <Field name="business" label={bn ? 'ব্যবসার পণ্য ও পাওনা' : 'Business stock and money owed to you'} value={d(0)} suffix={bn ? 'টাকা' : 'Tk'} />
+      <Field name="other" label={bn ? 'অন্যান্য যাকাতযোগ্য সম্পদ (শেয়ার, সঞ্চয়পত্র ইত্যাদি)' : 'Other zakatable assets (shares, savings certificates…)'} value={d(0)} suffix={bn ? 'টাকা' : 'Tk'} />
+      <Field name="debts" label={bn ? 'এখন পরিশোধযোগ্য দেনা' : 'Debts due now'} value={d(0)} suffix={bn ? 'টাকা' : 'Tk'} />
+      <Select
+        name="nisab"
+        label={bn ? 'নিসাব নির্ধারণ' : 'Nisab measured by'}
+        options={[
+          { value: 'silver', label: bn ? 'রুপা (৫২.৫ ভরি)' : 'Silver (52.5 bhori)', selected: true },
+          { value: 'gold', label: bn ? 'সোনা (৭.৫ ভরি)' : 'Gold (7.5 bhori)' },
+        ]}
+      />
+    </div>
+    <dl class="space-y-4">
+      <Result name="zakat" label={bn ? 'যাকাত (২.৫%)' : 'Zakat due (2.5%)'} primary />
+      <Result name="net" label={bn ? 'নিট যাকাতযোগ্য সম্পদ' : 'Net zakatable wealth'} />
+      <Result name="nisabValue" label={bn ? 'নিসাব' : 'Nisab'} />
+      <Result name="status" label={bn ? 'অবস্থা' : 'Status'} />
+    </dl>
+  </form>
+  <p slot="notes">
+    {
+      bn
+        ? 'সোনা-রুপার মূল্য বাজুসের আজকের দামে ধরা হয়েছে। সম্পদ এক চান্দ্র বছর মালিকানায় থাকলে যাকাত ফরজ হয়। কোন সম্পদ যাকাতযোগ্য বা কোন নিসাব প্রযোজ্য, সে বিষয়ে আলেমের পরামর্শ নিন।'
+        : 'Gold and silver are valued at BAJUS’s prices today. Zakat is due on wealth held for a lunar year. Ask a scholar which assets are zakatable and which nisab applies to you.'
+    }
+  </p>
+</Shell>
+
+<script>
+  import { NISAB_GOLD_BHORI, NISAB_SILVER_BHORI, zakat } from '../../lib/calc';
+  import { bindCalculator } from '../../lib/calc-ui';
+
+  const form = document.querySelector<HTMLFormElement>('[data-calc="zakat"]');
+  if (form) {
+    const prices = JSON.parse(form.dataset.prices!) as Record<string, number>;
+    bindCalculator(form, (c) => {
+      const v = (name: string) => Math.max(0, c.num(name) || 0);
+      const goldPrice = prices[c.str('goldKarat')] ?? 0;
+      const silverPrice = prices[c.str('silverKarat')] ?? 0;
+      const assets = v('cash') + v('gold') * goldPrice + v('silver') * silverPrice + v('business') + v('other');
+      const nisab = c.str('nisab') === 'gold' ? NISAB_GOLD_BHORI * goldPrice : NISAB_SILVER_BHORI * silverPrice;
+      const r = zakat(assets, v('debts'), nisab);
+      c.out('zakat', c.taka(r.zakat));
+      c.out('net', c.taka(r.net));
+      c.out('nisabValue', c.taka(nisab));
+      c.out(
+        'status',
+        r.due
+          ? c.lang === 'bn' ? 'নিসাব পূর্ণ: যাকাত প্রযোজ্য' : 'At or above nisab: zakat is due'
+          : c.lang === 'bn' ? 'নিসাবের কম: যাকাত প্রযোজ্য নয়' : 'Below nisab: no zakat due',
+      );
+    });
+  }
+</script>

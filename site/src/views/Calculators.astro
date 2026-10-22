@@ -1,0 +1,62 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { CALCULATORS, CUSTOM_CALCULATORS } from '../lib/calculators';
+import { getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const bn = lang === 'bn';
+const latest = await getLatest();
+const path = '/calculators';
+const title = bn ? `ক্যালকুলেটর: যাকাত, ইএমআই, সঞ্চয়পত্র, সোনা | ${SITE_NAME}` : `Calculators: zakat, EMI, Sanchayapatra, gold | ${SITE_NAME}`;
+const description = bn
+  ? 'আজকের রেট ও দামে মুদ্রা রূপান্তর, সোনার ওজন ও দাম, যাকাত, ঋণের কিস্তি, ডিপিএস, সঞ্চয়পত্রের মুনাফা ও মোবাইল ব্যাংকিং ক্যাশ-আউট খরচের হিসাব।'
+  : 'Currency conversion, gold weight and value, zakat, loan EMI, DPS, Sanchayapatra return and mobile-banking cash-out fees, worked out at today’s rates and prices.';
+const cards = [
+  ...CALCULATORS.map((c) => ({ ...c, ready: true })),
+  ...CUSTOM_CALCULATORS,
+];
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.calculators, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? 'ক্যালকুলেটর' : 'Calculators'}</h1>
+  <p class="mt-2 max-w-3xl text-ink-2">
+    {
+      bn
+        ? 'সব হিসাব আপনার ব্রাউজারেই হয়; আপনার দেওয়া কোনো সংখ্যা কোথাও পাঠানো হয় না। যেখানে দরকার, আজকের রেট ও দাম নিজে থেকে বসানো থাকে।'
+        : 'Everything is worked out in your browser; nothing you type is sent anywhere. Where a calculator needs today’s rates or prices, they are filled in for you.'
+    }
+  </p>
+
+  <ul class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {
+      cards.map((c) => (
+        <li class="min-w-0">
+          {c.ready ? (
+            <a href={localePath(lang, `/calculators/${c.slug}`)} class="card block h-full p-4 text-ink no-underline hover:border-accent">
+              <span class="block font-semibold">{bn ? c.bn : c.en}</span>
+              <span class="mt-1 block text-sm text-ink-2">{bn ? c.descBn : c.descEn}</span>
+            </a>
+          ) : (
+            <div class="card h-full p-4 opacity-60">
+              <span class="block font-semibold">
+                {bn ? c.bn : c.en}
+                <span class="ms-1 rounded bg-hairline px-1.5 py-0.5 text-xs font-normal text-ink-2">{bn ? 'শীঘ্রই' : 'Coming soon'}</span>
+              </span>
+              <span class="mt-1 block text-sm text-ink-2">{bn ? c.descBn : c.descEn}</span>
+            </div>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</Base>

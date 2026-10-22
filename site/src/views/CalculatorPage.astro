@@ -1,0 +1,61 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { CALCULATORS } from '../lib/calculators';
+import { getLatest } from '../lib/data';
+import Currency from './calculators/Currency.astro';
+import Dps from './calculators/Dps.astro';
+import Emi from './calculators/Emi.astro';
+import Gold from './calculators/Gold.astro';
+import MobileBanking from './calculators/MobileBanking.astro';
+import Sanchayapatra from './calculators/Sanchayapatra.astro';
+import Zakat from './calculators/Zakat.astro';
+
+interface Props {
+  lang: Lang;
+  slug: string;
+}
+
+// One built-in calculator page: the page frame, plus the live data the calculator needs from latest.json.
+const { lang, slug } = Astro.props;
+const s = STRINGS[lang];
+const info = CALCULATORS.find((c) => c.slug === slug);
+if (!info) throw new Error(`calculator ${slug} is not in CALCULATORS`);
+const latest = await getLatest();
+const metals = latest.series.filter((e) => e.category === 'gold' || e.category === 'silver');
+const fx = latest.series.filter((e) => e.category === 'fx');
+const bn = lang === 'bn';
+const title = `${bn ? `${info.bn} ক্যালকুলেটর` : /converter|calculator/i.test(info.en) ? info.en : `${info.en} calculator`} | ${SITE_NAME}`;
+const description = bn ? `${info.descBn}।` : `${info.descEn}.`;
+
+const RELATED: Record<string, Array<{ label: string; path: string }>> = {
+  'currency-converter': [{ label: s.nav.dollar, path: '/dollar-rate-today' }],
+  gold: [
+    { label: s.nav.gold, path: '/gold-price-today' },
+    { label: s.nav.silver, path: '/silver-price-today' },
+  ],
+  zakat: [
+    { label: s.nav.gold, path: '/gold-price-today' },
+    { label: s.nav.silver, path: '/silver-price-today' },
+  ],
+  sanchayapatra: [{ label: s.nav.savings, path: '/savings-rates' }],
+  dps: [{ label: s.nav.savings, path: '/savings-rates' }],
+};
+const others = CALCULATORS.filter((c) => c.slug !== slug)
+  .slice(0, 3)
+  .map((c) => ({ label: bn ? c.bn : c.en, path: `/calculators/${c.slug}` }));
+---
+
+<Base lang={lang} path={`/calculators/${slug}`} title={title} description={description} generatedAt={latest.generated_at}>
+  {slug === 'currency-converter' && <Currency lang={lang} series={fx} />}
+  {slug === 'gold' && <Gold lang={lang} metals={metals} />}
+  {slug === 'zakat' && <Zakat lang={lang} metals={metals} />}
+  {slug === 'emi' && <Emi lang={lang} />}
+  {slug === 'dps' && <Dps lang={lang} />}
+  {slug === 'sanchayapatra' && <Sanchayapatra lang={lang} />}
+  {slug === 'mobile-banking' && <MobileBanking lang={lang} />}
+  <Related lang={lang} links={[...(RELATED[slug] ?? []), ...others, { label: s.nav.calculators, path: '/calculators' }]} />
+</Base>
