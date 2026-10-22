@@ -76,6 +76,11 @@
     color: var(--accent);
     text-underline-offset: 3px;
   }
+  /* Links inside running text are underlined, so they don't rely on colour alone. */
+  p a {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+  }
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;

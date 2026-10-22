@@ -59,7 +59,7 @@ const xLabels = view[0] && last ? axisLabels(view[0][0], last[0], lang, digits) 
             ))}
             <span class="invisible block whitespace-nowrap">{tickText(geo.ticks[geo.ticks.length - 1]!.value)}</span>
           </div>
-          <div class="relative h-56 touch-pan-y outline-none" data-plot tabindex="0" aria-label={label}>
+          <div class="relative h-56 touch-pan-y outline-none" data-plot tabindex="0" role="group" aria-label={label}>
             <div data-grid aria-hidden="true">
               {geo.ticks.map((t) => (
                 <span class="absolute inset-x-0 border-t border-grid" style={`top:${t.y / 10}%`} />
