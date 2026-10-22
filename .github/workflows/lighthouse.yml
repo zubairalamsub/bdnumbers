@@ -1,0 +1,32 @@
+name: lighthouse
+
+# Fails when any audited page scores under 95 on mobile in performance, accessibility, best
+# practices or SEO (median of 3 runs; thresholds in site/lighthouserc.json).
+on:
+  push:
+    branches: [main]
+    paths: ['site/**', 'shared/**', 'package.json', 'package-lock.json', '.github/workflows/lighthouse.yml']
+  pull_request:
+    paths: ['site/**', 'shared/**', 'package.json', 'package-lock.json', '.github/workflows/lighthouse.yml']
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w site
+      - name: Lighthouse CI
+        working-directory: site
+        run: npx --yes @lhci/cli@0.15.1 autorun
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: site/.lighthouseci/reports
+          if-no-files-found: ignore

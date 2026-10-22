@@ -15,3 +15,6 @@ data/seed/*.csv
 
 # machine-specific dev server config
 .claude/launch.json
+
+# Lighthouse CI output
+.lighthouseci/
