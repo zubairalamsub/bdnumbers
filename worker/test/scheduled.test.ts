@@ -149,7 +149,8 @@ describe('runBatch', () => {
     let bajusCalls = 0;
     mockFetch({
       [BB_EXCHANGE_URL]: html(FIXTURES.bb),
-      [BAJUS_GOLD_URL]: () => (++bajusCalls === 1 ? new Response('busy', { status: 503 }) : html(FIXTURES.bajus)()),
+      // 520: Cloudflare's "origin returned an unknown error", seen from bb.org.bd during an outage.
+      [BAJUS_GOLD_URL]: () => (++bajusCalls === 1 ? new Response('busy', { status: 520 }) : html(FIXTURES.bajus)()),
       [DEPLOY_HOOK]: deployOk,
     });
     const result = await runBatch(env, 'daily', 'test');

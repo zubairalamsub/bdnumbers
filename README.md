@@ -145,16 +145,19 @@ To add a source, create `worker/src/sources/<name>.ts` exporting a `Source` (`ke
 
 ## Free-tier limits
 
-| Resource | Free limit | Estimated use (Stage 1) | If the limit is hit |
+Everything runs at $0. The Cloudflare account is on the **Workers Free** plan and the `bdrate.fyi` zone on the **Free** plan (both checked in the dashboard on 2026-10-22). Pages is on its free plan, and the repo is public, so GitHub Actions minutes are free. On the Free plan nothing can bill: a request over a limit fails instead. Failure degrades gracefully. The site is static HTML served by Pages (unmetered), so even if the Worker hit its daily request limit, every page would still load with the last built numbers; only the 5-minute live refresh would pause until midnight UTC.
+
+| Resource | Free limit | Estimated use (Stage 2) | If the limit is hit |
 |---|---|---|---|
-| Workers requests | 100,000/day | ~30/day for cron and fan-out, plus 1 per API call. The site's refresh island adds 1 per visible page view every ≥5 min (Stage 2). | Make the island poll less often or serve `latest.json` from Pages. Workers Paid is $5/mo for 10M requests. |
+| Workers requests | 100,000/day | ~30/day for cron and fan-out, plus 1 per visible page view whose data is ≥5 min old (the live refresh) | Make the island poll less often or serve `latest.json` from Pages. Workers Paid is $5/mo for 10M requests. |
 | Workers CPU | 10 ms per invocation (HTTP and cron) | Each source runs in its own invocation; HTMLRewriter parsing is native | `runs` shows "exceeded CPU". Move that parser to a GitHub Actions job that posts to `/api/ingest`. |
 | Workers subrequests | 50 per invocation (1,000 via service bindings) | ≤3 per source | Already spread across invocations |
 | Cron triggers | 5 per account | 2 | — |
 | D1 rows written | 100,000/day | <100/day now; ~3,000/day once hourly AQI and weather run | Drop hourly series or cities, or store AQI every 3 h |
 | D1 rows read | 5,000,000/day | ~1,000 per batch plus API cache misses | Cache misses are rare thanks to KV and the edge cache; lengthen `max-age` |
-| D1 storage | 500 MB per database | <50 MB/year | Prune old hourly points |
+| D1 storage | 500 MB per database, 5 GB per account | <50 MB/year | Prune old hourly points |
 | KV writes | 1,000/day | 3 per batch with sources (~6/day now, ~80/day with hourly sources) | Rebuild KV only when a batch wrote something |
 | KV reads | 100,000/day | ≤2 per API request (cache version memoized per isolate) | Same as Workers requests |
 | Pages builds | 500/month | ≤2/day (only when the daily batch wrote data) ≈ 60/month, plus pushes | Rebuild once a day |
+| Workers Logs | 200,000 events/day | a few hundred (one summary line per batch, errors) | Logs stop for the day; the `runs` table still records every run |
 | GitHub Actions | Unlimited minutes for public repos | test, deploy, Lighthouse (Stage 5), TCB fallback (Stage 3) | — |

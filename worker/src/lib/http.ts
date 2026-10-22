@@ -1,8 +1,9 @@
 import type { Env } from '../env';
 
 const TIMEOUT_MS = 20_000;
-/** Statuses worth one polite retry: rate limits, transient bot challenges, server errors. */
-const RETRY_STATUSES = new Set([403, 429, 500, 502, 503, 504]);
+/** Statuses worth one polite retry: rate limits, transient bot challenges, server errors, and
+ * Cloudflare's 520–524 "origin unreachable" family. */
+const RETRY_STATUSES = new Set([403, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
 
 /**
  * GET a page as text. Retries once after RETRY_DELAY_MS on a transient failure. Throws with the URL,
