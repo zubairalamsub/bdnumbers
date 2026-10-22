@@ -4,6 +4,7 @@ import {
   formatDate,
   formatNumber,
   formatSeriesValue,
+  getSeriesDef,
   type Category,
   type Lang,
 } from '@bdnumbers/shared';
@@ -36,7 +37,8 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 export async function feedEntries(lang: Lang): Promise<FeedEntry[]> {
   const latest = await getLatest();
   const digits = defaultDigits(lang);
-  const series = latest.series.filter((e) => FEED_CATEGORIES.includes(e.category));
+  // Backup series (a bank's rate while BB is down) would repeat the dollar's move; leave them out.
+  const series = latest.series.filter((e) => FEED_CATEGORIES.includes(e.category) && !getSeriesDef(e.key)?.backupFor);
   const histories = await Promise.all(series.map((e) => getHistory(e.key)));
 
   const byDate = new Map<string, FeedChange[]>();

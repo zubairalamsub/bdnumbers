@@ -9,6 +9,7 @@ import NotifyButton from '../components/NotifyButton.astro';
 import NumberCard from '../components/NumberCard.astro';
 import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
+import UsdBackup from '../components/UsdBackup.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getEntries, getHistory, getLatest } from '../lib/data';
@@ -50,6 +51,7 @@ const pagePath = '/dollar-rate-today';
   <Breadcrumbs lang={lang} items={[{ label: s.nav.dollar, path: pagePath }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'আজকের ডলার রেট' : 'Dollar rate today'}</h1>
   <NotifyButton lang={lang} topic="dollar" />
+  <UsdBackup lang={lang} usd={usd!} />
 
   <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
     <NumberCard entry={usd!} lang={lang} hero label={lang === 'bn' ? 'গড় রেট (WAR), প্রতি মার্কিন ডলার' : 'Weighted average rate (WAR), per US dollar'}>

@@ -20,6 +20,11 @@ const path = '/about';
 /** What each source in the series catalog supplies, by its source_name. */
 const SOURCES: Record<string, { name_bn: string; bn: string; en: string }> = {
   'Bangladesh Bank': { name_bn: 'বাংলাদেশ ব্যাংক', bn: 'ডলারসহ বৈদেশিক মুদ্রার বিনিময় হার', en: 'Taka exchange rates, including the dollar' },
+  'Eastern Bank (EBL)': {
+    name_bn: 'ইস্টার্ন ব্যাংক (ইবিএল)',
+    bn: 'বাংলাদেশ ব্যাংকের ওয়েবসাইট বন্ধ থাকলে ডলারের ক্রয়-বিক্রয় রেট',
+    en: 'Dollar buying and selling rates while Bangladesh Bank’s website is down',
+  },
   BAJUS: { name_bn: 'বাজুস', bn: 'সোনা ও রুপার দাম', en: 'Gold and silver prices' },
   TCB: { name_bn: 'টিসিবি', bn: 'ঢাকার নিত্যপণ্যের খুচরা বাজারদর', en: 'Retail prices of essentials in Dhaka' },
   'Dhaka Stock Exchange': { name_bn: 'ঢাকা স্টক এক্সচেঞ্জ', bn: 'শেয়ারবাজারের সূচক ও লেনদেন', en: 'Share market indices and turnover' },

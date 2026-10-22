@@ -1,0 +1,69 @@
+---
+import { defaultDigits, formatDate, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import { getLatest } from '../lib/data';
+import Num from './Num.astro';
+
+interface Props {
+  lang: Lang;
+  /** Bangladesh Bank's dollar rate (usd_bdt_avg). */
+  usd: LatestEntry;
+  /** One line for the home page card instead of the full note. */
+  compact?: boolean;
+}
+
+// Eastern Bank's dollar rate, shown only while Bangladesh Bank's page can't be read (usd is stale) and
+// EBL has published a rate for a later day than BB's last one. Otherwise this renders nothing.
+const { lang, usd, compact = false } = Astro.props;
+const bn = lang === 'bn';
+const digits = defaultDigits(lang);
+const { series } = await getLatest();
+const buy = series.find((e) => e.key === 'usd_bdt_ebl_buy');
+const sell = series.find((e) => e.key === 'usd_bdt_ebl_sell');
+const show = usd.stale && buy && sell && buy.date === sell.date && buy.date > usd.date;
+const day = show ? formatDate(buy.date, lang, digits) : '';
+const bank = bn ? 'ইস্টার্ন ব্যাংক (ইবিএল)' : 'Eastern Bank (EBL)';
+---
+
+{
+  show &&
+    (compact ? (
+      <p class="mt-2 text-sm text-ink-2" data-usd-backup>
+        {bn ? `ইবিএল, ${day}: ` : `EBL, ${day}: `}
+        <span data-series={buy.key}>
+          {bn ? 'ক্রয় ' : 'buying '}
+          <Num value={buy.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" />
+        </span>
+        {' · '}
+        <span data-series={sell.key}>
+          {bn ? 'বিক্রয় ' : 'selling '}
+          <Num value={sell.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" />
+        </span>
+      </p>
+    ) : (
+      <div class="mt-4 rounded-lg border border-warn bg-surface p-4 text-[0.9375rem]" role="note" data-usd-backup>
+        <p>
+          {bn
+            ? `বাংলাদেশ ব্যাংকের ওয়েবসাইট এখন বন্ধ, তাই নিচের রেটটি ${formatDate(usd.date, lang, digits)} তারিখের। এর পরের সর্বশেষ রেট ${bank} থেকে, ${day}:`
+            : `Bangladesh Bank’s website is down, so its rate below is from ${formatDate(usd.date, lang, digits)}. The newest rate since then is from ${bank}, ${day}:`}
+        </p>
+        <p class="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-lg">
+          <span data-series={buy.key}>
+            {bn ? 'ক্রয়: ' : 'Buying: '}
+            <Num value={buy.value} fd={2} lang={lang} field="value" class="font-semibold" />
+            {bn ? ' টাকা' : ''}
+          </span>
+          <span data-series={sell.key}>
+            {bn ? 'বিক্রয়: ' : 'Selling: '}
+            <Num value={sell.value} fd={2} lang={lang} field="value" class="font-semibold" />
+            {bn ? ' টাকা' : ''}
+          </span>
+        </p>
+        <p class="mt-2 text-sm text-ink-2">
+          {bn
+            ? 'এটি ব্যাংকের গ্রাহক রেট (টিটি ক্লিন ক্রয় ও বিসি বিক্রয়), যা আন্তঃব্যাংক গড় রেট থেকে কিছুটা ভিন্ন হয়। বাংলাদেশ ব্যাংকের সাইট চালু হলে এটি আর দেখানো হবে না। উৎস: '
+            : 'These are a bank’s customer rates (TT clean buying and BC selling), which differ slightly from the interbank average. This note disappears once Bangladesh Bank’s site is back. Source: '}
+          <a href={buy.source_url} rel="noopener" target="_blank">{bank}</a>
+        </p>
+      </div>
+    ))
+}

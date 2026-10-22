@@ -18,6 +18,7 @@ import {
 import ChangeText from '../components/ChangeText.astro';
 import Num from '../components/Num.astro';
 import NumberCard from '../components/NumberCard.astro';
+import UsdBackup from '../components/UsdBackup.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { CALCULATORS } from '../lib/calculators';
@@ -76,6 +77,7 @@ const description =
         <span data-series={bid!.key}>{s.table.bid}: <Num value={bid!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
         <span data-series={ask!.key}>{s.table.ask}: <Num value={ask!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
       </p>
+      <UsdBackup lang={lang} usd={usd!} compact />
     </NumberCard>
 
     <NumberCard
