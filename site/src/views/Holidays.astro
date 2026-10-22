@@ -1,0 +1,92 @@
+---
+import { defaultDigits, dhakaDate, formatDate, type Holiday, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const entry = latest.series.find((e) => e.key === 'holidays_public');
+const holidays = ((entry?.meta?.holidays as Holiday[] | undefined) ?? []).filter((h) => h.type === 'public');
+const today = dhakaDate();
+const next = holidays.find((h) => h.date >= today);
+const year = today.slice(0, 4);
+const name = (h: Holiday) => (lang === 'bn' ? (h.name_bn ?? h.name) : h.name);
+const weekday = (date: string) =>
+  new Intl.DateTimeFormat(lang, { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+
+const byMonth = new Map<string, Holiday[]>();
+for (const h of holidays) byMonth.set(h.date.slice(0, 7), [...(byMonth.get(h.date.slice(0, 7)) ?? []), h]);
+const monthLabel = (ym: string) =>
+  new Intl.DateTimeFormat(`${lang}-u-nu-${digits}`, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${ym}-01T00:00:00Z`));
+
+const title =
+  lang === 'bn'
+    ? `সরকারি ছুটির তালিকা ${year}${next ? `: পরের ছুটি ${name(next)}` : ''} | ${SITE_NAME}`
+    : `Bangladesh public holidays ${year}${next ? `: next is ${name(next)}` : ''} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `${year} ও পরের বছরের সরকারি ছুটির তারিখ ও বার${next ? `; পরের ছুটি ${name(next)}, ${formatDate(next.date, lang, digits)}` : ''}।`
+    : `Public holiday dates in Bangladesh for ${year} and next year${next ? `; the next is ${name(next)} on ${formatDate(next.date, lang, digits)}` : ''}.`;
+const path = '/holidays';
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.holidays, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'সরকারি ছুটির তালিকা' : 'Public holidays'}</h1>
+
+  {
+    next && (
+      <div class="card mt-5 p-4 sm:p-5">
+        <p class="text-[0.9375rem] font-semibold text-ink-2">{lang === 'bn' ? 'পরের সরকারি ছুটি' : 'Next public holiday'}</p>
+        <p class="mt-1 text-3xl font-semibold">{name(next)}</p>
+        <p class="mt-1 text-ink-2">
+          {formatDate(next.date, lang, digits)}, {weekday(next.date)} · <span data-countdown={next.date} />
+        </p>
+      </div>
+    )
+  }
+
+  {
+    [...byMonth.entries()].map(([ym, list]) => (
+      <section class="mt-6">
+        <h2 class="mb-2 text-lg font-semibold">{monthLabel(ym)}</h2>
+        <ul class="card divide-y divide-grid">
+          {list.map((h) => (
+            <li class="flex flex-wrap justify-between gap-2 px-4 py-2 text-[0.9375rem]" data-day={h.date}>
+              <span>{name(h)}</span>
+              <span class="text-ink-2">
+                {formatDate(h.date, lang, digits)}, {weekday(h.date)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+
+  <p class="mt-6 max-w-3xl text-sm text-ink-2">
+    {
+      lang === 'bn'
+        ? 'তালিকাটি গুগলের বাংলাদেশ ছুটির ক্যালেন্ডার থেকে নেওয়া এবং প্রতিদিন হালনাগাদ হয়। চাঁদ দেখার ওপর নির্ভরশীল ছুটির তারিখ বদলাতে পারে; সরকারি প্রজ্ঞাপনই চূড়ান্ত।'
+        : "The list comes from Google's Bangladesh holiday calendar and is refreshed daily. Holidays that depend on the moon can move; the government's notice is final."
+    }
+  </p>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.prayer, path: '/prayer-times' },
+      { label: s.nav.stock, path: '/share-market-today' },
+    ]}
+  />
+</Base>

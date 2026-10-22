@@ -1,0 +1,95 @@
+---
+import { FUEL_ITEMS, defaultDigits, formatDate, formatSeriesValue, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeText from '../components/ChangeText.astro';
+import DateText from '../components/DateText.astro';
+import Num from '../components/Num.astro';
+import NumberCard from '../components/NumberCard.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getEntries, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const fuels = await getEntries(FUEL_ITEMS.map((f) => `fuel_${f.id}`));
+const [diesel, kerosene, octane, petrol] = fuels;
+const v = (e: (typeof fuels)[number] | undefined) => formatSeriesValue(e!.value, 'fuel', digits);
+const title =
+  lang === 'bn'
+    ? `জ্বালানি তেলের দাম: ডিজেল ${v(diesel)}, অকটেন ${v(octane)} টাকা | ${SITE_NAME}`
+    : `Fuel prices: diesel Tk ${v(diesel)}, octane Tk ${v(octane)} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `বিপিসির সর্বশেষ দাম অনুযায়ী প্রতি লিটার ডিজেল ${v(diesel)}, কেরোসিন ${v(kerosene)}, অকটেন ${v(octane)} ও পেট্রোল ${v(petrol)} টাকা (${formatDate(diesel!.date, lang, digits)} থেকে কার্যকর)।`
+    : `BPC's current prices per litre: diesel Tk ${v(diesel)}, kerosene Tk ${v(kerosene)}, octane Tk ${v(octane)}, petrol Tk ${v(petrol)}, effective ${formatDate(diesel!.date, lang, digits)}.`;
+const path = '/fuel-price';
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.fuel, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'আজকের জ্বালানি তেলের দাম' : 'Fuel prices today'}</h1>
+
+  <div class="mt-5 grid gap-4 sm:grid-cols-2">
+    {[diesel, octane, petrol, kerosene].map((e, i) => <NumberCard entry={e!} lang={lang} hero={i === 0} />)}
+  </div>
+
+  <section class="mt-6 card overflow-x-auto">
+    <table class="data-table text-[0.9375rem]">
+      <thead>
+        <tr>
+          <th scope="col">{lang === 'bn' ? 'জ্বালানি' : 'Fuel'}</th>
+          <th scope="col">{lang === 'bn' ? 'দাম (টাকা/লিটার)' : 'Price (Tk/litre)'}</th>
+          <th scope="col">{lang === 'bn' ? 'কার্যকর' : 'Effective'}</th>
+          <th scope="col">{s.change}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          fuels.map((e) => (
+            <tr data-series={e!.key}>
+              <th scope="row" class="font-normal">
+                <a href={localePath(lang, `/history/${e!.key}`)} class="text-ink no-underline hover:underline">
+                  {lang === 'bn' ? e!.name_bn : e!.name_en}
+                </a>
+              </th>
+              <td class="font-semibold">
+                <Num value={e!.value} fd={Number.isInteger(e!.value) ? 0 : 2} lang={lang} field="value" />
+              </td>
+              <td>
+                <DateText date={e!.date} lang={lang} field="date" />
+              </td>
+              <td>
+                <ChangeText change={e!.change.prev} category="fuel" lang={lang} field="change.prev" empty="dash" class="text-sm text-ink-2" />
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <p class="mt-6 max-w-3xl text-[0.9375rem] text-ink-2">
+    {
+      lang === 'bn'
+        ? 'দাম বাংলাদেশ পেট্রোলিয়াম কর্পোরেশনের (বিপিসি) ওয়েবসাইটে প্রকাশিত স্থানীয় বিক্রয়মূল্য; প্রতিটি দামের পাশে কার্যকরের তারিখ দেওয়া আছে। নতুন দাম প্রকাশ হলে এই পাতা নিজে থেকে হালনাগাদ হয়।'
+        : 'Prices are the local sale prices published on the Bangladesh Petroleum Corporation (BPC) website, each with the date it took effect. This page updates on its own when new prices are published.'
+    }
+  </p>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.lpg, path: '/lpg-price' },
+      { label: s.nav.market, path: '/market-price-today' },
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+    ]}
+  />
+</Base>

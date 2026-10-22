@@ -11,13 +11,16 @@ interface Props {
 const { lang, path } = Astro.props;
 const s = STRINGS[lang];
 const other: Lang = lang === 'bn' ? 'en' : 'bn';
+// The most-used pages; the footer lists everything.
 const links = [
   { path: '/dollar-rate-today', label: s.nav.dollar },
   { path: '/gold-price-today', label: s.nav.gold },
-  { path: '/silver-price-today', label: s.nav.silver },
   { path: '/market-price-today', label: s.nav.market },
   { path: '/share-market-today', label: s.nav.stock },
+  { path: '/fuel-price', label: s.nav.fuel },
   { path: '/weather', label: s.nav.weather },
+  { path: '/prayer-times', label: s.nav.prayer },
+  { path: '/calculators', label: s.nav.calculators },
 ];
 // The toggle offers the digit system that isn't currently shown; the script keeps it in sync.
 const shown = defaultDigits(lang);

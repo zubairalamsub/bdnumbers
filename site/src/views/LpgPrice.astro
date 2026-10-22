@@ -1,0 +1,87 @@
+---
+import { defaultDigits, formatDate, formatSeriesValue, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import LineChart from '../components/LineChart.astro';
+import NumberCard from '../components/NumberCard.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getEntries, getHistory, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const [twelve, perKg, govt] = await getEntries(['lpg_12kg', 'lpg_per_kg', 'lpg_govt_12_5kg']);
+const history = await getHistory('lpg_12kg');
+const price = formatSeriesValue(twelve!.value, 'lpg', digits);
+const date = formatDate(twelve!.date, lang, digits);
+const article = typeof twelve!.meta?.url === 'string' ? twelve!.meta.url : null;
+const title =
+  lang === 'bn' ? `এলপিজির দাম: ১২ কেজি সিলিন্ডার ${price} টাকা | ${SITE_NAME}` : `LPG price: 12 kg cylinder Tk ${price} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `বিইআরসির নির্ধারিত দামে ১২ কেজি এলপিজি সিলিন্ডার ${price} টাকা, প্রতি কেজি ${formatSeriesValue(perKg!.value, 'lpg', digits)} টাকা (${date})। সরকারি সিলিন্ডারের দামও দেখুন।`
+    : `BERC's price: a 12 kg LPG cylinder costs Tk ${price}, Tk ${formatSeriesValue(perKg!.value, 'lpg', digits)} per kg (${date}). Also the government cylinder price.`;
+const path = '/lpg-price';
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.lpg, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'আজকের এলপিজির দাম' : 'LPG price today'}</h1>
+
+  <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
+    <NumberCard entry={twelve!} lang={lang} hero label={lang === 'bn' ? 'বেসরকারি এলপিজি, ১২ কেজি সিলিন্ডার' : 'Private LPG, 12 kg cylinder'} />
+    <div class="grid gap-4">
+      <NumberCard entry={perKg!} lang={lang} headingLevel={3} />
+      <NumberCard entry={govt!} lang={lang} headingLevel={3} />
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <LineChart points={history.points.map((p) => [p.date, p.value])} category="lpg" unit="BDT/cylinder" lang={lang} label={lang === 'bn' ? twelve!.name_bn : twelve!.name_en} />
+    <p class="mt-2 text-sm"><a href={localePath(lang, `/history/${twelve!.key}`)}>{s.history}</a></p>
+  </div>
+
+  <section class="mt-8 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{lang === 'bn' ? 'দাম কে ঠিক করে' : 'Who sets the price'}</h2>
+    {
+      lang === 'bn' ? (
+        <p>
+          বেসরকারি এলপিজির খুচরা দাম প্রতি মাসে বাংলাদেশ এনার্জি রেগুলেটরি কমিশন (বিইআরসি) নির্ধারণ করে। কমিশন তা ছবি আকারে প্রকাশ করে, তাই এখানে
+          বিইআরসির ঘোষণা নিয়ে ইউএনবির প্রতিবেদন থেকে দাম নেওয়া হয়; ১২ কেজি সিলিন্ডারের দাম ও প্রতি কেজির দাম মিলিয়ে দেখা হয়।
+          {article && (
+            <>
+              {' '}সর্বশেষ প্রতিবেদন: <a href={article} rel="noopener" target="_blank">ইউএনবি</a>।
+            </>
+          )}{' '}
+          সরকারি (বিপিসির) ১২.৫ কেজি সিলিন্ডারের দাম বিপিসির ওয়েবসাইট থেকে।
+        </p>
+      ) : (
+        <p>
+          The Bangladesh Energy Regulatory Commission (BERC) sets the retail price of private LPG every month. It publishes the decision as an image,
+          so the price here comes from UNB's report of each BERC announcement, checked by matching the 12 kg cylinder price against the per-kg price.
+          {article && (
+            <>
+              {' '}Latest report: <a href={article} rel="noopener" target="_blank">UNB</a>.
+            </>
+          )}{' '}
+          The government (BPC) 12.5 kg cylinder price comes from BPC's website.
+        </p>
+      )
+    }
+  </section>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.fuel, path: '/fuel-price' },
+      { label: s.nav.market, path: '/market-price-today' },
+    ]}
+  />
+</Base>

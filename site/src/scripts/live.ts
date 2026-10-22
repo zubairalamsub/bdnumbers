@@ -3,7 +3,7 @@
 // renders comes from the same helpers the build used, so the page never changes shape.
 import {
   BHORI_GRAMS,
-  defaultDigits,
+  dhakaDate,
   formatNumber,
   fractionDigits,
   relativeTime,
@@ -17,28 +17,18 @@ import {
 } from '@bdnumbers/shared';
 import { STRINGS } from '../i18n';
 import { axisLabels, geometry, sliceRange, tickDecimals, type Pt, type Range } from '../lib/chart';
+import { digitsKey, readDigits } from '../lib/prefs';
 import { REFRESH_MS, changeLabel, formatDateTime, formatPointDate } from '../lib/view';
 
 const DIGITS_EVENT = 'bdrate:digits';
 
 const root = document.documentElement;
 const lang: Lang = root.lang === 'en' ? 'en' : 'bn';
-// Per language: choosing Latin digits on Bengali pages shouldn't turn English pages Bengali.
-const DIGITS_KEY = `bdrate:digits:${lang}`;
+const DIGITS_KEY = digitsKey(lang);
 const api = document.body.dataset.api ?? '';
-let digits: Digits = loadDigits();
+let digits: Digits = readDigits(lang);
 // The build's data counts as the first fetch.
 let lastFetch = Date.parse(document.body.dataset.generated ?? '') || 0;
-
-function loadDigits(): Digits {
-  try {
-    const saved = localStorage.getItem(DIGITS_KEY);
-    if (saved === 'beng' || saved === 'latn') return saved;
-  } catch {
-    // storage blocked: use the language default
-  }
-  return defaultDigits(lang);
-}
 
 // ---------- rendering ----------
 
@@ -66,6 +56,28 @@ function renderValues(scope: ParentNode = document): void {
     el.setAttribute('datetime', date);
   }
   renderTimes(scope);
+  renderDays(scope);
+}
+
+/** [data-day]: dim days already past; [data-countdown]: "in N days" until that Dhaka date. */
+function renderDays(scope: ParentNode = document): void {
+  const today = dhakaDate();
+  for (const el of scope.querySelectorAll<HTMLElement>('[data-day]')) {
+    el.classList.toggle('opacity-50', el.dataset.day! < today);
+  }
+  for (const el of scope.querySelectorAll<HTMLElement>('[data-countdown]')) {
+    const days = Math.round((Date.parse(el.dataset.countdown!) - Date.parse(today)) / 86_400_000);
+    // A page built before the date can be read after it: say nothing rather than "-2 days".
+    el.hidden = days < 0;
+    el.textContent =
+      days === 0
+        ? lang === 'bn'
+          ? 'আজ'
+          : 'today'
+        : lang === 'bn'
+          ? `${formatNumber(days, digits, 0)} দিন বাকি`
+          : `in ${formatNumber(days, digits, 0)} day${days === 1 ? '' : 's'}`;
+  }
 }
 
 function renderTimes(scope: ParentNode = document): void {

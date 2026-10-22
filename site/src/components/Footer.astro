@@ -9,15 +9,31 @@ interface Props {
 
 const { lang } = Astro.props;
 const s = STRINGS[lang];
+const pages = [
+  { path: '/dollar-rate-today', label: s.nav.dollar },
+  { path: '/gold-price-today', label: s.nav.gold },
+  { path: '/silver-price-today', label: s.nav.silver },
+  { path: '/market-price-today', label: s.nav.market },
+  { path: '/share-market-today', label: s.nav.stock },
+  { path: '/fuel-price', label: s.nav.fuel },
+  { path: '/lpg-price', label: s.nav.lpg },
+  { path: '/savings-rates', label: s.nav.savings },
+  { path: '/weather', label: s.nav.weather },
+  { path: '/prayer-times', label: s.nav.prayer },
+  { path: '/holidays', label: s.nav.holidays },
+  { path: '/calculators', label: s.nav.calculators },
+  { path: '/status', label: s.nav.status },
+];
 ---
 
 <footer class="border-t border-hairline bg-surface">
-  <div class="mx-auto max-w-5xl space-y-2 px-4 py-6 text-sm text-ink-2 sm:px-6">
+  <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 text-sm text-ink-2 sm:px-6">
+    <nav aria-label={s.nav.allPages}>
+      <ul class="flex flex-wrap gap-x-4 gap-y-1">
+        {pages.map((p) => <li><a href={localePath(lang, p.path)} class="text-ink-2">{p.label}</a></li>)}
+      </ul>
+    </nav>
     <p>{s.footer}</p>
-    <p>
-      <a href={localePath(lang, '/status')}>{s.nav.status}</a>
-      <span aria-hidden="true"> · </span>
-      <span>{SITE_NAME}</span>
-    </p>
+    <p>{SITE_NAME}</p>
   </div>
 </footer>

@@ -1,0 +1,99 @@
+---
+import { SAVINGS_NOTICE, defaultDigits, formatDate, formatNumber, type Lang, type SavingsNotice } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const entry = latest.series.find((e) => e.key === 'savings_rates');
+const notice = (entry?.meta?.notice as SavingsNotice | undefined) ?? SAVINGS_NOTICE;
+const pct = (n: number) => `${formatNumber(n, digits, 2, 2)}%`;
+const period = lang === 'bn' ? notice.periodBn : notice.periodEn;
+const top = Math.max(...notice.schemes.flatMap((x) => x.upTo7_5Lakh));
+const title = lang === 'bn' ? `সঞ্চয়পত্রের মুনাফার হার (${period}) | ${SITE_NAME}` : `Savings certificate rates (${period}) | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `${period} মেয়াদে সঞ্চয়পত্রের মুনাফার হার, সর্বোচ্চ ${pct(top)}। ৫ বছর মেয়াদি, ৩ মাস অন্তর, পেনশনার ও পরিবার সঞ্চয়পত্রের বছরভিত্তিক হার, ৭.৫ লাখ টাকার নিচে ও ওপরে।`
+    : `Savings certificate profit rates for ${period}, up to ${pct(top)}: 5-year, 3-monthly, pensioner and family Sanchayapatra by year, below and above Tk 7.5 lakh.`;
+const path = '/savings-rates';
+const ordinal = (n: number) => (lang === 'bn' ? `${formatNumber(n, digits, 0)} বছর শেষে` : `After year ${n}`);
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.savings, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'সঞ্চয়পত্রের মুনাফার হার' : 'Savings certificate profit rates'}</h1>
+
+  <p class="mt-4 max-w-3xl rounded-lg border border-warn bg-surface p-4 text-[0.9375rem]" role="note">
+    <span aria-hidden="true">⚠ </span>
+    {
+      lang === 'bn' ? (
+        <>
+          এখানে <strong>{period}</strong> মেয়াদের হার দেখানো হচ্ছে — সরকারের যে প্রজ্ঞাপন ({formatDate(notice.issued, lang, digits)}) আমরা যাচাই করতে
+          পেরেছি তার সর্বশেষটি। হার প্রতি ছয় মাসে পুনর্নির্ধারণ হয় এবং এরপর পরিবর্তন হয়ে থাকতে পারে; বিনিয়োগের আগে জাতীয় সঞ্চয় অধিদপ্তর বা ব্যাংক থেকে বর্তমান হার
+          যাচাই করুন।
+        </>
+      ) : (
+        <>
+          These are the rates for <strong>{period}</strong>, from the newest official notice we could verify (issued{' '}
+          {formatDate(notice.issued, lang, digits)}). Rates are reset every six months and may have changed since; check the current rate with
+          the National Savings Directorate or your bank before investing.
+        </>
+      )
+    }
+  </p>
+
+  {
+    notice.schemes.map((scheme) => (
+      <section class="mt-6">
+        <h2 class="mb-2 text-lg font-semibold">{lang === 'bn' ? scheme.bn : scheme.en}</h2>
+        <div class="card overflow-x-auto">
+          <table class="data-table text-[0.9375rem]">
+            <thead>
+              <tr>
+                <th scope="col">{lang === 'bn' ? 'মেয়াদ' : 'Held for'}</th>
+                <th scope="col">{lang === 'bn' ? '৭.৫ লাখ টাকা পর্যন্ত' : 'Up to Tk 7.5 lakh'}</th>
+                <th scope="col">{lang === 'bn' ? '৭.৫ লাখ টাকার বেশি' : 'Above Tk 7.5 lakh'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scheme.upTo7_5Lakh.map((rate, i) => (
+                <tr>
+                  <th scope="row" class="font-normal">
+                    {ordinal(i + 1)}
+                  </th>
+                  <td class="font-semibold">{pct(rate)}</td>
+                  <td>{pct(scheme.above7_5Lakh[i]!)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  }
+
+  <p class="mt-6 max-w-3xl text-sm text-ink-2">
+    {lang === 'bn' ? 'উৎস: ' : 'Source: '}
+    <a href={notice.documentUrl} rel="noopener" target="_blank">{lang === 'bn' ? 'অভ্যন্তরীণ সম্পদ বিভাগের প্রজ্ঞাপন (জাতীয় সঞ্চয় অধিদপ্তরের ওয়েবসাইট)' : 'Internal Resources Division notice (National Savings Directorate website)'}</a>
+    {lang === 'bn' ? `, কার্যকর ${formatDate(notice.effectiveFrom, lang, digits)}।` : `, effective ${formatDate(notice.effectiveFrom, lang, digits)}.`}
+  </p>
+  <p class="mt-3"><a href={localePath(lang, '/calculators/sanchayapatra')} class="card inline-block px-3 py-1.5 no-underline hover:underline">{lang === 'bn' ? 'সঞ্চয়পত্রের মুনাফা হিসাব করুন →' : 'Work out your return →'}</a></p>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.calculators, path: '/calculators' },
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+    ]}
+  />
+</Base>
