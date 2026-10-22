@@ -3,6 +3,8 @@
 export const BPC_FUEL_URL = 'https://bpc.gov.bd/pages/static-pages/6922ddb6933eb65569e15fbc';
 export const UNB_LPG_SEARCH_URL = 'https://unb.com.bd/search?q=LPG+price';
 export const NSD_SCHEMES_URL = 'https://nationalsavings.gov.bd/pages/static-pages/6922e111933eb65569e29fed';
+/** The directorate's "প্রজ্ঞাপন/পরিপত্র" page, where each rate notice (including "rates stay the same") is posted. */
+export const NSD_NOTICES_URL = 'https://nationalsavings.gov.bd/pages/static-pages/6922de17933eb65569e182f5';
 export const HOLIDAYS_ICS_URL =
   'https://calendar.google.com/calendar/ical/en.bd%23holiday%40group.v.calendar.google.com/public/basic.ics';
 
@@ -70,23 +72,33 @@ export interface SavingsScheme {
 export interface SavingsNotice {
   issued: string;
   effectiveFrom: string;
+  /** The period these rates are confirmed for (by the latest notice, which may only extend them). */
   periodBn: string;
   periodEn: string;
   /** The official document the table was read from. */
   documentUrl: string;
   schemes: SavingsScheme[];
+  /** Later notices that kept these rates in force unchanged, oldest first. */
+  extendedBy?: Array<{ issued: string; until: string; url: string }>;
 }
 
 /**
- * The newest savings-rate notice verified against an official document: Internal Resources Division
- * notice of 30 June 2025 (rates for July–December 2025), as published by the National Savings
- * Directorate. Rates are reset every six months; update this when a newer official notice is found.
+ * The rates in force, verified against the official notices (as published by the National Savings
+ * Directorate). The table is the Internal Resources Division notice of 30 June 2025 (memo ...২০.৮৫). A
+ * notice of 30 Dec 2025 cut the rates from January 2026, but the notice of 4 Jan 2026 (...২০.৩) cancelled
+ * it and kept these rates to 30 June 2026, and the notice of 2 July 2026 (...২০.৯৩) kept them to
+ * 31 December 2026. Checked against the notices themselves on 2026-10-22. Rates are reviewed every six
+ * months; the savingsRates source warns on /status when a newer notice appears.
  */
 export const SAVINGS_NOTICE: SavingsNotice = {
   issued: '2025-06-30',
   effectiveFrom: '2025-07-01',
-  periodBn: 'জুলাই–ডিসেম্বর ২০২৫',
-  periodEn: 'July–December 2025',
+  periodBn: 'জুলাই–ডিসেম্বর ২০২৬',
+  periodEn: 'July–December 2026',
+  extendedBy: [
+    { issued: '2026-01-04', until: '2026-06-30', url: 'https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-nationalsavings/2024/12/1aebfb2a642a46e1ae45c4dbf3e4351d.pdf' },
+    { issued: '2026-07-02', until: '2026-12-31', url: 'https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-nationalsavings/2026/6/6d1a451f-6927-4738-ae6b-58d1f2ea5046.pdf' },
+  ],
   documentUrl:
     'https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-nationalsavings/2024/12/5123d60a893e49c2923d35d7e0c1b833.pdf',
   schemes: [

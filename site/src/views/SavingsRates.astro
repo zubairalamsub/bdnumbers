@@ -1,5 +1,5 @@
 ---
-import { SAVINGS_NOTICE, defaultDigits, formatDate, formatNumber, type Lang, type SavingsNotice } from '@bdnumbers/shared';
+import { SAVINGS_NOTICE, defaultDigits, dhakaDate, formatDate, formatNumber, type Lang, type SavingsNotice } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import PageSeo from '../components/PageSeo.astro';
 import NotifyButton from '../components/NotifyButton.astro';
@@ -20,6 +20,10 @@ const entry = latest.series.find((e) => e.key === 'savings_rates');
 const notice = (entry?.meta?.notice as SavingsNotice | undefined) ?? SAVINGS_NOTICE;
 const pct = (n: number) => `${formatNumber(n, digits, 2, 2)}%`;
 const period = lang === 'bn' ? notice.periodBn : notice.periodEn;
+// Notices that kept the table in force; while the last one still covers today, the rates are current.
+const extensions = notice.extendedBy ?? [];
+const validUntil = extensions.at(-1)?.until ?? '';
+const confirmed = extensions.length > 0 && dhakaDate() <= validUntil;
 const top = Math.max(...notice.schemes.flatMap((x) => x.upTo7_5Lakh));
 const yearRate = (id: string, year: number, tier: 'upTo7_5Lakh' | 'above7_5Lakh' = 'upTo7_5Lakh') => {
   const rate = notice.schemes.find((x) => x.id === id)?.[tier][year - 1];
@@ -50,6 +54,38 @@ const ordinal = (n: number) => (lang === 'bn' ? `${formatNumber(n, digits, 0)} �
   <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'সঞ্চয়পত্রের মুনাফার হার' : 'Savings certificate profit rates'}</h1>
   <NotifyButton lang={lang} topic="savings" />
 
+  {
+    confirmed ? (
+      <p class="mt-4 max-w-3xl rounded-lg border border-hairline bg-surface p-4 text-[0.9375rem]" role="note">
+        {lang === 'bn' ? (
+          <>
+            এই হার {formatDate(notice.issued, lang, digits)}-এর প্রজ্ঞাপনে নির্ধারিত। পরের প্রজ্ঞাপনগুলোতে (
+            {extensions.map((x, i) => (
+              <>
+                {i > 0 && ', '}
+                <a href={x.url} rel="noopener" target="_blank">
+                  {formatDate(x.issued, lang, digits)}
+                </a>
+              </>
+            ))}
+            ) একই হার <strong>{formatDate(validUntil, lang, digits)}</strong> পর্যন্ত বহাল রাখা হয়েছে।
+          </>
+        ) : (
+          <>
+            These rates were set by the notice of {formatDate(notice.issued, lang, digits)}, and later notices (
+            {extensions.map((x, i) => (
+              <>
+                {i > 0 && ', '}
+                <a href={x.url} rel="noopener" target="_blank">
+                  {formatDate(x.issued, lang, digits)}
+                </a>
+              </>
+            ))}
+            ) kept them unchanged until <strong>{formatDate(validUntil, lang, digits)}</strong>.
+          </>
+        )}
+      </p>
+    ) : (
   <p class="mt-4 max-w-3xl rounded-lg border border-warn bg-surface p-4 text-[0.9375rem]" role="note">
     <span aria-hidden="true">⚠ </span>
     {
@@ -68,6 +104,8 @@ const ordinal = (n: number) => (lang === 'bn' ? `${formatNumber(n, digits, 0)} �
       )
     }
   </p>
+    )
+  }
 
   {
     notice.schemes.map((scheme) => (

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parseBpcFuel } from '../src/sources/fuelPrices';
 import { parseHolidaysIcs } from '../src/sources/holidays';
 import { parseUnbLpgArticle, parseUnbLpgSearch } from '../src/sources/lpgPrice';
-import { findRatesDocument } from '../src/sources/savingsRates';
+import { findRatesDocument, latestRateNotice } from '../src/sources/savingsRates';
 import { validatePoints } from '../src/validate';
 import { FIXTURES, UNB_LPG_ARTICLE_URL } from './helpers';
 
@@ -64,5 +64,10 @@ describe('parseHolidaysIcs', () => {
 describe('findRatesDocument', () => {
   it('finds the profit-rate document the curated table was read from', () => {
     expect(findRatesDocument(FIXTURES.nsdSchemes)).toBe(SAVINGS_NOTICE.documentUrl);
+    // The notices page's newest rate notice is the last extension the table accounts for.
+    const newest = latestRateNotice(FIXTURES.nsdNotices);
+    expect(newest?.date).toBe('2026-07-02');
+    expect(newest?.date).toBe(SAVINGS_NOTICE.extendedBy?.at(-1)?.issued);
+    expect(newest?.url).toBe(SAVINGS_NOTICE.extendedBy?.at(-1)?.url);
   });
 });

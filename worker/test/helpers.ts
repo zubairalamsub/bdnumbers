@@ -11,6 +11,7 @@ import {
   DSE_URL,
   HOLIDAYS_ICS_URL,
   MET_API_URL,
+  NSD_NOTICES_URL,
   NSD_SCHEMES_URL,
   TCB_LIST_URL,
   UNB_LPG_SEARCH_URL,
@@ -19,6 +20,7 @@ import bajus from './fixtures/bajus-gold-price-2026-10-22.html?raw';
 import bb from './fixtures/bb-exchangerate-2026-10-19.html?raw';
 import bpcFuel from './fixtures/bpc-fuel-prices-2026-10-22.html?raw';
 import holidaysIcs from './fixtures/google-bd-holidays-2026-10-22.ics?raw';
+import nsdNotices from './fixtures/nsd-notices-2026-10-22.html?raw';
 import nsdSchemes from './fixtures/nsd-schemes-2026-10-22.html?raw';
 import unbLpgArticle from './fixtures/unb-lpg-article-2026-10.html?raw';
 import unbLpgSearch from './fixtures/unb-search-lpg-2026-10-22.html?raw';
@@ -42,6 +44,7 @@ export const FIXTURES = {
   unbLpgSearch,
   unbLpgArticle,
   nsdSchemes,
+  nsdNotices,
   holidaysIcs,
 };
 
@@ -91,6 +94,7 @@ export function allSourceRoutes(): Record<string, Responder> {
     [UNB_LPG_SEARCH_URL]: html(FIXTURES.unbLpgSearch),
     [UNB_LPG_ARTICLE_URL]: html(FIXTURES.unbLpgArticle),
     [NSD_SCHEMES_URL]: html(FIXTURES.nsdSchemes),
+    [NSD_NOTICES_URL]: html(FIXTURES.nsdNotices),
     [HOLIDAYS_ICS_URL]: () => new Response(FIXTURES.holidaysIcs, { headers: { 'content-type': 'text/calendar' } }),
     [DEPLOY_HOOK]: () => new Response('{"success":true}', { status: 200 }),
   };
