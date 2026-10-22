@@ -1,0 +1,51 @@
+name = "bdnumbers-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+# Custom domain, so the Workers Cache API works (it is a no-op on workers.dev).
+routes = [{ pattern = "api.bdrate.fyi", custom_domain = true }]
+
+[observability]
+enabled = true
+
+[triggers]
+crons = [
+  "0 1,7 * * *", # daily sources: 07:00 and 13:00 Asia/Dhaka
+  "15 * * * *",  # hourly sources (AQI, weather; Stage 3)
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bdnumbers"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "00000000000000000000000000000000"
+
+# Each source runs in its own invocation through this binding, so every parser
+# gets its own 10 ms CPU budget on the free plan.
+[[services]]
+binding = "SELF"
+service = "bdnumbers-api"
+
+[[ratelimits]]
+name = "INGEST_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[vars]
+SITE_URL = "https://bdrate.fyi"
+USER_AGENT = "Mozilla/5.0 (compatible; bdnumbers/1.0; +https://bdrate.fyi)"
+# "fanout" runs each source through SELF; "inline" runs them in one invocation (tests, local debugging).
+RUN_MODE = "fanout"
+
+# Secrets (wrangler secret put <NAME>):
+#   INGEST_TOKEN       bearer token for POST /api/ingest
+#   INTERNAL_TOKEN     bearer token for /internal/* (fan-out and manual batch runs)
+#   PAGES_DEPLOY_HOOK  Cloudflare Pages deploy hook URL (Stage 2)
+#   ONESIGNAL_KEY      Web Push (Stage 5)
