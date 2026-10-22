@@ -19,6 +19,11 @@ export interface SeriesDef {
   bounds?: readonly [number, number];
   /** Sub-grouping for display: a market group (rice, oil…) or a weather city id. */
   group?: string;
+  /**
+   * Key of the series this one stands in for while that series' source is down. Backup series are
+   * collected every day but kept out of change lists, feeds, pushes and digests.
+   */
+  backupFor?: string;
 }
 
 export type PointMeta = Record<string, unknown>;

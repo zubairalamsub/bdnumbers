@@ -9,6 +9,7 @@ import {
   BB_EXCHANGE_URL,
   BPC_FUEL_URL,
   DSE_URL,
+  EBL_FOREX_URL,
   HOLIDAYS_ICS_URL,
   MET_API_URL,
   NSD_NOTICES_URL,
@@ -19,6 +20,7 @@ import {
 import bajus from './fixtures/bajus-gold-price-2026-10-22.html?raw';
 import bb from './fixtures/bb-exchangerate-2026-10-19.html?raw';
 import bpcFuel from './fixtures/bpc-fuel-prices-2026-10-22.html?raw';
+import ebl from './fixtures/ebl-forexrate-2026-10-23.html?raw';
 import holidaysIcs from './fixtures/google-bd-holidays-2026-10-22.ics?raw';
 import nsdNotices from './fixtures/nsd-notices-2026-10-22.html?raw';
 import nsdSchemes from './fixtures/nsd-schemes-2026-10-22.html?raw';
@@ -34,6 +36,7 @@ import unbSearch from './fixtures/unb-search-gold-2026-10-22.html?raw';
 /** Live pages saved on 2026-10-22. File names carry the data date shown on each page. */
 export const FIXTURES = {
   bb,
+  ebl,
   bajus,
   unbSearch,
   unbArticle,
@@ -85,6 +88,7 @@ export const DEPLOY_HOOK = 'https://deploy-hook.test/hook';
 export function allSourceRoutes(): Record<string, Responder> {
   return {
     [BB_EXCHANGE_URL]: html(FIXTURES.bb),
+    [EBL_FOREX_URL]: html(FIXTURES.ebl),
     [BAJUS_GOLD_URL]: html(FIXTURES.bajus),
     [TCB_LIST_URL]: html(FIXTURES.tcbList),
     [TCB_FILE_HOST]: () => new Response(tcbXlsx(), { headers: { 'content-type': 'application/octet-stream' } }),

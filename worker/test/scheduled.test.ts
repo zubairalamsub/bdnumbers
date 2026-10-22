@@ -178,6 +178,7 @@ describe('runBatch', () => {
     const first = await runBatch(env, 'daily', 'test');
     expect(Object.fromEntries(first.results.map((r) => [r.source, [r.ok, r.written]]))).toEqual({
       bangladeshBank: [true, 23],
+      eblRates: [true, 2],
       bajusGold: [true, 8],
       tcbMarketPrices: [true, tcbPoints],
       dseIndex: [true, 32 * 4],

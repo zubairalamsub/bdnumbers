@@ -296,7 +296,8 @@ export async function buildChanges(db: D1Database, today: string): Promise<Chang
     seen.add(r.series_key);
     if (r.previous !== null && r.previous === r.value) continue;
     const def = getSeriesDef(r.series_key);
-    if (!def) continue;
+    // Backup series stand in for another while its source is down; their moves aren't news.
+    if (!def || def.backupFor) continue;
     changes.push({
       key: def.key,
       name_bn: def.name_bn,

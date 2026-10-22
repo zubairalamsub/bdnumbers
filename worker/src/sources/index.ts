@@ -1,6 +1,7 @@
 import { bajusGold } from './bajusGold';
 import { bangladeshBank } from './bangladeshBank';
 import { dseIndex } from './dseIndex';
+import { eblRates } from './eblRates';
 import { fuelPrices } from './fuelPrices';
 import { holidays } from './holidays';
 import { lpgPrice } from './lpgPrice';
@@ -12,6 +13,7 @@ import { weather } from './weather';
 /** Every registered source. Add new ones here. */
 export const SOURCES: readonly Source[] = [
   bangladeshBank,
+  eblRates,
   bajusGold,
   tcbMarketPrices,
   dseIndex,

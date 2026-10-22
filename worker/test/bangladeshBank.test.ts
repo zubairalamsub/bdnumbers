@@ -1,6 +1,7 @@
-import type { Point } from '@bdnumbers/shared';
+import { getSeriesDef, type Point } from '@bdnumbers/shared';
 import { describe, expect, it } from 'vitest';
 import { parseBangladeshBank } from '../src/sources/bangladeshBank';
+import { parseEblRates } from '../src/sources/eblRates';
 import { validatePoints } from '../src/validate';
 import { FIXTURES } from './helpers';
 
@@ -53,5 +54,36 @@ describe('parseBangladeshBank', () => {
   it('fails loudly when column headers change', async () => {
     const page = FIXTURES.bb.replace('<th>WAR</th>', '<th>Weighted Average</th>');
     await expect(parseBangladeshBank(page)).rejects.toThrow(/no header row with columns Bid Rate, Ask Rate, WAR/);
+  });
+});
+
+describe('parseEblRates (backup while bb.org.bd is down)', () => {
+  it('reads USD buying and selling, dated by the "As on" row', async () => {
+    const points = await parseEblRates(FIXTURES.ebl);
+    expect(points).toEqual([
+      { series_key: 'usd_bdt_ebl_buy', date: '2026-10-19', value: 122.9, meta: { kind: 'TT clean buying' } },
+      { series_key: 'usd_bdt_ebl_sell', date: '2026-10-19', value: 123.9, meta: { kind: 'BC selling' } },
+    ]);
+    expect(() => validatePoints(points, '2026-10-23')).not.toThrow();
+  });
+
+  it('marks its series as the backup for the BB average', () => {
+    expect(getSeriesDef('usd_bdt_ebl_buy')?.backupFor).toBe('usd_bdt_avg');
+    expect(getSeriesDef('usd_bdt_ebl_sell')?.backupFor).toBe('usd_bdt_avg');
+  });
+
+  it('fails loudly without the rate box', async () => {
+    await expect(parseEblRates('<html><head><title>Maintenance</title></head></html>')).rejects.toThrow(/EBL rate table not found .*Maintenance/);
+  });
+
+  it('fails loudly without the date row', async () => {
+    const page = FIXTURES.ebl.replace('As on 19 October, 2026', 'Updated daily');
+    await expect(parseEblRates(page)).rejects.toThrow(/no "As on <date>" row/);
+  });
+
+  it('fails loudly when selling is below buying (columns swapped)', async () => {
+    const page = FIXTURES.ebl.replace(/<td>122\.90<\/td>(\s*)<td>123\.90<\/td>/, '<td>123.90</td>$1<td>122.90</td>');
+    expect(page).not.toBe(FIXTURES.ebl);
+    await expect(parseEblRates(page)).rejects.toThrow(/selling 122.9 is below buying 123.9/);
   });
 });

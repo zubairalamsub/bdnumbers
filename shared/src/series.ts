@@ -8,6 +8,8 @@ export const BHORI_GRAMS = 11.664;
 
 export const BB_EXCHANGE_URL = 'https://www.bb.org.bd/en/index.php/econdata/exchangerate';
 export const BAJUS_GOLD_URL = 'https://www.bajus.org/gold-price';
+/** Eastern Bank's forex page; every EBL page carries its "Currency Exchange Rate" box with the USD rate. */
+export const EBL_FOREX_URL = 'https://www.ebl.com.bd/forexrate';
 
 const BB = {
   source_name: 'Bangladesh Bank',
@@ -28,6 +30,21 @@ const USD: SeriesDef[] = [
   { ...BB, key: 'usd_bdt_low', name_bn: 'ডলার রেট (বিড)', name_en: 'US Dollar rate (bid)', unit: 'BDT', bounds: [80, 250] },
   { ...BB, key: 'usd_bdt_high', name_bn: 'ডলার রেট (আস্ক)', name_en: 'US Dollar rate (ask)', unit: 'BDT', bounds: [80, 250] },
   { ...BB, key: 'usd_bdt_avg', name_bn: 'ডলার রেট (গড়)', name_en: 'US Dollar rate (weighted average)', unit: 'BDT', bounds: [80, 250] },
+];
+
+const EBL = {
+  source_name: 'Eastern Bank (EBL)',
+  source_url: EBL_FOREX_URL,
+  cadence: 'daily',
+  category: 'fx',
+  source_key: 'eblRates',
+  backupFor: 'usd_bdt_avg',
+} as const;
+
+/** A bank's customer rates, shown only while Bangladesh Bank's site is down and EBL has a newer rate. */
+const USD_BACKUP: SeriesDef[] = [
+  { ...EBL, key: 'usd_bdt_ebl_buy', name_bn: 'ডলার রেট (ইবিএল, ক্রয়)', name_en: 'US Dollar rate (EBL, buying)', unit: 'BDT', bounds: [80, 250] },
+  { ...EBL, key: 'usd_bdt_ebl_sell', name_bn: 'ডলার রেট (ইবিএল, বিক্রয়)', name_en: 'US Dollar rate (EBL, selling)', unit: 'BDT', bounds: [80, 250] },
 ];
 
 /** Cross currencies Bangladesh Bank lists, with rough BDT bounds (about 2.5x either side of 2026 levels). */
@@ -229,6 +246,7 @@ export function currencyName(ccy: string, lang: 'bn' | 'en'): string {
 
 export const SERIES: readonly SeriesDef[] = [
   ...USD,
+  ...USD_BACKUP,
   ...Object.keys(CROSS)
     .filter((c) => c !== 'usd')
     .flatMap((c) => [crossRateDef(c, 'bid'), crossRateDef(c, 'ask')]),
