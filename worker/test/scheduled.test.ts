@@ -123,6 +123,53 @@ describe('runBatch', () => {
     expect(await latestPoint('silver_22k')).toBeNull();
   });
 
+  it('counts the run as failed when BAJUS is down and the mirror has nothing newer', async () => {
+    await seedPoints([
+      { series_key: 'gold_22k', date: '2026-10-22', value: 226_340 },
+      { series_key: 'gold_21k', date: '2026-10-22', value: 216_192 },
+      { series_key: 'gold_18k', date: '2026-10-22', value: 185_691 },
+      { series_key: 'gold_traditional', date: '2026-10-22', value: 151_690 },
+    ]);
+    mockFetch({
+      [BB_EXCHANGE_URL]: html(FIXTURES.bb),
+      [BAJUS_GOLD_URL]: httpStatus(403),
+      [UNB_SEARCH_URL]: html(FIXTURES.unbSearch),
+      [UNB_ARTICLE_URL]: html(FIXTURES.unbArticle),
+      [DEPLOY_HOOK]: deployOk,
+    });
+
+    const result = await runBatch(env, 'daily', 'test');
+    const bajus = result.results.find((r) => r.source === 'bajusGold')!;
+    expect(bajus.ok).toBe(false);
+    expect(bajus.error).toMatch(/HTTP 403; UNB mirror has nothing newer \(article 2026-10-13, stored 2026-10-22\)/);
+    expect(await latestPoint('gold_22k')).toMatchObject({ date: '2026-10-22', value: 226_340, stale: 1 });
+  });
+
+  it('retries a transient failure once', async () => {
+    let bajusCalls = 0;
+    mockFetch({
+      [BB_EXCHANGE_URL]: html(FIXTURES.bb),
+      [BAJUS_GOLD_URL]: () => (++bajusCalls === 1 ? new Response('busy', { status: 503 }) : html(FIXTURES.bajus)()),
+      [DEPLOY_HOOK]: deployOk,
+    });
+    const result = await runBatch(env, 'daily', 'test');
+    expect(bajusCalls).toBe(2);
+    expect(result.results.find((r) => r.source === 'bajusGold')).toMatchObject({ ok: true, error: null, written: 8 });
+  });
+
+  it('says why a request was blocked', async () => {
+    const challenge = () =>
+      new Response('<html><head><title>Just a moment...</title></head></html>', {
+        status: 403,
+        headers: { 'cf-mitigated': 'challenge' },
+      });
+    mockFetch({ [BB_EXCHANGE_URL]: challenge, [BAJUS_GOLD_URL]: html(FIXTURES.bajus), [DEPLOY_HOOK]: deployOk });
+    const result = await runBatch(env, 'daily', 'test');
+    expect(result.results.find((r) => r.source === 'bangladeshBank')!.error).toBe(
+      'GET https://www.bb.org.bd/en/index.php/econdata/exchangerate returned HTTP 403 (cf-mitigated: challenge, title "Just a moment...")',
+    );
+  });
+
   it('writes BAJUS prices only when they change, and rebuilds the site only when something was written', async () => {
     const fetchSpy = mockFetch({
       [BB_EXCHANGE_URL]: html(FIXTURES.bb),

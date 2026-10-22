@@ -1,4 +1,5 @@
 import { BAJUS_GOLD_URL, BHORI_GRAMS, KARAT_ORDER, dhakaDate, toIsoDate, type Karat, type Point } from '@bdnumbers/shared';
+import { latestStored } from '../db';
 import { ParseError, errorMessage, parseAmount } from '../lib/errors';
 import { Extractor, describePage } from '../lib/html';
 import { fetchText } from '../lib/http';
@@ -89,8 +90,21 @@ export const bajusGold: Source = {
     } catch (err) {
       throw new Error(`BAJUS: ${primaryError}; UNB mirror: ${errorMessage(err)}`);
     }
+    // A news article older than what we already have confirms nothing: treat the run as failed so the
+    // stored prices are flagged stale rather than shown as freshly checked.
+    const stored = await latestStored(env.DB, mirror.points.map((p) => p.series_key));
+    const usable = mirror.points.filter((p) => {
+      const current = stored.get(p.series_key);
+      return !current || p.date >= current.date;
+    });
+    if (usable.length === 0) {
+      const storedDate = [...stored.values()][0]?.date;
+      throw new Error(
+        `BAJUS: ${primaryError}; UNB mirror has nothing newer (article ${mirror.points[0]?.date}, stored ${storedDate})`,
+      );
+    }
     ctx.warn(`BAJUS failed (${primaryError}); used UNB mirror ${mirror.url}`);
     for (const warning of mirror.warnings) ctx.warn(warning);
-    return mirror.points;
+    return usable;
   },
 };

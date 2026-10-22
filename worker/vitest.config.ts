@@ -12,6 +12,7 @@ export default defineConfig(async () => {
             TEST_MIGRATIONS: migrations,
             // Run sources in-process; the fan-out path is tested with a stubbed SELF.
             RUN_MODE: 'inline',
+            RETRY_DELAY_MS: '0',
             INGEST_TOKEN: 'test-ingest-token',
             INTERNAL_TOKEN: 'test-internal-token',
             PAGES_DEPLOY_HOOK: 'https://deploy-hook.test/hook',

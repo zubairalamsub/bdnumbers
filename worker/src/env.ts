@@ -10,6 +10,8 @@ export interface Env {
   USER_AGENT: string;
   /** "fanout" (production) or "inline" (tests, local debugging). */
   RUN_MODE: string;
+  /** Wait before the single retry of a failed source fetch; default 3000. Tests set 0. */
+  RETRY_DELAY_MS?: string;
 
   INGEST_TOKEN?: string;
   INTERNAL_TOKEN?: string;

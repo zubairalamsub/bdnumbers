@@ -1,6 +1,10 @@
 import type { Category } from './types';
 
 export type Lang = 'bn' | 'en';
+/** Numbering system: Bengali digits (০১২) or Latin digits (012). Independent of the page language. */
+export type Digits = 'beng' | 'latn';
+
+export const defaultDigits = (lang: Lang): Digits => (lang === 'bn' ? 'beng' : 'latn');
 
 const BN_DIGITS = '০১২৩৪৫৬৭৮৯';
 
@@ -8,13 +12,33 @@ export function toBengaliDigits(s: string): string {
   return s.replace(/\d/g, (d) => BN_DIGITS[Number(d)]!);
 }
 
+export function toLatinDigits(s: string): string {
+  return s.replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6));
+}
+
+const withDigits = (s: string, digits: Digits) => (digits === 'beng' ? toBengaliDigits(s) : s);
+
 /**
- * Format with South Asian grouping (2,26,340). Bengali uses Bengali digits. Done by hand rather than
- * via the bn-BD locale so output doesn't depend on the runtime's ICU data.
+ * Format with South Asian grouping (2,26,340). Done with en-IN plus digit substitution rather than
+ * the bn-BD locale so output doesn't depend on the runtime's ICU data.
  */
-export function formatNumber(value: number, lang: Lang, maxFractionDigits = Math.abs(value) < 10 ? 4 : 2): string {
-  const s = new Intl.NumberFormat('en-IN', { maximumFractionDigits: maxFractionDigits }).format(value);
-  return lang === 'bn' ? toBengaliDigits(s) : s;
+export function formatNumber(value: number, digits: Digits, maxFractionDigits = 2, minFractionDigits = 0): string {
+  const s = new Intl.NumberFormat('en-IN', {
+    maximumFractionDigits: maxFractionDigits,
+    minimumFractionDigits: minFractionDigits,
+  }).format(value);
+  return withDigits(s, digits);
+}
+
+/** Fraction digits for a series value: rates to 2 places (4 below 10, e.g. JPY), prices whole. */
+export function fractionDigits(category: Category, value: number): number {
+  if (category !== 'fx') return 0;
+  return Math.abs(value) < 10 ? 4 : 2;
+}
+
+export function formatSeriesValue(value: number, category: Category, digits: Digits): string {
+  const fd = fractionDigits(category, value);
+  return formatNumber(value, digits, fd, fd);
 }
 
 const MONTHS: Record<Lang, readonly string[]> = {
@@ -23,10 +47,26 @@ const MONTHS: Record<Lang, readonly string[]> = {
 };
 
 /** "2026-10-19" → "19 Oct 2026" / "১৯ অক্টোবর ২০২৬". */
-export function formatDate(date: string, lang: Lang): string {
+export function formatDate(date: string, lang: Lang, digits: Digits = defaultDigits(lang)): string {
   const [y, m, d] = date.slice(0, 10).split('-').map(Number);
-  const s = `${d} ${MONTHS[lang][(m ?? 1) - 1]} ${y}`;
-  return lang === 'bn' ? toBengaliDigits(s) : s;
+  return withDigits(`${d} ${MONTHS[lang][(m ?? 1) - 1]} ${y}`, digits);
+}
+
+/** "19 Oct" / "১৯ অক্টোবর", for chart axes. */
+export function formatShortDate(date: string, lang: Lang, digits: Digits = defaultDigits(lang)): string {
+  const [, m, d] = date.slice(0, 10).split('-').map(Number);
+  return withDigits(`${d} ${MONTHS[lang][(m ?? 1) - 1]}`, digits);
+}
+
+/** "5 minutes ago" / "৫ মিনিট আগে". */
+export function relativeTime(iso: string, lang: Lang, digits: Digits = defaultDigits(lang), now = Date.now()): string {
+  const seconds = (Date.parse(iso) - now) / 1000;
+  const abs = Math.abs(seconds);
+  const rtf = new Intl.RelativeTimeFormat(`${lang}-u-nu-${digits}`, { numeric: 'auto' });
+  if (abs < 60) return rtf.format(0, 'second');
+  if (abs < 3600) return rtf.format(Math.round(seconds / 60), 'minute');
+  if (abs < 86400) return rtf.format(Math.round(seconds / 3600), 'hour');
+  return rtf.format(Math.round(seconds / 86400), 'day');
 }
 
 const UNIT_LABELS: Record<string, Record<Lang, string>> = {

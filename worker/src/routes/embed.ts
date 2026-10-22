@@ -1,4 +1,13 @@
-import { formatDate, formatNumber, pageUrl, unitLabel, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import {
+  defaultDigits,
+  formatDate,
+  formatNumber,
+  formatSeriesValue,
+  pageUrl,
+  unitLabel,
+  type Lang,
+  type LatestEntry,
+} from '@bdnumbers/shared';
 import { Hono } from 'hono';
 import { CACHE_CONTROL, edgeCache, getLatest } from '../cache';
 import type { AppEnv } from '../env';
@@ -23,14 +32,15 @@ const TEXT: Record<Lang, { asOf: string; stale: string; source: string }> = {
 /** A self-contained widget for <iframe> embedding, with an attribution link back to the site. */
 export function renderEmbed(entry: LatestEntry, lang: Lang, siteUrl: string): string {
   const t = TEXT[lang];
+  const digits = defaultDigits(lang);
   const name = lang === 'bn' ? entry.name_bn : entry.name_en;
   const prev = entry.change.prev;
   let delta = '';
   if (prev) {
     const arrow = prev.abs > 0 ? '▲' : prev.abs < 0 ? '▼' : '■';
     const dir = prev.abs > 0 ? 'up' : prev.abs < 0 ? 'down' : 'flat';
-    const pct = prev.pct === null ? '' : ` (${formatNumber(Math.abs(prev.pct), lang, 2)}%)`;
-    delta = `<span class="d ${dir}">${arrow} ${formatNumber(Math.abs(prev.abs), lang)}${pct}</span>`;
+    const pct = prev.pct === null ? '' : ` (${formatNumber(Math.abs(prev.pct), digits, 2)}%)`;
+    delta = `<span class="d ${dir}">${arrow} ${formatSeriesValue(Math.abs(prev.abs), entry.category, digits)}${pct}</span>`;
   }
   const site = new URL(siteUrl).host;
   return `<!doctype html>
@@ -58,7 +68,7 @@ a{color:inherit}
 <body>
 <div class="w">
 <div class="n">${escapeHtml(name)}</div>
-<div class="v">${formatNumber(entry.value, lang)}<span class="u">${escapeHtml(unitLabel(entry.unit, lang))}</span></div>
+<div class="v">${formatSeriesValue(entry.value, entry.category, digits)}<span class="u">${escapeHtml(unitLabel(entry.unit, lang))}</span></div>
 <div class="m">${delta}<span>${t.asOf}: ${formatDate(entry.date, lang)}</span>${entry.stale ? `<span class="s">${t.stale}</span>` : ''}</div>
 <div class="m"><a href="${escapeHtml(pageUrl(siteUrl, entry.category, lang))}" target="_blank" rel="noopener">${escapeHtml(site)}</a><span>·</span><span>${t.source}: <a href="${escapeHtml(entry.source_url)}" target="_blank" rel="noopener nofollow">${escapeHtml(entry.source_name)}</a></span></div>
 </div>

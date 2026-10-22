@@ -29,6 +29,8 @@ const USD: SeriesDef[] = [
 
 /** Cross currencies Bangladesh Bank lists, with rough BDT bounds (about 2.5x either side of 2026 levels). */
 const CROSS: Record<string, { bn: string; en: string; bounds: readonly [number, number] }> = {
+  // Not a cross rate (USD has its own series above); listed so currencyName() covers it.
+  usd: { bn: 'মার্কিন ডলার', en: 'US Dollar', bounds: [80, 250] },
   eur: { bn: 'ইউরো', en: 'Euro', bounds: [55, 350] },
   gbp: { bn: 'ব্রিটিশ পাউন্ড', en: 'British Pound', bounds: [65, 410] },
   aud: { bn: 'অস্ট্রেলিয়ান ডলার', en: 'Australian Dollar', bounds: [34, 215] },
@@ -89,9 +91,16 @@ const SILVER: SeriesDef[] = KARATS.map(({ k, bn, en }) => ({
   bounds: [500, 50_000],
 }));
 
+/** Display name of a currency code, e.g. ('eur', 'bn') → 'ইউরো'. Unknown codes return the code. */
+export function currencyName(ccy: string, lang: 'bn' | 'en'): string {
+  return CROSS[ccy.toLowerCase()]?.[lang] ?? ccy.toUpperCase();
+}
+
 export const SERIES: readonly SeriesDef[] = [
   ...USD,
-  ...Object.keys(CROSS).flatMap((c) => [crossRateDef(c, 'bid'), crossRateDef(c, 'ask')]),
+  ...Object.keys(CROSS)
+    .filter((c) => c !== 'usd')
+    .flatMap((c) => [crossRateDef(c, 'bid'), crossRateDef(c, 'ask')]),
   ...GOLD,
   ...SILVER,
 ];
@@ -103,5 +112,6 @@ export function getSeriesDef(key: string): SeriesDef | undefined {
   const known = BY_KEY.get(key);
   if (known) return known;
   const fx = FX_KEY.exec(key);
-  return fx ? crossRateDef(fx[1]!, fx[2] as 'bid' | 'ask') : undefined;
+  // USD has its own low/high/avg series; usd_bdt_bid/ask are not valid keys.
+  return fx && fx[1] !== 'usd' ? crossRateDef(fx[1]!, fx[2] as 'bid' | 'ask') : undefined;
 }
