@@ -17,12 +17,12 @@ crons = [
 [[d1_databases]]
 binding = "DB"
 database_name = "bdnumbers"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "7f9d7980-2feb-4c95-a091-d557f1830b0a"
 migrations_dir = "migrations"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "00000000000000000000000000000000"
+id = "07aa73b513fa40fa913c9f394eeba891"
 
 # Each source runs in its own invocation through this binding, so every parser
 # gets its own 10 ms CPU budget on the free plan.
