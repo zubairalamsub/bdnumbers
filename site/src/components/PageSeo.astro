@@ -1,0 +1,35 @@
+---
+import type { Lang, LatestEntry } from '@bdnumbers/shared';
+import { getHistory, getLatest } from '../lib/data';
+import { datasetLd, faqsFor, keywordsFor, ldJson, seriesVars } from '../lib/seo';
+import AdSlot from './AdSlot.astro';
+import Faq from './Faq.astro';
+
+interface Props {
+  lang: Lang;
+  /** Path without the language prefix; also the page's key in seo/keywords.json. */
+  path: string;
+  /** FAQ file in seo/faqs (without .json). */
+  faq: string;
+  /** Dataset name and description (the description must be at least 50 characters). */
+  name: string;
+  description: string;
+  /** The page's series, most important first; the first one's history dates the dataset. */
+  entries: readonly LatestEntry[];
+  place?: string;
+  /** Extra FAQ placeholder values. */
+  vars?: Record<string, string>;
+}
+
+// FAQs plus Dataset JSON-LD for a number page.
+const { lang, path, faq, name, description, entries, place, vars } = Astro.props;
+const latest = await getLatest();
+const history = await getHistory(entries[0]!.key);
+const since = (history.points[0]?.date ?? entries[0]!.date).slice(0, 10);
+const faqs = faqsFor(faq, lang, seriesVars(latest, lang, vars));
+const dataset = datasetLd({ lang, path, name, description, entries, since, keywords: keywordsFor(path, lang), place });
+---
+
+<AdSlot lang={lang} />
+<Faq lang={lang} faqs={faqs} />
+<script type="application/ld+json" is:inline set:html={ldJson(dataset)} />

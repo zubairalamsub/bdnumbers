@@ -1,10 +1,11 @@
 ---
 import { DISTRICTS, DIVISIONS, defaultDigits, dhakaDate, formatDate, type District, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { SITE_NAME } from '../config';
+import Faq from '../components/Faq.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
+import { faqsFor } from '../lib/seo';
 import { PRAYERS, formatTime, monthTimes, prayerTimes, ramadanDates } from '../lib/prayer';
 
 interface Props {
@@ -31,10 +32,18 @@ const LABELS = {
   bn: { fajr: 'ফজর', sunrise: 'সূর্যোদয়', dhuhr: 'যোহর', asr: 'আসর', maghrib: 'মাগরিব', isha: 'এশা' },
   en: { fajr: 'Fajr', sunrise: 'Sunrise', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' },
 }[lang];
+const fajr = t(day.times.fajr);
+const maghrib = t(day.times.maghrib);
 const title =
   lang === 'bn'
-    ? `${name} নামাজের সময়: আজ ফজর ${t(day.times.fajr)}, মাগরিব ${t(day.times.maghrib)} | ${SITE_NAME}`
-    : `${name} prayer times today: Fajr ${t(day.times.fajr)}, Maghrib ${t(day.times.maghrib)} | ${SITE_NAME}`;
+    ? [`${name} নামাজের সময়: আজ ফজর ${fajr}, মাগরিব ${maghrib}`, `${name} নামাজের সময়: ফজর ${fajr}, মাগরিব ${maghrib}`, `${name} নামাজের সময় আজ`]
+    : [`${name} prayer times today: Fajr ${fajr}, Maghrib ${maghrib}`, `${name} prayer times: Fajr ${fajr}, Maghrib ${maghrib}`, `${name} prayer times today`];
+const faqVars: Record<string, string> = {
+  district: name,
+  date: formatDate(today, lang, digits),
+  ...Object.fromEntries(PRAYERS.map((p) => [p, t(day.times[p])])),
+};
+const faqs = faqsFor('prayer', lang, (n) => faqVars[n]);
 const description =
   lang === 'bn'
     ? `${name} জেলায় আজকের নামাজের সময়, মাসিক সময়সূচি এবং রমজানের সাহরি ও ইফতারের সময় (করাচি পদ্ধতি, হানাফি আসর)।`
@@ -168,6 +177,8 @@ const neighbours = DISTRICTS.filter((d) => d.division === district.division && d
       </li>
     </ul>
   </section>
+
+  <Faq lang={lang} faqs={faqs} />
 
   <script>
     import { dhakaDate, formatDate } from '@bdnumbers/shared';

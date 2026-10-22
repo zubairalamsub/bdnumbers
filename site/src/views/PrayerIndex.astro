@@ -1,7 +1,6 @@
 ---
 import { DISTRICTS, DIVISIONS, type DivisionId, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
@@ -14,7 +13,7 @@ const { lang } = Astro.props;
 const s = STRINGS[lang];
 const latest = await getLatest();
 const divisions = Object.keys(DIVISIONS) as DivisionId[];
-const title = lang === 'bn' ? `নামাজের সময়সূচি: ৬৪ জেলা | ${SITE_NAME}` : `Prayer times for all 64 districts | ${SITE_NAME}`;
+const title = lang === 'bn' ? `নামাজের সময়সূচি: ৬৪ জেলা` : `Prayer times for all 64 districts`;
 const description =
   lang === 'bn'
     ? 'বাংলাদেশের ৬৪ জেলার আজকের নামাজের সময়, সাহরি ও ইফতারের সময়সূচি। হানাফি মাজহাব অনুযায়ী আসর।'

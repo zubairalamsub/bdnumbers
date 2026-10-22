@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "১২ কেজি এলপিজি সিলিন্ডারের দাম কত?", "a": "বিইআরসির সর্বশেষ ঘোষণা অনুযায়ী ({lpg_12kg:date} থেকে) ১২ কেজি এলপিজি সিলিন্ডারের দাম {lpg_12kg} টাকা।" },
+    { "q": "প্রতি কেজি এলপিজির দাম কত?", "a": "বিইআরসির ঘোষণায় প্রতি কেজি এলপিজির দাম {lpg_per_kg} টাকা।" },
+    { "q": "এলপিজির দাম কে ঠিক করে, কতদিন পরপর বদলায়?", "a": "বাংলাদেশ এনার্জি রেগুলেটরি কমিশন (বিইআরসি) প্রতি মাসে বেসরকারি এলপিজির দাম ঘোষণা করে।" },
+    { "q": "সরকারি এলপিজি সিলিন্ডারের দাম কত?", "a": "বিপিসির তালিকা অনুযায়ী সরকারি সাড়ে ১২ কেজির সিলিন্ডার {lpg_govt_12_5kg} টাকা।" },
+    { "q": "এই দাম কোথা থেকে নেওয়া?", "a": "বিইআরসি দাম ছবি আকারে প্রকাশ করে, তাই এই সাইট বার্তা সংস্থা ইউএনবির প্রতিবেদন থেকে দাম নেয় এবং ১২ কেজির দাম কেজিপ্রতি দামের সঙ্গে মেলে কি না যাচাই করে।" }
+  ],
+  "en": [
+    { "q": "What does a 12 kg LPG cylinder cost?", "a": "BERC's latest announcement (from {lpg_12kg:date}) puts a 12 kg LPG cylinder at Tk {lpg_12kg}." },
+    { "q": "What is the LPG price per kg?", "a": "BERC's announcement puts LPG at Tk {lpg_per_kg} per kg." },
+    { "q": "Who sets the LPG price, and how often does it change?", "a": "The Bangladesh Energy Regulatory Commission (BERC) announces the price of private-sector LPG every month." },
+    { "q": "What does a government LPG cylinder cost?", "a": "BPC lists the government 12.5 kg cylinder at Tk {lpg_govt_12_5kg}." },
+    { "q": "Where does this price come from?", "a": "BERC publishes its prices as an image, so this site takes them from the news agency UNB's report and checks that the 12 kg price matches the per-kg price." }
+  ]
+}

@@ -6,8 +6,8 @@ import DateText from '../components/DateText.astro';
 import LineChart from '../components/LineChart.astro';
 import Num from '../components/Num.astro';
 import NumberCard from '../components/NumberCard.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getEntries, getHistory, getLatest } from '../lib/data';
@@ -33,7 +33,7 @@ const recent = [...byDate.entries()].sort(([a], [b]) => b.localeCompare(a)).slic
 
 const value = formatSeriesValue(dsex!.value, 'stock', digits);
 const date = formatDate(dsex!.date, lang, digits);
-const title = lang === 'bn' ? `আজকের শেয়ারবাজার: ডিএসইএক্স ${value} | ${SITE_NAME}` : `Share market today: DSEX ${value} | ${SITE_NAME}`;
+const title = lang === 'bn' ? `আজকের শেয়ারবাজার: ডিএসইএক্স ${value}` : `Share market today: DSEX ${value}`;
 const description =
   lang === 'bn'
     ? `ঢাকা স্টক এক্সচেঞ্জে ${date} তারিখে ডিএসইএক্স সূচক ${value}, লেনদেন ${formatSeriesValue(turnover!.value, 'stock', digits)} কোটি টাকা। ডিএসইএস, ডিএস৩০ ও সাম্প্রতিক লেনদেনের চার্ট।`
@@ -120,6 +120,15 @@ const numberCols = [
       )
     }
   </section>
+
+  <PageSeo
+    lang={lang}
+    path={path}
+    faq="share-market"
+    name={lang === 'bn' ? 'ঢাকা স্টক এক্সচেঞ্জের সূচক ও লেনদেন' : 'Dhaka Stock Exchange indices and turnover'}
+    description={description}
+    entries={[dsex!, dses!, ds30!, turnover!]}
+  />
 
   <Related
     lang={lang}

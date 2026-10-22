@@ -1,0 +1,48 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import { ADSENSE_CLIENT, ADSENSE_SLOT } from '../config';
+
+interface Props {
+  lang: Lang;
+}
+
+// One optional AdSense slot. Off unless ADSENSE_CLIENT and ADSENSE_SLOT are set at build time; when on,
+// Google's script loads only once the slot is about to scroll into view, so it never delays the page.
+const { lang } = Astro.props;
+---
+
+{
+  ADSENSE_CLIENT && ADSENSE_SLOT && (
+    <aside class="mt-8" aria-label={lang === 'bn' ? 'বিজ্ঞাপন' : 'Advertisement'} data-ad-client={ADSENSE_CLIENT}>
+      <p class="mb-1 text-xs text-muted">{lang === 'bn' ? 'বিজ্ঞাপন' : 'Advertisement'}</p>
+      <ins
+        class="adsbygoogle block min-h-[100px]"
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot={ADSENSE_SLOT}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
+    </aside>
+  )
+}
+
+<script>
+  const slot = document.querySelector<HTMLElement>('[data-ad-client]');
+  if (slot) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        const script = document.createElement('script');
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(slot.dataset.adClient!)}`;
+        document.head.append(script);
+        const w = window as unknown as { adsbygoogle?: unknown[] };
+        (w.adsbygoogle ??= []).push({});
+      },
+      { rootMargin: '400px' },
+    );
+    observer.observe(slot);
+  }
+</script>

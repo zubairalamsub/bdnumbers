@@ -1,0 +1,128 @@
+---
+import { PUSH_TOPICS, type Lang, type PushTopic } from '@bdnumbers/shared';
+import { ONESIGNAL_APP_ID } from '../config';
+
+interface Props {
+  lang: Lang;
+  topic: PushTopic;
+}
+
+// "Notify me when this changes" (web push through OneSignal's free plan). Renders nothing until
+// ONESIGNAL_APP_ID is set at build time, and loads OneSignal's script only when the button is tapped.
+const { lang, topic } = Astro.props;
+const bn = lang === 'bn';
+const t = PUSH_TOPICS[topic];
+const labels = {
+  off: bn ? `🔔 ${t.bn} বদলালে জানান` : `🔔 Notify me when the ${t.en.toLowerCase()} changes`,
+  on: bn ? `✓ ${t.bn} বদলালে জানানো হবে (বন্ধ করুন)` : `✓ You'll be notified (turn off)`,
+  blocked: bn ? 'ব্রাউজারে নোটিফিকেশন বন্ধ করা আছে' : 'Notifications are blocked in this browser',
+  failed: bn ? 'এখন চালু করা গেল না, পরে চেষ্টা করুন' : "Couldn't turn this on; try again later",
+};
+---
+
+{
+  ONESIGNAL_APP_ID && (
+    <button
+      type="button"
+      class="mt-3 rounded-md border border-hairline bg-surface px-3 py-1.5 text-sm text-ink hover:border-accent disabled:opacity-60"
+      aria-pressed="false"
+      hidden
+      data-notify={topic}
+      data-app-id={ONESIGNAL_APP_ID}
+      data-lang={lang}
+      data-label-off={labels.off}
+      data-label-on={labels.on}
+      data-label-blocked={labels.blocked}
+      data-label-failed={labels.failed}
+    >
+      {labels.off}
+    </button>
+  )
+}
+
+<script>
+  import { pushTagKey, type PushTopic } from '@bdnumbers/shared';
+
+  interface OneSignalApi {
+    init(options: Record<string, unknown>): Promise<void>;
+    Notifications: { permission: boolean; requestPermission(): Promise<void> };
+    User: { addTag(key: string, value: string): void; removeTag(key: string): void };
+  }
+  type Deferred = Array<(os: OneSignalApi) => void | Promise<void>>;
+
+  let sdk: Promise<OneSignalApi> | undefined;
+  function loadSdk(appId: string): Promise<OneSignalApi> {
+    sdk ??= new Promise((resolve, reject) => {
+      const w = window as unknown as { OneSignalDeferred?: Deferred };
+      (w.OneSignalDeferred ??= []).push(async (OneSignal) => {
+        try {
+          // Share the site's own service worker (it imports OneSignal's when OneSignal is configured).
+          await OneSignal.init({ appId, serviceWorkerPath: 'sw.js', serviceWorkerParam: { scope: '/' } });
+          resolve(OneSignal);
+        } catch (err) {
+          reject(err);
+        }
+      });
+      const script = document.createElement('script');
+      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+      script.defer = true;
+      script.onerror = () => reject(new Error('OneSignal SDK failed to load'));
+      document.head.append(script);
+    });
+    return sdk;
+  }
+
+  const storageKey = (topic: string) => `bdrate:notify:${topic}`;
+  const remembered = (topic: string) => {
+    try {
+      return localStorage.getItem(storageKey(topic)) === '1';
+    } catch {
+      return false;
+    }
+  };
+  const remember = (topic: string, on: boolean) => {
+    try {
+      if (on) localStorage.setItem(storageKey(topic), '1');
+      else localStorage.removeItem(storageKey(topic));
+    } catch {
+      // Private mode: the button just won't remember its state.
+    }
+  };
+
+  const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-notify]')) {
+    if (!supported) continue;
+    const topic = button.dataset.notify as PushTopic;
+    const show = (on: boolean) => {
+      button.setAttribute('aria-pressed', String(on));
+      button.textContent = on ? button.dataset.labelOn! : button.dataset.labelOff!;
+    };
+    show(remembered(topic));
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        const OneSignal = await loadSdk(button.dataset.appId!);
+        if (button.getAttribute('aria-pressed') === 'true') {
+          OneSignal.User.removeTag(pushTagKey(topic));
+          remember(topic, false);
+          show(false);
+          return;
+        }
+        if (!OneSignal.Notifications.permission) await OneSignal.Notifications.requestPermission();
+        if (!OneSignal.Notifications.permission) {
+          button.textContent = button.dataset.labelBlocked!;
+          return;
+        }
+        OneSignal.User.addTag(pushTagKey(topic), button.dataset.lang!);
+        remember(topic, true);
+        show(true);
+      } catch (err) {
+        console.warn('notify:', err);
+        button.textContent = button.dataset.labelFailed!;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+</script>

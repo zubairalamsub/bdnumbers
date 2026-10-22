@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "আজ ২২ ক্যারেট সোনার দাম কত?", "a": "বাজুসের ঘোষিত দাম অনুযায়ী ({gold_22k:date} থেকে কার্যকর) ২২ ক্যারেট সোনার দাম প্রতি ভরি {gold_22k} টাকা। ২১ ক্যারেট {gold_21k} টাকা, ১৮ ক্যারেট {gold_18k} টাকা এবং সনাতন পদ্ধতির সোনা {gold_traditional} টাকা ভরি।" },
+    { "q": "১ গ্রাম সোনার দাম কত?", "a": "প্রতি গ্রামে ২২ ক্যারেট সোনা প্রায় {gold_22k:gram} টাকা, ২১ ক্যারেট প্রায় {gold_21k:gram} টাকা এবং ১৮ ক্যারেট প্রায় {gold_18k:gram} টাকা।" },
+    { "q": "১ ভরি সোনা কত গ্রাম?", "a": "১ ভরি = ১১.৬৬৪ গ্রাম। ১ ভরি = ১৬ আনা এবং ১ আনা = ৬ রতি, অর্থাৎ ১ ভরি = ৯৬ রতি। সোনার ক্যালকুলেটরে ভরি-আনা-রতি থেকে গ্রামে রূপান্তর করে দাম দেখতে পারেন।" },
+    { "q": "দোকানে কি এই দামেই সোনা কেনা যায়?", "a": "না। বাজুসের ঘোষিত দামে ভ্যাট ও গয়নার মজুরি ধরা থাকে না; কেনার সময় এগুলো আলাদাভাবে যোগ হয়। পুরোনো গয়না বিক্রির সময় দোকান সাধারণত কিছু অংশ কেটে রাখে।" },
+    { "q": "সোনার দাম কে ঠিক করে, কখন বদলায়?", "a": "বাংলাদেশ জুয়েলার্স সমিতি (বাজুস) সোনা ও রুপার দাম ঘোষণা করে; ঘোষণায় দেওয়া তারিখ থেকে নতুন দাম কার্যকর হয়। এই সাইট দিনে দুবার বাজুসের ওয়েবসাইট দেখে এবং দাম বদলালে পাতা হালনাগাদ করে।" }
+  ],
+  "en": [
+    { "q": "What is the price of 22 carat gold today?", "a": "BAJUS's announced price (effective {gold_22k:date}) for 22 carat gold is Tk {gold_22k} per bhori. 21 carat is Tk {gold_21k}, 18 carat Tk {gold_18k} and traditional gold Tk {gold_traditional} per bhori." },
+    { "q": "What is the gold price per gram?", "a": "Per gram, 22 carat gold comes to about Tk {gold_22k:gram}, 21 carat about Tk {gold_21k:gram} and 18 carat about Tk {gold_18k:gram}." },
+    { "q": "How many grams is 1 bhori of gold?", "a": "1 bhori is 11.664 grams. A bhori is 16 ana and an ana is 6 rati, so 1 bhori is 96 rati. The gold calculator converts bhori, ana and rati to grams and values them at today's price." },
+    { "q": "Will a shop sell gold at this price?", "a": "No. BAJUS's price leaves out VAT and the making charge for jewellery, which are added when you buy. When you sell old jewellery, shops usually deduct a share of its value." },
+    { "q": "Who sets the gold price, and when does it change?", "a": "The Bangladesh Jewellers Association (BAJUS) announces gold and silver prices, effective from the date in each announcement. This site checks the BAJUS website twice a day and updates as soon as the price changes." }
+  ]
+}

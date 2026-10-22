@@ -5,9 +5,10 @@ import ChangeTable from '../components/ChangeTable.astro';
 import ChangeText from '../components/ChangeText.astro';
 import LineChart from '../components/LineChart.astro';
 import Num from '../components/Num.astro';
+import NotifyButton from '../components/NotifyButton.astro';
 import NumberCard from '../components/NumberCard.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getEntries, getHistory, getLatest } from '../lib/data';
@@ -34,8 +35,8 @@ const metalBn = metal === 'gold' ? 'সোনা' : 'রুপা';
 const metalEn = metal === 'gold' ? 'gold' : 'silver';
 const title =
   lang === 'bn'
-    ? `আজকের ${metalBn === 'সোনা' ? 'সোনার' : 'রুপার'} দাম: ২২ ক্যারেট ${value} টাকা/ভরি | ${SITE_NAME}`
-    : `${metal === 'gold' ? 'Gold' : 'Silver'} price today: 22K Tk ${value}/bhori | ${SITE_NAME}`;
+    ? `আজকের ${metalBn === 'সোনা' ? 'সোনার' : 'রুপার'} দাম: ২২ ক্যারেট ${value} টাকা/ভরি`
+    : `${metal === 'gold' ? 'Gold' : 'Silver'} price today: 22K Tk ${value}/bhori`;
 const description =
   lang === 'bn'
     ? `বাজুস নির্ধারিত ${date} তারিখের দাম: ২২ ক্যারেট ${metalBn} প্রতি ভরি ${value} টাকা। ২১, ১৮ ক্যারেট ও সনাতন পদ্ধতির ${metalBn}র ভরি ও গ্রামপ্রতি দাম এবং চার্ট।`
@@ -47,6 +48,7 @@ const h1 =
 <Base lang={lang} path={pagePath} title={title} description={description} generatedAt={latest.generated_at}>
   <Breadcrumbs lang={lang} items={[{ label: navLabel, path: pagePath }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{h1}</h1>
+  <NotifyButton lang={lang} topic={metal} />
 
   <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
     <NumberCard entry={top} lang={lang} hero label={`${s.karats['22k']}, ${s.table.perBhori}`} />
@@ -117,6 +119,20 @@ const h1 =
       )
     }
   </section>
+
+  <PageSeo
+    lang={lang}
+    path={pagePath}
+    faq={metal}
+    name={
+      lang === 'bn'
+        ? `বাজুস নির্ধারিত ${metal === 'gold' ? 'সোনার' : 'রুপার'} দাম (প্রতি ভরি)`
+        : `BAJUS ${metal} prices in Bangladesh (per bhori)`
+    }
+    description={description}
+    entries={entries}
+    vars={{ nisab: formatSeriesValue(52.5 * top.value, metal, digits) }}
+  />
 
   <Related
     lang={lang}

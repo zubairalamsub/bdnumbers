@@ -6,7 +6,6 @@ import DateText from '../components/DateText.astro';
 import EntryMeta from '../components/EntryMeta.astro';
 import LineChart from '../components/LineChart.astro';
 import Num from '../components/Num.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getEntry, getHistory, getLatest } from '../lib/data';
@@ -48,7 +47,7 @@ const rows = listed
   })
   .reverse()
   .slice(0, hourly ? 7 * 24 : undefined);
-const title = `${name}: ${s.history} | ${SITE_NAME}`;
+const title = `${name}: ${s.history}`;
 const description =
   lang === 'bn'
     ? `${name}: সর্বশেষ ${formatSeriesValue(entry.value, entry.category, defaultDigits(lang))} ${unitLabel(entry.unit, lang)}। দৈনিক ইতিহাস, চার্ট ও CSV ডাউনলোড।`

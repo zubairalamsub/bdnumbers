@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "পরের সরকারি ছুটি কবে?", "a": "{next_holiday}" },
+    { "q": "{year} সালে মোট কয়টি সরকারি ছুটি?", "a": "এই তালিকা অনুযায়ী {year} সালে মোট {holiday_count}টি সরকারি ছুটি।" },
+    { "q": "ঈদের ছুটির তারিখ কি বদলাতে পারে?", "a": "হ্যাঁ। ঈদ ও আশুরার মতো চাঁদ দেখার ওপর নির্ভরশীল ছুটির তারিখ এক দিন আগে-পিছে হতে পারে; চূড়ান্ত তারিখ সরকারি ঘোষণায় নিশ্চিত হয়।" },
+    { "q": "ছুটির তালিকা কোথা থেকে নেওয়া?", "a": "গুগলের বাংলাদেশ ছুটির ক্যালেন্ডার থেকে। আনুষ্ঠানিক তালিকা মন্ত্রিপরিষদ বিভাগ প্রজ্ঞাপন আকারে প্রকাশ করে; দুটির মধ্যে পার্থক্য দেখলে প্রজ্ঞাপনই চূড়ান্ত।" },
+    { "q": "এই তালিকায় কি ঐচ্ছিক ছুটি আছে?", "a": "না, এখানে শুধু সরকারি ছুটি দেখানো হয়। ধর্ম ও সম্প্রদায়ভিত্তিক ঐচ্ছিক ছুটি এই তালিকায় নেই।" }
+  ],
+  "en": [
+    { "q": "When is the next public holiday?", "a": "{next_holiday}" },
+    { "q": "How many public holidays are there in {year}?", "a": "This list has {holiday_count} public holidays in {year}." },
+    { "q": "Can Eid holiday dates change?", "a": "Yes. Holidays that depend on the moon, such as Eid and Ashura, can move by a day; the government's announcement confirms the final date." },
+    { "q": "Where does the holiday list come from?", "a": "From Google's calendar of Bangladesh holidays. The official list is published by the Cabinet Division as a gazette notice; if the two differ, the notice is final." },
+    { "q": "Does this list include optional holidays?", "a": "No, it shows public holidays only. Optional holidays for particular religions and communities are not on it." }
+  ]
+}

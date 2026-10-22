@@ -2,9 +2,10 @@
 import { defaultDigits, formatDate, formatSeriesValue, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import LineChart from '../components/LineChart.astro';
+import NotifyButton from '../components/NotifyButton.astro';
 import NumberCard from '../components/NumberCard.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getEntries, getHistory, getLatest } from '../lib/data';
@@ -23,7 +24,7 @@ const price = formatSeriesValue(twelve!.value, 'lpg', digits);
 const date = formatDate(twelve!.date, lang, digits);
 const article = typeof twelve!.meta?.url === 'string' ? twelve!.meta.url : null;
 const title =
-  lang === 'bn' ? `এলপিজির দাম: ১২ কেজি সিলিন্ডার ${price} টাকা | ${SITE_NAME}` : `LPG price: 12 kg cylinder Tk ${price} | ${SITE_NAME}`;
+  lang === 'bn' ? `এলপিজির দাম: ১২ কেজি সিলিন্ডার ${price} টাকা` : `LPG price: 12 kg cylinder Tk ${price}`;
 const description =
   lang === 'bn'
     ? `বিইআরসির নির্ধারিত দামে ১২ কেজি এলপিজি সিলিন্ডার ${price} টাকা, প্রতি কেজি ${formatSeriesValue(perKg!.value, 'lpg', digits)} টাকা (${date})। সরকারি সিলিন্ডারের দামও দেখুন।`
@@ -34,6 +35,7 @@ const path = '/lpg-price';
 <Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.lpg, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'আজকের এলপিজির দাম' : 'LPG price today'}</h1>
+  <NotifyButton lang={lang} topic="fuel" />
 
   <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
     <NumberCard entry={twelve!} lang={lang} hero label={lang === 'bn' ? 'বেসরকারি এলপিজি, ১২ কেজি সিলিন্ডার' : 'Private LPG, 12 kg cylinder'} />
@@ -76,6 +78,15 @@ const path = '/lpg-price';
       )
     }
   </section>
+
+  <PageSeo
+    lang={lang}
+    path={path}
+    faq="lpg"
+    name={lang === 'bn' ? 'বিইআরসি নির্ধারিত এলপিজির দাম' : 'BERC LPG prices in Bangladesh'}
+    description={description}
+    entries={[twelve!, perKg!, govt!]}
+  />
 
   <Related
     lang={lang}

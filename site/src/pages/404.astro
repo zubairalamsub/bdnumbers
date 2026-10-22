@@ -1,5 +1,4 @@
 ---
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
@@ -9,7 +8,7 @@ const bn = STRINGS.bn;
 const en = STRINGS.en;
 ---
 
-<Base lang="bn" path="/404" title={`${bn.notFound} | ${SITE_NAME}`} description={bn.notFound} generatedAt={latest.generated_at} noindex>
+<Base lang="bn" path="/404" title={`${bn.notFound}`} description={bn.notFound} generatedAt={latest.generated_at} noindex>
   <h1 class="text-2xl font-semibold">{bn.notFound}</h1>
   <p class="mt-1 text-ink-2" lang="en">{en.notFound}</p>
   <ul class="mt-6 space-y-2">

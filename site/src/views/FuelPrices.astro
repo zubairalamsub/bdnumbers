@@ -4,9 +4,10 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import ChangeText from '../components/ChangeText.astro';
 import DateText from '../components/DateText.astro';
 import Num from '../components/Num.astro';
+import NotifyButton from '../components/NotifyButton.astro';
 import NumberCard from '../components/NumberCard.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getEntries, getLatest } from '../lib/data';
@@ -24,8 +25,8 @@ const [diesel, kerosene, octane, petrol] = fuels;
 const v = (e: (typeof fuels)[number] | undefined) => formatSeriesValue(e!.value, 'fuel', digits);
 const title =
   lang === 'bn'
-    ? `জ্বালানি তেলের দাম: ডিজেল ${v(diesel)}, অকটেন ${v(octane)} টাকা | ${SITE_NAME}`
-    : `Fuel prices: diesel Tk ${v(diesel)}, octane Tk ${v(octane)} | ${SITE_NAME}`;
+    ? `জ্বালানি তেলের দাম: ডিজেল ${v(diesel)}, অকটেন ${v(octane)} টাকা`
+    : `Fuel prices: diesel Tk ${v(diesel)}, octane Tk ${v(octane)}`;
 const description =
   lang === 'bn'
     ? `বিপিসির সর্বশেষ দাম অনুযায়ী প্রতি লিটার ডিজেল ${v(diesel)}, কেরোসিন ${v(kerosene)}, অকটেন ${v(octane)} ও পেট্রোল ${v(petrol)} টাকা (${formatDate(diesel!.date, lang, digits)} থেকে কার্যকর)।`
@@ -36,6 +37,7 @@ const path = '/fuel-price';
 <Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.fuel, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'আজকের জ্বালানি তেলের দাম' : 'Fuel prices today'}</h1>
+  <NotifyButton lang={lang} topic="fuel" />
 
   <div class="mt-5 grid gap-4 sm:grid-cols-2">
     {[diesel, octane, petrol, kerosene].map((e, i) => <NumberCard entry={e!} lang={lang} hero={i === 0} />)}
@@ -83,6 +85,15 @@ const path = '/fuel-price';
         : 'Prices are the local sale prices published on the Bangladesh Petroleum Corporation (BPC) website, each with the date it took effect. This page updates on its own when new prices are published.'
     }
   </p>
+
+  <PageSeo
+    lang={lang}
+    path={path}
+    faq="fuel"
+    name={lang === 'bn' ? 'বিপিসির জ্বালানি তেলের দাম' : 'BPC fuel prices in Bangladesh'}
+    description={description}
+    entries={fuels.filter((e) => e !== undefined)}
+  />
 
   <Related
     lang={lang}

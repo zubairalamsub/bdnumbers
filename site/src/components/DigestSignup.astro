@@ -1,0 +1,48 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import { BUTTONDOWN_USERNAME } from '../config';
+
+interface Props {
+  lang: Lang;
+}
+
+// Daily email digest sign-up: a plain form posting to Buttondown (free plan), no JavaScript. Renders
+// nothing until BUTTONDOWN_USERNAME is set at build time.
+const { lang } = Astro.props;
+const bn = lang === 'bn';
+---
+
+{
+  BUTTONDOWN_USERNAME && (
+    <form
+      action={`https://buttondown.com/api/emails/embed-subscribe/${encodeURIComponent(BUTTONDOWN_USERNAME)}`}
+      method="post"
+      target="_blank"
+      class="max-w-md"
+    >
+      <label for="digest-email" class="mb-1 block font-semibold text-ink">
+        {bn ? 'প্রতিদিনের পরিবর্তন ইমেইলে পান' : 'Get the day’s changes by email'}
+      </label>
+      <div class="flex gap-2">
+        <input
+          id="digest-email"
+          type="email"
+          name="email"
+          required
+          autocomplete="email"
+          placeholder={bn ? 'আপনার ইমেইল' : 'Your email'}
+          class="w-full min-w-0 rounded-md border border-hairline bg-page px-3 py-2 text-ink"
+        />
+        <input type="hidden" name="embed" value="1" />
+        <button type="submit" class="whitespace-nowrap rounded-md bg-accent px-3 py-2 font-semibold text-accent-ink">
+          {bn ? 'সাবস্ক্রাইব' : 'Subscribe'}
+        </button>
+      </div>
+      <p class="mt-1 text-xs text-muted">
+        {bn
+          ? 'যেদিন কিছু বদলায়, সেদিন দুপুরে একটি ইমেইল। Buttondown-এর মাধ্যমে পাঠানো হয়; যেকোনো সময় বাতিল করা যায়।'
+          : 'One email in the afternoon on days something changes, sent through Buttondown. Unsubscribe any time.'}
+      </p>
+    </form>
+  )
+}

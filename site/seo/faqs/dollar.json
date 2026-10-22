@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "আজ ডলারের রেট কত?", "a": "বাংলাদেশ ব্যাংকের সর্বশেষ প্রকাশিত হিসাবে ({usd_bdt_avg:date}) মার্কিন ডলারের ভারিত গড় রেট {usd_bdt_avg} টাকা। ওই দিন আন্তঃব্যাংক বাজারে বিড ছিল {usd_bdt_low} টাকা আর আস্ক {usd_bdt_high} টাকা।" },
+    { "q": "১ ডলার সমান কত টাকা?", "a": "গড় রেটে ১ ডলার = {usd_bdt_avg} টাকা। এটি ব্যাংকগুলোর নিজেদের মধ্যে লেনদেনের রেট; ব্যাংকের কাউন্টার, মানি এক্সচেঞ্জ বা খোলাবাজারে নগদ ডলারের দাম আলাদা হতে পারে।" },
+    { "q": "বিড, আস্ক ও গড় রেট (WAR) মানে কী?", "a": "বিড হলো যে দামে ব্যাংক ডলার কেনে, আস্ক হলো যে দামে বিক্রি করে। গড় রেট বা WAR (weighted average rate) হলো দিনের আন্তঃব্যাংক লেনদেনের পরিমাণ অনুযায়ী ভারিত গড়।" },
+    { "q": "ডলারের রেট কখন হালনাগাদ হয়?", "a": "বাংলাদেশ ব্যাংক কর্মদিবসে রেট প্রকাশ করে। এই সাইট দিনে দুবার, সকাল ৭টা ও দুপুর ১টায়, নতুন রেট খোঁজে এবং প্রতিটি রেটের পাশে বাংলাদেশ ব্যাংকের দেওয়া তারিখ দেখায়। ছুটির দিনে সর্বশেষ কর্মদিবসের রেট থাকে।" },
+    { "q": "ইউরো, পাউন্ড ও রুপির রেট কত?", "a": "বাংলাদেশ ব্যাংকের ক্রস রেট অনুযায়ী ১ ইউরো {eur_bdt_ask} টাকা, ১ পাউন্ড {gbp_bdt_ask} টাকা এবং ১ ভারতীয় রুপি {inr_bdt_ask} টাকা (আস্ক)। তালিকার সব মুদ্রার বিড ও আস্ক এই পাতার টেবিলে আছে।" }
+  ],
+  "en": [
+    { "q": "What is the dollar rate today?", "a": "Bangladesh Bank's latest published rate ({usd_bdt_avg:date}) puts the US dollar at Tk {usd_bdt_avg}, the weighted average. On that day the interbank bid was Tk {usd_bdt_low} and the ask Tk {usd_bdt_high}." },
+    { "q": "How many taka is 1 US dollar?", "a": "At the average rate, 1 dollar = Tk {usd_bdt_avg}. That is the rate banks trade at among themselves; bank counters, money changers and the open market set their own prices for cash dollars." },
+    { "q": "What do bid, ask and WAR mean?", "a": "The bid is what a bank pays for a dollar and the ask is what it sells one for. WAR, the weighted average rate, is the average of the day's interbank trades weighted by their size." },
+    { "q": "When is the dollar rate updated?", "a": "Bangladesh Bank publishes rates on working days. This site checks for a new rate twice a day, at 7 am and 1 pm Dhaka time, and shows the date Bangladesh Bank gives for each rate. On holidays the last working day's rate stays up." },
+    { "q": "What are the euro, pound and rupee rates?", "a": "Bangladesh Bank's cross rates put 1 euro at Tk {eur_bdt_ask}, 1 pound at Tk {gbp_bdt_ask} and 1 Indian rupee at Tk {inr_bdt_ask} (ask). The table on this page has the bid and ask for every currency on its list." }
+  ]
+}

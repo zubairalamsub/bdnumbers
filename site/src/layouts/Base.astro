@@ -5,20 +5,29 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { API_BASE, SITE_NAME, SITE_URL } from '../config';
 import { localePath } from '../i18n';
+import { ogImagePath } from '../lib/og-cards';
+import { fitDescription, fitTitle, ldJson, type JsonLd } from '../lib/seo';
 import '../styles/global.css';
 
 interface Props {
   lang: Lang;
   /** Path without the language prefix, e.g. '/dollar-rate-today'. */
   path: string;
-  title: string;
-  description: string;
+  /** Title variants, best first, without the site name: the first that fits 60 characters is used. */
+  title: string | readonly string[];
+  /** Description variants, best first: the first that fits 155 characters is used. */
+  description: string | readonly string[];
   /** When the page's data was generated (latest.json generated_at); drives the client refresh. */
   generatedAt: string;
   noindex?: boolean;
+  /** Page-level JSON-LD (breadcrumbs and FAQs add their own). */
+  jsonLd?: readonly JsonLd[];
 }
 
-const { lang, path, title, description, generatedAt, noindex = false } = Astro.props;
+const { lang, path, generatedAt, noindex = false, jsonLd = [] } = Astro.props;
+const title = fitTitle(Astro.props.title);
+const description = fitDescription(Astro.props.description);
+const ogImage = `${SITE_URL}${ogImagePath(lang, path, generatedAt.replace(/\D/g, '').slice(0, 12))}`;
 const canonical = `${SITE_URL}${localePath(lang, path)}`;
 ---
 
@@ -42,13 +51,24 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
     {noindex && <meta name="robots" content="noindex" />}
     <meta name="theme-color" content="#006a4e" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href={localePath(lang, '/manifest.webmanifest')} />
     <link rel="preconnect" href={API_BASE} crossorigin />
+    <link rel="alternate" type="application/atom+xml" title={lang === 'bn' ? `${SITE_NAME}: আজ যা বদলেছে` : `${SITE_NAME}: what changed today`} href={localePath(lang, '/feed.xml')} />
+    <link rel="alternate" type="application/rss+xml" title={`${SITE_NAME} RSS`} href={localePath(lang, '/rss.xml')} />
     <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content={lang === 'bn' ? 'bn_BD' : 'en_US'} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
+    <meta name="twitter:card" content="summary_large_image" />
     <Font cssVariable="--font-hind" preload />
+    {jsonLd.map((data) => <script type="application/ld+json" is:inline set:html={ldJson(data)} />)}
   </head>
   <body class="min-h-screen font-sans antialiased" data-api={API_BASE} data-generated={generatedAt}>
     <Header lang={lang} path={path} />
@@ -58,6 +78,7 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
     <Footer lang={lang} />
     <script>
       import '../scripts/live';
+      import '../scripts/pwa';
     </script>
   </body>
 </html>

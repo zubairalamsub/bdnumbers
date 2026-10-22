@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "আজ রুপার দাম কত?", "a": "বাজুসের ঘোষিত দাম অনুযায়ী ({silver_22k:date} থেকে কার্যকর) ২২ ক্যারেট রুপা প্রতি ভরি {silver_22k} টাকা, ২১ ক্যারেট {silver_21k} টাকা, ১৮ ক্যারেট {silver_18k} টাকা এবং সনাতন পদ্ধতির রুপা {silver_traditional} টাকা।" },
+    { "q": "১ গ্রাম রুপার দাম কত?", "a": "প্রতি গ্রামে ২২ ক্যারেট রুপা প্রায় {silver_22k:gram} টাকা এবং সনাতন পদ্ধতির রুপা প্রায় {silver_traditional:gram} টাকা।" },
+    { "q": "১ ভরি রুপা কত গ্রাম?", "a": "সোনার মতোই ১ ভরি = ১১.৬৬৪ গ্রাম = ১৬ আনা = ৯৬ রতি। বাজুস রুপার দামও প্রতি ভরি হিসাবে ঘোষণা করে।" },
+    { "q": "যাকাতের নিসাব হিসাবে রুপার দাম কেন লাগে?", "a": "যাকাতের নিসাব সোনায় ৭.৫ ভরি বা রুপায় ৫২.৫ ভরি ধরা হয়। আজকের দামে ৫২.৫ ভরি ২২ ক্যারেট রুপার মূল্য প্রায় {nisab} টাকা। যাকাত ক্যালকুলেটরে নিজের হিসাব করতে পারেন।" },
+    { "q": "রুপার দাম কে ঠিক করে?", "a": "বাংলাদেশ জুয়েলার্স সমিতি (বাজুস) সোনা ও রুপার দাম ঘোষণা করে; ঘোষণায় দেওয়া তারিখ থেকে নতুন দাম কার্যকর হয়। এই সাইট দিনে দুবার বাজুসের ওয়েবসাইট দেখে।" }
+  ],
+  "en": [
+    { "q": "What is the silver price today?", "a": "BAJUS's announced price (effective {silver_22k:date}) for 22 carat silver is Tk {silver_22k} per bhori; 21 carat is Tk {silver_21k}, 18 carat Tk {silver_18k} and traditional silver Tk {silver_traditional}." },
+    { "q": "What is the silver price per gram?", "a": "Per gram, 22 carat silver comes to about Tk {silver_22k:gram} and traditional silver about Tk {silver_traditional:gram}." },
+    { "q": "How many grams is 1 bhori of silver?", "a": "As with gold, 1 bhori is 11.664 grams, or 16 ana, or 96 rati. BAJUS announces silver prices per bhori too." },
+    { "q": "Why does the silver price matter for zakat?", "a": "The zakat nisab is 7.5 bhori of gold or 52.5 bhori of silver. At today's price, 52.5 bhori of 22 carat silver is worth about Tk {nisab}. The zakat calculator works out your own figure." },
+    { "q": "Who sets the silver price?", "a": "The Bangladesh Jewellers Association (BAJUS) announces gold and silver prices, effective from the date in each announcement. This site checks the BAJUS website twice a day." }
+  ]
+}

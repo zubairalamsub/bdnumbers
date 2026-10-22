@@ -1,0 +1,27 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import { faqLd, ldJson, type Faq } from '../lib/seo';
+
+interface Props {
+  lang: Lang;
+  faqs: readonly Faq[];
+}
+
+// The visible questions and their FAQPage JSON-LD come from the same list, so they can't drift apart.
+const { lang, faqs } = Astro.props;
+---
+
+<section class="mt-10" aria-labelledby="faq">
+  <h2 id="faq" class="mb-3 text-lg font-semibold">{lang === 'bn' ? 'সাধারণ জিজ্ঞাসা' : 'Frequently asked questions'}</h2>
+  <div class="card divide-y divide-grid">
+    {
+      faqs.map((f) => (
+        <div class="px-4 py-3">
+          <h3 class="font-semibold">{f.q}</h3>
+          <p class="mt-1 text-[0.9375rem] text-ink-2">{f.a}</p>
+        </div>
+      ))
+    }
+  </div>
+  <script type="application/ld+json" is:inline set:html={ldJson(faqLd(faqs))} />
+</section>

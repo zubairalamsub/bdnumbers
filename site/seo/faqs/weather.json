@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "ঢাকায় এখন তাপমাত্রা কত?", "a": "{weather_dhaka_temp:date}-এর পূর্বাভাস অনুযায়ী ঢাকায় তাপমাত্রা {weather_dhaka_temp}°সে।" },
+    { "q": "ঢাকায় আর্দ্রতা ও বাতাসের গতি কত?", "a": "ঢাকায় আপেক্ষিক আর্দ্রতা {weather_dhaka_humidity}% এবং বাতাসের গতি ঘণ্টায় {weather_dhaka_wind} কিলোমিটার।" },
+    { "q": "ঢাকায় কি বৃষ্টি হবে?", "a": "আগামী এক ঘণ্টায় ঢাকায় পূর্বাভাসিত বৃষ্টিপাত {weather_dhaka_rain} মিলিমিটার। আট বিভাগীয় শহরের অবস্থা এই পাতার তালিকায় আছে।" },
+    { "q": "চট্টগ্রাম, সিলেট ও রাজশাহীতে তাপমাত্রা কত?", "a": "চট্টগ্রামে {weather_chattogram_temp}°সে, সিলেটে {weather_sylhet_temp}°সে এবং রাজশাহীতে {weather_rajshahi_temp}°সে।" },
+    { "q": "আবহাওয়ার তথ্য কোথা থেকে আসে?", "a": "নরওয়ের আবহাওয়া সংস্থা MET Norway-এর পূর্বাভাস মডেল থেকে, প্রতি ঘণ্টায় হালনাগাদ। এটি বাংলাদেশ আবহাওয়া অধিদপ্তরের সতর্কবার্তার বিকল্প নয়; ঝড় বা সংকেতের জন্য তাদের ঘোষণা দেখুন।" }
+  ],
+  "en": [
+    { "q": "What is the temperature in Dhaka now?", "a": "The forecast for {weather_dhaka_temp:date} puts Dhaka at {weather_dhaka_temp}°C." },
+    { "q": "How humid and windy is Dhaka?", "a": "Relative humidity in Dhaka is {weather_dhaka_humidity}% and the wind is {weather_dhaka_wind} km/h." },
+    { "q": "Will it rain in Dhaka?", "a": "The forecast for the next hour is {weather_dhaka_rain} mm of rain in Dhaka. The table on this page covers all eight division cities." },
+    { "q": "What is the temperature in Chattogram, Sylhet and Rajshahi?", "a": "Chattogram is at {weather_chattogram_temp}°C, Sylhet {weather_sylhet_temp}°C and Rajshahi {weather_rajshahi_temp}°C." },
+    { "q": "Where does the weather data come from?", "a": "From the forecast model of MET Norway, the Norwegian Meteorological Institute, updated every hour. It does not replace the Bangladesh Meteorological Department's warnings; check those for storms and signals." }
+  ]
+}

@@ -1,8 +1,9 @@
 ---
 import { SAVINGS_NOTICE, defaultDigits, formatDate, formatNumber, type Lang, type SavingsNotice } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import PageSeo from '../components/PageSeo.astro';
+import NotifyButton from '../components/NotifyButton.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
@@ -20,11 +21,26 @@ const notice = (entry?.meta?.notice as SavingsNotice | undefined) ?? SAVINGS_NOT
 const pct = (n: number) => `${formatNumber(n, digits, 2, 2)}%`;
 const period = lang === 'bn' ? notice.periodBn : notice.periodEn;
 const top = Math.max(...notice.schemes.flatMap((x) => x.upTo7_5Lakh));
-const title = lang === 'bn' ? `সঞ্চয়পত্রের মুনাফার হার (${period}) | ${SITE_NAME}` : `Savings certificate rates (${period}) | ${SITE_NAME}`;
+const yearRate = (id: string, year: number, tier: 'upTo7_5Lakh' | 'above7_5Lakh' = 'upTo7_5Lakh') => {
+  const rate = notice.schemes.find((x) => x.id === id)?.[tier][year - 1];
+  return rate === undefined ? undefined : pct(rate);
+};
+const faqVars = Object.fromEntries(
+  Object.entries({
+    period,
+    top_rate: pct(top),
+    bsp_5y_1: yearRate('bsp_5y', 1),
+    bsp_5y_5: yearRate('bsp_5y', 5),
+    bsp_5y_5_high: yearRate('bsp_5y', 5, 'above7_5Lakh'),
+    paribar_5y_1: yearRate('paribar_5y', 1),
+    paribar_5y_5: yearRate('paribar_5y', 5),
+  }).filter((kv): kv is [string, string] => kv[1] !== undefined),
+);
+const title = lang === 'bn' ? `সঞ্চয়পত্রের মুনাফার হার (${period})` : `Savings certificate rates (${period})`;
 const description =
   lang === 'bn'
     ? `${period} মেয়াদে সঞ্চয়পত্রের মুনাফার হার, সর্বোচ্চ ${pct(top)}। ৫ বছর মেয়াদি, ৩ মাস অন্তর, পেনশনার ও পরিবার সঞ্চয়পত্রের বছরভিত্তিক হার, ৭.৫ লাখ টাকার নিচে ও ওপরে।`
-    : `Savings certificate profit rates for ${period}, up to ${pct(top)}: 5-year, 3-monthly, pensioner and family Sanchayapatra by year, below and above Tk 7.5 lakh.`;
+    : `Savings certificate profit rates for ${period}, up to ${pct(top)}: 5-year, 3-monthly, pensioner and family Sanchayapatra, by year and amount.`;
 const path = '/savings-rates';
 const ordinal = (n: number) => (lang === 'bn' ? `${formatNumber(n, digits, 0)} বছর শেষে` : `After year ${n}`);
 ---
@@ -32,6 +48,7 @@ const ordinal = (n: number) => (lang === 'bn' ? `${formatNumber(n, digits, 0)} �
 <Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.savings, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'সঞ্চয়পত্রের মুনাফার হার' : 'Savings certificate profit rates'}</h1>
+  <NotifyButton lang={lang} topic="savings" />
 
   <p class="mt-4 max-w-3xl rounded-lg border border-warn bg-surface p-4 text-[0.9375rem]" role="note">
     <span aria-hidden="true">⚠ </span>
@@ -88,6 +105,20 @@ const ordinal = (n: number) => (lang === 'bn' ? `${formatNumber(n, digits, 0)} �
     {lang === 'bn' ? `, কার্যকর ${formatDate(notice.effectiveFrom, lang, digits)}।` : `, effective ${formatDate(notice.effectiveFrom, lang, digits)}.`}
   </p>
   <p class="mt-3"><a href={localePath(lang, '/calculators/sanchayapatra')} class="card inline-block px-3 py-1.5 no-underline hover:underline">{lang === 'bn' ? 'সঞ্চয়পত্রের মুনাফা হিসাব করুন →' : 'Work out your return →'}</a></p>
+
+  {
+    entry && (
+      <PageSeo
+        lang={lang}
+        path={path}
+        faq="savings"
+        name={lang === 'bn' ? 'সঞ্চয়পত্রের মুনাফার হার' : 'Savings certificate (Sanchayapatra) profit rates'}
+        description={description}
+        entries={[entry]}
+        vars={faqVars}
+      />
+    )
+  }
 
   <Related
     lang={lang}

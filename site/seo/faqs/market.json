@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "আজ ঢাকায় চালের দাম কত?", "a": "টিসিবির {tcb_rice_coarse_min:date} তারিখের হিসাবে ঢাকায় মোটা চাল কেজিপ্রতি {tcb_rice_coarse_min}–{tcb_rice_coarse_max} টাকা, মাঝারি চাল {tcb_rice_medium_min}–{tcb_rice_medium_max} টাকা এবং সরু চাল {tcb_rice_fine_min}–{tcb_rice_fine_max} টাকা।" },
+    { "q": "সয়াবিন তেলের দাম কত?", "a": "খোলা সয়াবিন তেল লিটারপ্রতি {tcb_soybean_oil_loose_min}–{tcb_soybean_oil_loose_max} টাকা এবং ১ লিটারের বোতল {tcb_soybean_oil_1l_min}–{tcb_soybean_oil_1l_max} টাকা।" },
+    { "q": "পেঁয়াজ, আলু ও ডিমের দাম কত?", "a": "দেশি পেঁয়াজ কেজিপ্রতি {tcb_onion_local_min}–{tcb_onion_local_max} টাকা, আলু {tcb_potato_min}–{tcb_potato_max} টাকা এবং ফার্মের ডিম হালিপ্রতি {tcb_egg_min}–{tcb_egg_max} টাকা।" },
+    { "q": "এই দামগুলো কোথা থেকে আসে?", "a": "ট্রেডিং কর্পোরেশন অব বাংলাদেশ (টিসিবি) ঢাকার বাজার থেকে খুচরা দাম সংগ্রহ করে প্রতিটি পণ্যের সর্বনিম্ন ও সর্বোচ্চ দাম প্রকাশ করে। এই পাতায় টিসিবির সেই তালিকাই দেখানো হয়।" },
+    { "q": "বাজারদর কখন হালনাগাদ হয়?", "a": "টিসিবি সাধারণত কর্মদিবসে নতুন তালিকা প্রকাশ করে। এই সাইট দিনে দুবার নতুন তালিকা খোঁজে; ছুটির দিনে সর্বশেষ তালিকার দামই থাকে।" }
+  ],
+  "en": [
+    { "q": "What is the price of rice in Dhaka today?", "a": "TCB's list for {tcb_rice_coarse_min:date} has coarse rice at Tk {tcb_rice_coarse_min}–{tcb_rice_coarse_max} a kg in Dhaka, medium rice at Tk {tcb_rice_medium_min}–{tcb_rice_medium_max} and fine rice at Tk {tcb_rice_fine_min}–{tcb_rice_fine_max}." },
+    { "q": "What is the price of soybean oil?", "a": "Loose soybean oil costs Tk {tcb_soybean_oil_loose_min}–{tcb_soybean_oil_loose_max} a litre and a 1-litre bottle Tk {tcb_soybean_oil_1l_min}–{tcb_soybean_oil_1l_max}." },
+    { "q": "What do onions, potatoes and eggs cost?", "a": "Local onions cost Tk {tcb_onion_local_min}–{tcb_onion_local_max} a kg, potatoes Tk {tcb_potato_min}–{tcb_potato_max} a kg, and farm eggs Tk {tcb_egg_min}–{tcb_egg_max} a hali (four)." },
+    { "q": "Where do these prices come from?", "a": "The Trading Corporation of Bangladesh (TCB) collects retail prices from Dhaka markets and publishes the lowest and highest price for each item. This page shows that list." },
+    { "q": "When are market prices updated?", "a": "TCB usually publishes a new list on working days. This site checks for one twice a day; on holidays the latest list stays up." }
+  ]
+}

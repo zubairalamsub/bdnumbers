@@ -2,6 +2,7 @@
 import type { Lang } from '@bdnumbers/shared';
 import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
+import DigestSignup from './DigestSignup.astro';
 
 interface Props {
   lang: Lang;
@@ -28,6 +29,7 @@ const pages = [
 
 <footer class="border-t border-hairline bg-surface">
   <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 text-sm text-ink-2 sm:px-6">
+    <DigestSignup lang={lang} />
     <nav aria-label={s.nav.allPages}>
       <ul class="flex flex-wrap gap-x-4 gap-y-1">
         {pages.map((p) => <li><a href={localePath(lang, p.path)} class="text-ink-2">{p.label}</a></li>)}

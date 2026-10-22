@@ -1,8 +1,8 @@
 ---
-import { defaultDigits, dhakaDate, formatDate, toBengaliDigits, type Holiday, type Lang } from '@bdnumbers/shared';
+import { defaultDigits, dhakaDate, formatDate, formatNumber, toBengaliDigits, type Holiday, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
@@ -31,8 +31,8 @@ const monthLabel = (ym: string) =>
 
 const title =
   lang === 'bn'
-    ? `সরকারি ছুটির তালিকা ${year}${next ? `: পরের ছুটি ${name(next)}` : ''} | ${SITE_NAME}`
-    : `Bangladesh public holidays ${year}${next ? `: next is ${name(next)}` : ''} | ${SITE_NAME}`;
+    ? [...(next ? [`সরকারি ছুটির তালিকা ${year}: পরের ছুটি ${name(next)}`] : []), `সরকারি ছুটির তালিকা ${year}`]
+    : [...(next ? [`Bangladesh public holidays ${year}: next is ${name(next)}`] : []), `Bangladesh public holidays ${year}`];
 const description =
   lang === 'bn'
     ? `${year} ও পরের বছরের সরকারি ছুটির তারিখ ও বার${next ? `; পরের ছুটি ${name(next)}, ${formatDate(next.date, lang, digits)}` : ''}।`
@@ -81,6 +81,30 @@ const path = '/holidays';
         : "The list comes from Google's Bangladesh holiday calendar and is refreshed daily. Holidays that depend on the moon can move; the government's notice is final."
     }
   </p>
+
+  {
+    entry && (
+      <PageSeo
+        lang={lang}
+        path={path}
+        faq="holidays"
+        name={lang === 'bn' ? 'বাংলাদেশের সরকারি ছুটির তালিকা' : 'Public holidays in Bangladesh'}
+        description={description}
+        entries={[entry]}
+        vars={{
+          year,
+          holiday_count: formatNumber(holidays.filter((h) => h.date.startsWith(today.slice(0, 4))).length, digits, 0),
+          next_holiday: next
+            ? lang === 'bn'
+              ? `পরের সরকারি ছুটি ${name(next)}, ${formatDate(next.date, lang, digits)} (${weekday(next.date)})।`
+              : `The next public holiday is ${name(next)} on ${weekday(next.date)}, ${formatDate(next.date, lang, digits)}.`
+            : lang === 'bn'
+              ? 'এই তালিকায় আর কোনো সরকারি ছুটি নেই।'
+              : 'There are no more public holidays on this list.',
+        }}
+      />
+    )
+  }
 
   <Related
     lang={lang}

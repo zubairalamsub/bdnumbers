@@ -1,0 +1,170 @@
+{
+  "/": {
+    "bn": "আজকের রেট ও দাম",
+    "en": "Bangladesh rates today",
+    "longTail": {
+      "bn": ["আজকের ডলার ও সোনার দাম", "বাংলাদেশে আজকের বাজারদর", "আজকের দাম কত"],
+      "en": ["dollar and gold price in Bangladesh today", "Bangladesh daily prices", "taka rate today"]
+    }
+  },
+  "/dollar-rate-today": {
+    "bn": "আজকের ডলার রেট",
+    "en": "dollar rate today",
+    "longTail": {
+      "bn": ["১ ডলার সমান কত টাকা", "বাংলাদেশ ব্যাংকের ডলার রেট", "ডলারের দাম কত", "আজকের টাকার রেট"],
+      "en": ["USD to BDT today", "1 dollar to taka", "Bangladesh Bank dollar rate", "taka exchange rate"]
+    }
+  },
+  "/gold-price-today": {
+    "bn": "আজকের সোনার দাম",
+    "en": "gold price today",
+    "longTail": {
+      "bn": ["২২ ক্যারেট সোনার দাম", "এক ভরি সোনার দাম কত", "বাজুস সোনার দাম", "১ গ্রাম সোনার দাম"],
+      "en": ["22 carat gold price in Bangladesh", "gold price per bhori", "BAJUS gold price", "gold price per gram in Bangladesh"]
+    }
+  },
+  "/silver-price-today": {
+    "bn": "আজকের রুপার দাম",
+    "en": "silver price today",
+    "longTail": {
+      "bn": ["এক ভরি রুপার দাম", "২২ ক্যারেট রুপার দাম", "বাজুস রুপার দাম"],
+      "en": ["silver price per bhori in Bangladesh", "22 carat silver price", "BAJUS silver price"]
+    }
+  },
+  "/market-price-today": {
+    "bn": "আজকের বাজারদর",
+    "en": "market prices today",
+    "longTail": {
+      "bn": ["ঢাকায় চালের দাম", "সয়াবিন তেলের দাম আজ", "পেঁয়াজের দাম কত", "টিসিবি বাজারদর"],
+      "en": ["rice price in Dhaka", "soybean oil price today", "onion price in Bangladesh", "TCB market price"]
+    }
+  },
+  "/share-market-today": {
+    "bn": "আজকের শেয়ারবাজার",
+    "en": "share market today",
+    "longTail": {
+      "bn": ["ডিএসইএক্স সূচক আজ", "ঢাকা স্টক এক্সচেঞ্জের লেনদেন", "ডিএসই আজকের বাজার"],
+      "en": ["DSEX index today", "Dhaka Stock Exchange turnover", "DSE market today"]
+    }
+  },
+  "/weather": {
+    "bn": "আজকের আবহাওয়া",
+    "en": "weather today",
+    "longTail": {
+      "bn": ["ঢাকার আবহাওয়া", "ঢাকায় এখন তাপমাত্রা কত", "আজ বৃষ্টি হবে কি"],
+      "en": ["Dhaka weather today", "temperature in Dhaka now", "Bangladesh weather"]
+    }
+  },
+  "/fuel-price": {
+    "bn": "জ্বালানি তেলের দাম",
+    "en": "fuel price",
+    "longTail": {
+      "bn": ["ডিজেলের দাম কত", "অকটেনের দাম", "পেট্রোলের দাম প্রতি লিটার", "কেরোসিনের দাম"],
+      "en": ["diesel price in Bangladesh", "octane price per litre", "petrol price in Bangladesh", "kerosene price"]
+    }
+  },
+  "/lpg-price": {
+    "bn": "এলপিজির দাম",
+    "en": "LPG price",
+    "longTail": {
+      "bn": ["১২ কেজি গ্যাস সিলিন্ডারের দাম", "এলপি গ্যাসের দাম এই মাসে", "বিইআরসি এলপিজির দাম"],
+      "en": ["12 kg LPG cylinder price in Bangladesh", "LPG gas price this month", "BERC LPG price"]
+    }
+  },
+  "/savings-rates": {
+    "bn": "সঞ্চয়পত্রের মুনাফার হার",
+    "en": "savings certificate rates",
+    "longTail": {
+      "bn": ["সঞ্চয়পত্রের সুদের হার", "পরিবার সঞ্চয়পত্রের মুনাফা", "পেনশনার সঞ্চয়পত্রের হার"],
+      "en": ["Sanchayapatra profit rate", "family savings certificate rate", "pensioner savings certificate rate"]
+    }
+  },
+  "/holidays": {
+    "bn": "সরকারি ছুটির তালিকা",
+    "en": "public holidays",
+    "longTail": {
+      "bn": ["পরের সরকারি ছুটি কবে", "ঈদের ছুটি কবে", "এ বছরের ছুটির তালিকা"],
+      "en": ["Bangladesh holiday list", "next public holiday in Bangladesh", "Eid holiday dates"]
+    }
+  },
+  "/prayer-times": {
+    "bn": "নামাজের সময়সূচি",
+    "en": "prayer times",
+    "longTail": {
+      "bn": ["আজকের নামাজের সময়", "সাহরি ও ইফতারের সময়সূচি", "জেলাভিত্তিক নামাজের সময়"],
+      "en": ["prayer times in Bangladesh today", "sehri and iftar time", "namaz time by district"]
+    }
+  },
+  "/prayer-times/{district}": {
+    "bn": "{district} নামাজের সময়",
+    "en": "{district} prayer times",
+    "longTail": {
+      "bn": ["{district} আজকের ফজরের সময়", "{district} ইফতারের সময়", "{district} মাগরিবের সময়"],
+      "en": ["{district} namaz time today", "{district} iftar time", "{district} maghrib time"]
+    }
+  },
+  "/calculators": {
+    "bn": "ক্যালকুলেটর",
+    "en": "calculators",
+    "longTail": {
+      "bn": ["যাকাত হিসাব", "ইএমআই হিসাব", "সঞ্চয়পত্রের মুনাফা হিসাব"],
+      "en": ["zakat calculator Bangladesh", "EMI calculator Bangladesh", "Sanchayapatra calculator"]
+    }
+  },
+  "/calculators/currency-converter": {
+    "bn": "মুদ্রা রূপান্তর",
+    "en": "currency converter",
+    "longTail": {
+      "bn": ["ডলার থেকে টাকা", "রুপি থেকে টাকা", "ইউরো থেকে টাকা"],
+      "en": ["USD to BDT converter", "rupee to taka", "euro to taka"]
+    }
+  },
+  "/calculators/gold": {
+    "bn": "ভরি থেকে গ্রাম",
+    "en": "bhori to gram",
+    "longTail": {
+      "bn": ["সোনার দাম হিসাব", "আনা রতি থেকে গ্রাম", "গয়নার দাম কত হবে"],
+      "en": ["gold price calculator Bangladesh", "ana and rati to gram", "gold jewellery price calculator"]
+    }
+  },
+  "/calculators/zakat": {
+    "bn": "যাকাত ক্যালকুলেটর",
+    "en": "zakat calculator",
+    "longTail": {
+      "bn": ["যাকাতের নিসাব কত টাকা", "সোনার যাকাত হিসাব", "কত টাকা থাকলে যাকাত দিতে হয়"],
+      "en": ["nisab amount in Bangladesh", "zakat on gold", "how much zakat do I owe"]
+    }
+  },
+  "/calculators/emi": {
+    "bn": "ইএমআই ক্যালকুলেটর",
+    "en": "EMI calculator",
+    "longTail": {
+      "bn": ["ঋণের কিস্তি হিসাব", "হোম লোনের কিস্তি", "গাড়ির লোনের কিস্তি"],
+      "en": ["loan instalment calculator", "home loan EMI Bangladesh", "car loan EMI"]
+    }
+  },
+  "/calculators/dps": {
+    "bn": "ডিপিএস ক্যালকুলেটর",
+    "en": "DPS calculator",
+    "longTail": {
+      "bn": ["ডিপিএসে মেয়াদ শেষে কত পাব", "মাসিক সঞ্চয় হিসাব", "ডিপিএসের মুনাফা"],
+      "en": ["DPS maturity value", "monthly savings scheme calculator", "DPS profit Bangladesh"]
+    }
+  },
+  "/calculators/sanchayapatra": {
+    "bn": "সঞ্চয়পত্রের মুনাফা",
+    "en": "Sanchayapatra profit calculator",
+    "longTail": {
+      "bn": ["সঞ্চয়পত্রে ৫ লাখ টাকায় মাসে কত", "পরিবার সঞ্চয়পত্রের মুনাফা হিসাব", "সঞ্চয়পত্রের উৎস কর"],
+      "en": ["savings certificate return calculator", "family savings certificate profit", "Sanchayapatra source tax"]
+    }
+  },
+  "/calculators/mobile-banking": {
+    "bn": "ক্যাশ আউট চার্জ",
+    "en": "cash out charge",
+    "longTail": {
+      "bn": ["বিকাশ ক্যাশ আউট চার্জ", "নগদ ক্যাশ আউট চার্জ", "রকেট ক্যাশ আউট চার্জ"],
+      "en": ["bKash cash out charge", "Nagad cash out charge", "Rocket cash out charge"]
+    }
+  }
+}

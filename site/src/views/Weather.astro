@@ -14,8 +14,8 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import DateText from '../components/DateText.astro';
 import LineChart from '../components/LineChart.astro';
 import Num from '../components/Num.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getHistory, getLatest } from '../lib/data';
@@ -43,7 +43,7 @@ const num = (meta: unknown) => (typeof meta === 'number' ? meta : null);
 
 const dhakaTemp = dhaka ? formatNumber(dhaka.temp.value, digits, 1, 1) : '—';
 const dhakaSky = dhaka ? weatherCondition(dhaka.temp.meta?.symbol, lang)?.text : null;
-const title = lang === 'bn' ? `আজকের আবহাওয়া: ঢাকায় ${dhakaTemp}°সে | ${SITE_NAME}` : `Weather today: Dhaka ${dhakaTemp}°C | ${SITE_NAME}`;
+const title = lang === 'bn' ? `আজকের আবহাওয়া: ঢাকায় ${dhakaTemp}°সে` : `Weather today: Dhaka ${dhakaTemp}°C`;
 const description =
   lang === 'bn'
     ? `ঢাকায় এখন ${dhakaTemp}°সে${dhakaSky ? `, ${dhakaSky}` : ''}। আট বিভাগীয় শহরের তাপমাত্রা, আর্দ্রতা, বাতাস ও বৃষ্টি, প্রতি ঘণ্টায় হালনাগাদ।`
@@ -143,6 +143,15 @@ const path = '/weather';
         : ' Values update every hour; wind converted to km/h.'
     }
   </p>
+
+  <PageSeo
+    lang={lang}
+    path={path}
+    faq="weather"
+    name={lang === 'bn' ? 'বিভাগীয় শহরের আবহাওয়া: তাপমাত্রা, আর্দ্রতা, বাতাস ও বৃষ্টি' : 'Weather in the division cities of Bangladesh'}
+    description={description}
+    entries={cities.flatMap((c) => [c.temp, c.humidity, c.wind, c.rain].filter((e): e is LatestEntry => e !== undefined))}
+  />
 
   <Related
     lang={lang}

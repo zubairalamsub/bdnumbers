@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "ডিজেলের দাম কত?", "a": "বিপিসির সর্বশেষ দাম অনুযায়ী ({fuel_diesel:date} থেকে কার্যকর) ডিজেল লিটারপ্রতি {fuel_diesel} টাকা।" },
+    { "q": "অকটেন ও পেট্রোলের দাম কত?", "a": "অকটেন লিটারপ্রতি {fuel_octane} টাকা এবং পেট্রোল লিটারপ্রতি {fuel_petrol} টাকা।" },
+    { "q": "কেরোসিন ও ফার্নেস অয়েলের দাম কত?", "a": "কেরোসিন লিটারপ্রতি {fuel_kerosene} টাকা এবং ফার্নেস অয়েল লিটারপ্রতি {fuel_furnace_oil} টাকা।" },
+    { "q": "জ্বালানি তেলের দাম কে ঠিক করে?", "a": "সরকার জ্বালানি তেলের দাম নির্ধারণ করে, আর বাংলাদেশ পেট্রোলিয়াম কর্পোরেশন (বিপিসি) তার ওয়েবসাইটে কার্যকর তারিখসহ দাম প্রকাশ করে। দাম বদলালে এই পাতা নিজে থেকে হালনাগাদ হয়।" },
+    { "q": "সরকারি এলপিজি সিলিন্ডারের দাম কত?", "a": "বিপিসির তালিকায় সরকারি সাড়ে ১২ কেজি এলপিজি সিলিন্ডারের দাম {lpg_govt_12_5kg} টাকা। বেসরকারি ১২ কেজি সিলিন্ডারের দাম এলপিজির পাতায় আছে।" }
+  ],
+  "en": [
+    { "q": "What is the price of diesel?", "a": "BPC's current price (effective {fuel_diesel:date}) for diesel is Tk {fuel_diesel} a litre." },
+    { "q": "What do octane and petrol cost?", "a": "Octane costs Tk {fuel_octane} a litre and petrol Tk {fuel_petrol} a litre." },
+    { "q": "What do kerosene and furnace oil cost?", "a": "Kerosene costs Tk {fuel_kerosene} a litre and furnace oil Tk {fuel_furnace_oil} a litre." },
+    { "q": "Who sets fuel prices?", "a": "The government sets fuel prices, and the Bangladesh Petroleum Corporation (BPC) publishes them on its website with the date each takes effect. This page updates on its own when they change." },
+    { "q": "What does a government LPG cylinder cost?", "a": "BPC lists the government 12.5 kg LPG cylinder at Tk {lpg_govt_12_5kg}. The price of private 12 kg cylinders is on the LPG page." }
+  ]
+}

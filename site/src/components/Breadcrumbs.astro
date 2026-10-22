@@ -1,6 +1,7 @@
 ---
 import type { Lang } from '@bdnumbers/shared';
 import { STRINGS, localePath } from '../i18n';
+import { breadcrumbLd, ldJson } from '../lib/seo';
 
 interface Props {
   lang: Lang;
@@ -30,4 +31,5 @@ const crumbs = [{ label: s.nav.home, path: '/' }, ...items];
       ))
     }
   </ol>
+  <script type="application/ld+json" is:inline set:html={ldJson(breadcrumbLd(lang, crumbs))} />
 </nav>

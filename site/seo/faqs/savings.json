@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "সঞ্চয়পত্রে এখন মুনাফার হার কত?", "a": "সরকারি প্রজ্ঞাপন অনুযায়ী {period} মেয়াদে সঞ্চয়পত্রে সর্বোচ্চ মুনাফার হার {top_rate}। এরপর হার বদলে থাকতে পারে; নতুন প্রজ্ঞাপন প্রকাশ হলে এই পাতা হালনাগাদ হবে।" },
+    { "q": "৫ বছর মেয়াদি বাংলাদেশ সঞ্চয়পত্রে মুনাফা কত?", "a": "প্রজ্ঞাপনে বছরভিত্তিক হার দেওয়া আছে: ৭.৫ লাখ টাকা পর্যন্ত বিনিয়োগে প্রথম বছরে {bsp_5y_1} থেকে পঞ্চম বছরে {bsp_5y_5}।" },
+    { "q": "পরিবার সঞ্চয়পত্রের মুনাফা কত?", "a": "৭.৫ লাখ টাকা পর্যন্ত বিনিয়োগে পরিবার সঞ্চয়পত্রের হার প্রথম বছরে {paribar_5y_1} থেকে পঞ্চম বছরে {paribar_5y_5}।" },
+    { "q": "৭.৫ লাখ টাকার বেশি বিনিয়োগে হার কত?", "a": "প্রজ্ঞাপনে দুই স্তরের হার আছে: ৭.৫ লাখ টাকা পর্যন্ত এবং তার বেশি। বেশি বিনিয়োগে হার সামান্য কম; যেমন ৫ বছর মেয়াদি বাংলাদেশ সঞ্চয়পত্রে পঞ্চম বছরে {bsp_5y_5_high}।" },
+    { "q": "মুনাফার ওপর কি কর কাটা হয়?", "a": "হ্যাঁ, মুনাফা থেকে উৎসে কর কেটে রাখা হয়; হার বিনিয়োগের পরিমাণ ও আয়করের নিয়মের ওপর নির্ভর করে। সঞ্চয়পত্র ক্যালকুলেটরে আপনার প্রযোজ্য হার বসিয়ে কর বাদে মুনাফা দেখতে পারেন।" }
+  ],
+  "en": [
+    { "q": "What are savings certificate rates now?", "a": "The government notice for {period} sets the highest savings certificate rate at {top_rate}. Rates may have changed since; this page will update when a new notice is published." },
+    { "q": "What does the 5-year Bangladesh Sanchayapatra pay?", "a": "The notice gives a rate for each year: for investments up to Tk 7.5 lakh, from {bsp_5y_1} in the first year to {bsp_5y_5} in the fifth." },
+    { "q": "What does the family savings certificate pay?", "a": "For investments up to Tk 7.5 lakh, the family savings certificate pays from {paribar_5y_1} in the first year to {paribar_5y_5} in the fifth." },
+    { "q": "What is the rate above Tk 7.5 lakh?", "a": "The notice has two tiers: up to Tk 7.5 lakh and above it. The higher tier pays slightly less; the 5-year Bangladesh Sanchayapatra, for example, pays {bsp_5y_5_high} in the fifth year." },
+    { "q": "Is tax deducted from the profit?", "a": "Yes, source tax is deducted from the profit, at a rate that depends on the amount invested and income tax rules. The Sanchayapatra calculator shows the profit after the rate that applies to you." }
+  ]
+}

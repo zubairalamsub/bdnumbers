@@ -1,7 +1,6 @@
 ---
 import type { Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { CALCULATORS, CUSTOM_CALCULATORS } from '../lib/calculators';
@@ -16,10 +15,10 @@ const s = STRINGS[lang];
 const bn = lang === 'bn';
 const latest = await getLatest();
 const path = '/calculators';
-const title = bn ? `ক্যালকুলেটর: যাকাত, ইএমআই, সঞ্চয়পত্র, সোনা | ${SITE_NAME}` : `Calculators: zakat, EMI, Sanchayapatra, gold | ${SITE_NAME}`;
+const title = bn ? `ক্যালকুলেটর: যাকাত, ইএমআই, সঞ্চয়পত্র, সোনা` : `Calculators: zakat, EMI, Sanchayapatra, gold`;
 const description = bn
   ? 'আজকের রেট ও দামে মুদ্রা রূপান্তর, সোনার ওজন ও দাম, যাকাত, ঋণের কিস্তি, ডিপিএস, সঞ্চয়পত্রের মুনাফা ও মোবাইল ব্যাংকিং ক্যাশ-আউট খরচের হিসাব।'
-  : 'Currency conversion, gold weight and value, zakat, loan EMI, DPS, Sanchayapatra return and mobile-banking cash-out fees, worked out at today’s rates and prices.';
+  : 'Currency, gold, zakat, EMI, DPS, Sanchayapatra and bKash/Nagad/Rocket cash-out calculators, worked out in your browser at today’s rates.';
 const cards = [
   ...CALCULATORS.map((c) => ({ ...c, ready: true })),
   ...CUSTOM_CALCULATORS,

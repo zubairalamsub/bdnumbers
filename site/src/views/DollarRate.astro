@@ -5,9 +5,10 @@ import ChangeTable from '../components/ChangeTable.astro';
 import ChangeText from '../components/ChangeText.astro';
 import LineChart from '../components/LineChart.astro';
 import Num from '../components/Num.astro';
+import NotifyButton from '../components/NotifyButton.astro';
 import NumberCard from '../components/NumberCard.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getEntries, getHistory, getLatest } from '../lib/data';
@@ -37,7 +38,7 @@ const value = formatSeriesValue(usd!.value, 'fx', digits);
 const bidText = formatSeriesValue(bid!.value, 'fx', digits);
 const askText = formatSeriesValue(ask!.value, 'fx', digits);
 const date = formatDate(usd!.date, lang, digits);
-const title = lang === 'bn' ? `আজকের ডলার রেট: ${value} টাকা | ${SITE_NAME}` : `Dollar rate today: Tk ${value} | ${SITE_NAME}`;
+const title = lang === 'bn' ? `আজকের ডলার রেট: ${value} টাকা` : `Dollar rate today: Tk ${value}`;
 const description =
   lang === 'bn'
     ? `বাংলাদেশ ব্যাংকের ${date} তারিখের হিসাবে ডলারের গড় রেট ${value} টাকা (বিড ${bidText}, আস্ক ${askText})। ইউরো, পাউন্ড, রুপিসহ সব মুদ্রার রেট ও চার্ট।`
@@ -48,6 +49,7 @@ const pagePath = '/dollar-rate-today';
 <Base lang={lang} path={pagePath} title={title} description={description} generatedAt={latest.generated_at}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.dollar, path: pagePath }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'আজকের ডলার রেট' : 'Dollar rate today'}</h1>
+  <NotifyButton lang={lang} topic="dollar" />
 
   <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
     <NumberCard entry={usd!} lang={lang} hero label={lang === 'bn' ? 'গড় রেট (WAR), প্রতি মার্কিন ডলার' : 'Weighted average rate (WAR), per US dollar'}>
@@ -139,6 +141,15 @@ const pagePath = '/dollar-rate-today';
       )
     }
   </section>
+
+  <PageSeo
+    lang={lang}
+    path={pagePath}
+    faq="dollar"
+    name={lang === 'bn' ? 'বাংলাদেশ ব্যাংকের ডলার ও বৈদেশিক মুদ্রার রেট' : 'Bangladesh Bank exchange rates of the taka'}
+    description={description}
+    entries={[usd!, bid!, ask!, ...rows.slice(1).flatMap((r) => [r.bid, r.ask])]}
+  />
 
   <Related
     lang={lang}

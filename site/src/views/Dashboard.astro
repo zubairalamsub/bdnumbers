@@ -18,10 +18,10 @@ import {
 import ChangeText from '../components/ChangeText.astro';
 import Num from '../components/Num.astro';
 import NumberCard from '../components/NumberCard.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { CALCULATORS } from '../lib/calculators';
+import { homeLd } from '../lib/seo';
 import { getChanges, getEntries, getLatest } from '../lib/data';
 
 interface Props {
@@ -58,14 +58,16 @@ const fuels = ['fuel_diesel', 'fuel_octane', 'fuel_petrol', 'lpg_12kg'].map((k) 
 const usdText = formatSeriesValue(usd!.value, 'fx', digits);
 const goldText = formatSeriesValue(gold[0]!.value, 'gold', digits);
 const title =
-  lang === 'bn' ? `আজকের ডলার রেট ${usdText} টাকা, সোনা ${goldText} | ${SITE_NAME}` : `Dollar Tk ${usdText}, gold Tk ${goldText}/bhori today | ${SITE_NAME}`;
+  lang === 'bn'
+    ? [`আজকের রেট ও দাম: ডলার ${usdText}, সোনা ${goldText} টাকা`, `আজকের রেট ও দাম: ডলার ${usdText} টাকা`]
+    : [`Bangladesh rates today: dollar Tk ${usdText}, gold Tk ${goldText}`, `Bangladesh rates today: dollar Tk ${usdText}`];
 const description =
   lang === 'bn'
     ? `আজ বাংলাদেশ ব্যাংকের ডলার রেট ${usdText} টাকা, ২২ ক্যারেট সোনা প্রতি ভরি ${goldText} টাকা। ডলার, ইউরো, পাউন্ড, রুপি এবং সোনা-রুপার দাম প্রতিদিন হালনাগাদ।`
     : `Today's Bangladesh Bank dollar rate is Tk ${usdText} and 22K gold is Tk ${goldText} per bhori. Dollar, euro, pound, rupee, gold and silver prices, updated daily.`;
 ---
 
-<Base lang={lang} path="/" title={title} description={description} generatedAt={latest.generated_at}>
+<Base lang={lang} path="/" title={title} description={description} generatedAt={latest.generated_at} jsonLd={homeLd(lang, description)}>
   <h1 class="text-2xl font-semibold sm:text-3xl">{s.tagline}</h1>
 
   <div class="mt-5 grid gap-4 md:grid-cols-2">

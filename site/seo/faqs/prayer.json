@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "{district} জেলায় আজ ফজরের ওয়াক্ত কখন?", "a": "আজ ({date}) {district} জেলায় ফজর {fajr} এবং সূর্যোদয় {sunrise}।" },
+    { "q": "{district} জেলায় আজ মাগরিব ও ইফতার কখন?", "a": "আজ মাগরিবের ওয়াক্ত শুরু {maghrib}। রমজানে এটিই ইফতারের সময়।" },
+    { "q": "আজ যোহর, আসর ও এশা কখন?", "a": "আজ {district} জেলায় যোহর {dhuhr}, আসর {asr} (হানাফি) এবং এশা {isha}।" },
+    { "q": "নামাজের সময় কীভাবে হিসাব করা হয়?", "a": "জেলার ভৌগোলিক অবস্থান থেকে করাচি পদ্ধতিতে (ফজর ও এশায় সূর্য দিগন্তের ১৮° নিচে) হিসাব করা হয়েছে; আসর হানাফি মাজহাব অনুযায়ী। মসজিদে জামাতের সময় এর কয়েক মিনিট পরে হতে পারে।" },
+    { "q": "সাহরির শেষ সময় কখন?", "a": "ফজরের ওয়াক্ত শুরু হওয়ার আগে সাহরি শেষ করতে হয়; আজকের হিসাবে {fajr}। অনেকে সতর্কতা হিসেবে কয়েক মিনিট আগে শেষ করেন।" }
+  ],
+  "en": [
+    { "q": "When is Fajr in {district} today?", "a": "Today ({date}) Fajr in {district} is at {fajr} and sunrise at {sunrise}." },
+    { "q": "When are Maghrib and iftar in {district} today?", "a": "Maghrib begins at {maghrib} today. In Ramadan, that is iftar time." },
+    { "q": "When are Dhuhr, Asr and Isha today?", "a": "In {district} today, Dhuhr is at {dhuhr}, Asr at {asr} (Hanafi) and Isha at {isha}." },
+    { "q": "How are these prayer times calculated?", "a": "From the district's coordinates using the Karachi method (Fajr and Isha with the sun 18° below the horizon), with Asr by the Hanafi school. Congregational prayers in mosques may start a few minutes later." },
+    { "q": "When does sehri end?", "a": "Sehri must end before Fajr begins, which today is at {fajr}. Many people finish a few minutes earlier to be safe." }
+  ]
+}

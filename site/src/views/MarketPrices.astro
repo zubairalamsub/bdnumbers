@@ -14,8 +14,8 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import ChangeText from '../components/ChangeText.astro';
 import DateText from '../components/DateText.astro';
 import Num from '../components/Num.astro';
+import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
@@ -59,7 +59,7 @@ const rice = pick('rice_coarse');
 const oil = pick('soybean_oil_loose');
 const onion = pick('onion_local');
 const date = marketDate ? formatDate(marketDate, lang, digits) : '';
-const title = lang === 'bn' ? `আজকের বাজারদর (ঢাকা, ${date}) | ${SITE_NAME}` : `Market prices today (Dhaka, ${date}) | ${SITE_NAME}`;
+const title = lang === 'bn' ? `আজকের বাজারদর (ঢাকা, ${date})` : `Market prices today (Dhaka, ${date})`;
 const description =
   lang === 'bn'
     ? `টিসিবির ${date} তারিখের হিসাবে ঢাকায় মোটা চাল ${rice ? range(rice.min.value, rice.max.value) : '—'} টাকা কেজি, খোলা সয়াবিন তেল ${oil ? range(oil.min.value, oil.max.value) : '—'} টাকা লিটার, পেঁয়াজ ${onion ? range(onion.min.value, onion.max.value) : '—'} টাকা। ৬০টি পণ্যের দাম।`
@@ -69,15 +69,20 @@ const path = '/market-price-today';
 
 <Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.market, path }]} />
-  <h1 class="text-2xl font-semibold sm:text-3xl">{m.title} <span class="text-ink-2">({m.city})</span></h1>
-  <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
+  <!-- The city sits on its own line, so the heading's height doesn't depend on which font has loaded. -->
+  <h1 class="text-2xl font-semibold sm:text-3xl">
+    {m.title} <span class="block text-lg font-normal text-ink-2 sm:inline sm:text-3xl sm:font-semibold">({m.city})</span>
+  </h1>
+  <!-- Stacked on phones: one line or two depending on the font would shift the tables below. -->
+  <p class="mt-2 flex flex-col gap-y-1 text-sm text-ink-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
     {marketDate && <span>{s.asOf}: <DateText date={marketDate} lang={lang} /></span>}
     <span>{s.updated}: <Ago at={checkedAt} lang={lang} /></span>
     {stale && <span class="badge text-warn-ink" title={s.staleHint}><span aria-hidden="true">⚠</span>{s.stale}</span>}
     <span>{s.source}: <a href={rows[0]?.max.source_url} rel="noopener" target="_blank">{lang === 'bn' ? 'টিসিবি' : 'TCB'}</a></span>
   </p>
 
-  <nav class="mt-4 flex flex-wrap gap-2 text-sm" aria-label={m.title}>
+  <!-- One scrolling row: wrapping would change height when the webfont swaps in and shift the tables. -->
+  <nav class="-mx-4 mt-4 flex gap-2 overflow-x-auto whitespace-nowrap px-4 pb-1 text-sm sm:mx-0 sm:px-0" aria-label={m.title}>
     {MARKET_GROUPS.map((g) => <a href={`#${g}`} class="card px-2.5 py-1 no-underline hover:underline">{m.groups[g]}</a>)}
   </nav>
 
@@ -152,6 +157,16 @@ const path = '/market-price-today';
       )
     }
   </section>
+
+  <PageSeo
+    lang={lang}
+    path={path}
+    faq="market"
+    name={lang === 'bn' ? 'টিসিবির ঢাকার খুচরা বাজারদর' : 'TCB retail market prices in Dhaka'}
+    description={description}
+    entries={rows.flatMap((r) => [r.min, r.max])}
+    place="Dhaka, Bangladesh"
+  />
 
   <Related
     lang={lang}

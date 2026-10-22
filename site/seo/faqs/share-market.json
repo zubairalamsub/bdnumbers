@@ -1,0 +1,16 @@
+{
+  "bn": [
+    { "q": "আজ ডিএসইএক্স সূচক কত?", "a": "ঢাকা স্টক এক্সচেঞ্জের সর্বশেষ লেনদেনের দিনে ({dse_dsex:date}) প্রধান সূচক ডিএসইএক্স ছিল {dse_dsex} পয়েন্ট।" },
+    { "q": "ডিএসইতে আজ কত টাকার লেনদেন হয়েছে?", "a": "{dse_turnover:date} তারিখে ডিএসইতে মোট লেনদেন হয়েছে {dse_turnover} কোটি টাকা।" },
+    { "q": "ডিএসইএক্স, ডিএসইএস ও ডিএস৩০ কী?", "a": "ডিএসইএক্স ডিএসইর প্রধান সূচক। ডিএসইএস শরিয়াহভিত্তিক কোম্পানিগুলোর সূচক, আর ডিএস৩০ শীর্ষ ৩০টি কোম্পানির সূচক। সর্বশেষ দিনে ডিএসইএস ছিল {dse_dses} এবং ডিএস৩০ {dse_ds30} পয়েন্ট।" },
+    { "q": "ছুটির দিনে নতুন তথ্য আসে না কেন?", "a": "ডিএসইতে লেনদেন হয় রবি থেকে বৃহস্পতিবার, সরকারি ছুটির দিন বাদে। লেনদেন না হলে নতুন সূচক আসে না, তাই সর্বশেষ লেনদেনের দিনের তথ্য দেখানো হয়।" },
+    { "q": "এই তথ্য কোথা থেকে নেওয়া?", "a": "ঢাকা স্টক এক্সচেঞ্জের ওয়েবসাইটের ‘Recent Market Information’ পাতা থেকে, দিনে দুবার। সূচকগুলো লেনদেনের দিন শেষের মান।" }
+  ],
+  "en": [
+    { "q": "What is the DSEX index today?", "a": "On the Dhaka Stock Exchange's latest trading day ({dse_dsex:date}) the benchmark DSEX closed at {dse_dsex} points." },
+    { "q": "How much was traded on the DSE today?", "a": "Turnover on the DSE on {dse_turnover:date} was Tk {dse_turnover} crore." },
+    { "q": "What are DSEX, DSES and DS30?", "a": "DSEX is the DSE's benchmark index. DSES tracks Shariah-compliant companies and DS30 the top 30 companies. On the latest day DSES stood at {dse_dses} and DS30 at {dse_ds30} points." },
+    { "q": "Why is there no new data on holidays?", "a": "The DSE trades Sunday to Thursday, except on public holidays. No trading means no new index values, so the latest trading day's figures stay up." },
+    { "q": "Where does this data come from?", "a": "From the ‘Recent Market Information’ page on the Dhaka Stock Exchange website, checked twice a day. The index values are end-of-day closes." }
+  ]
+}

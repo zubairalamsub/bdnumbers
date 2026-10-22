@@ -2,7 +2,6 @@
 import { formatNumber, defaultDigits, type Lang } from '@bdnumbers/shared';
 import Ago from '../components/Ago.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { SITE_NAME } from '../config';
 import { STRINGS } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest, getStatus } from '../lib/data';
@@ -23,14 +22,14 @@ const NAMES: Record<string, string> = {
   dseIndex: 'Dhaka Stock Exchange',
   weather: 'MET Norway',
 };
-const title = `${s.nav.status} | ${SITE_NAME}`;
+const title = `${s.nav.status}`;
 const description =
   lang === 'bn'
     ? 'প্রতিটি উৎস থেকে সর্বশেষ কখন তথ্য আনা হয়েছে, কোনো সমস্যা হয়েছে কি না এবং কোন তথ্য পুরোনো।'
     : 'When each source was last fetched, whether it failed, and which numbers are stale.';
 ---
 
-<Base lang={lang} path="/status" title={title} description={description} generatedAt={latest.generated_at}>
+<Base lang={lang} path="/status" title={title} description={description} generatedAt={latest.generated_at} noindex>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.status, path: '/status' }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{s.nav.status}</h1>
   <p class="mt-2 max-w-3xl text-ink-2">{description}</p>
