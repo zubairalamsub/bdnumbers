@@ -1,8 +1,10 @@
 import { refreshCaches } from './cache';
 import { pruneRuns } from './db';
 import { triggerPagesDeploy, type DeployOutcome } from './deploy';
+import { sendDigest, type DigestOutcome } from './digest';
 import type { Env } from './env';
 import { errorMessage } from './lib/errors';
+import { batchChanges, sendPushes, type PushOutcome } from './notify';
 import { failSource, runSource, type RunResult } from './run';
 import { sourcesFor } from './sources';
 import type { Batch, Source } from './sources/types';
@@ -59,14 +61,24 @@ export interface BatchResult {
   results: RunResult[];
   written: number;
   deploy: DeployOutcome;
+  push: PushOutcome | 'skipped';
+  digest: DigestOutcome | 'skipped';
 }
 
 /**
  * Run every source in a batch concurrently. One source failing never stops the others. Afterwards the
- * KV caches are rebuilt (which also invalidates edge-cached /api responses), and after a daily batch
- * that wrote anything the Pages site is rebuilt.
+ * KV caches are rebuilt (which also invalidates edge-cached /api responses). After a daily batch that
+ * wrote anything, the Pages site is rebuilt and web pushes go out for the numbers that moved; the
+ * afternoon daily batch also sends the email digest. `now` only decides whether the digest is due.
  */
-export async function runBatch(env: Env, batch: Batch, trigger: string, invoke: Invoker = invokerFor(env)): Promise<BatchResult> {
+export async function runBatch(
+  env: Env,
+  batch: Batch,
+  trigger: string,
+  invoke: Invoker = invokerFor(env),
+  now: Date = new Date(),
+): Promise<BatchResult> {
+  const startedAt = new Date().toISOString();
   const sources = sourcesFor(batch);
   const results = await Promise.all(
     sources.map((source) =>
@@ -78,15 +90,21 @@ export async function runBatch(env: Env, batch: Batch, trigger: string, invoke: 
   const written = results.reduce((sum, r) => sum + r.written, 0);
 
   let deploy: DeployOutcome = 'skipped';
+  let push: BatchResult['push'] = 'skipped';
+  let digest: BatchResult['digest'] = 'skipped';
   if (sources.length > 0) {
     await refreshCaches(env);
     if (batch === 'daily') {
       await pruneRuns(env.DB);
-      if (written > 0) deploy = await triggerPagesDeploy(env);
+      if (written > 0) {
+        deploy = await triggerPagesDeploy(env);
+        push = (await sendPushes(env, await batchChanges(env, startedAt))).outcome;
+      }
+      digest = await sendDigest(env, now);
     }
   }
 
-  const summary: BatchResult = { batch, trigger, results, written, deploy };
+  const summary: BatchResult = { batch, trigger, results, written, deploy, push, digest };
   console.log(JSON.stringify(summary));
   return summary;
 }

@@ -16,7 +16,11 @@ export interface Env {
   INGEST_TOKEN?: string;
   INTERNAL_TOKEN?: string;
   PAGES_DEPLOY_HOOK?: string;
+  /** OneSignal app ID and REST API key: web push on changes (free plan). Unset: pushes are skipped. */
+  ONESIGNAL_APP_ID?: string;
   ONESIGNAL_KEY?: string;
+  /** Buttondown API key: the daily email digest (free plan). Unset: the digest is skipped. */
+  BUTTONDOWN_API_KEY?: string;
 }
 
 export type AppEnv = { Bindings: Env };

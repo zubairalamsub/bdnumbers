@@ -48,4 +48,6 @@ RUN_MODE = "fanout"
 #   INGEST_TOKEN       bearer token for POST /api/ingest
 #   INTERNAL_TOKEN     bearer token for /internal/* (fan-out and manual batch runs)
 #   PAGES_DEPLOY_HOOK  Cloudflare Pages deploy hook URL (Stage 2)
-#   ONESIGNAL_KEY      Web Push (Stage 5)
+#   ONESIGNAL_APP_ID   OneSignal app ID (web push on changes; optional, free plan)
+#   ONESIGNAL_KEY      OneSignal REST API key (optional)
+#   BUTTONDOWN_API_KEY Buttondown API key (daily email digest; optional, free plan)
