@@ -51,6 +51,8 @@ export interface LatestEntry {
   date: string;
   /** ISO timestamp of when the value was fetched; null for manual overrides without a fetched point. */
   fetched_at: string | null;
+  /** ISO timestamp of the source's last successful run, i.e. when this value was last confirmed. Falls back to fetched_at. */
+  checked_at: string | null;
   stale: boolean;
   overridden: boolean;
   meta: PointMeta | null;

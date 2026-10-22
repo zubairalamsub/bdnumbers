@@ -75,10 +75,12 @@ const ORDER = new Map(SERIES.map((s, i) => [s.key, i]));
 
 /** Latest value of every series with change vs the previous point and 7d/30d/1y ago. Manual overrides win. */
 export async function buildLatest(db: D1Database): Promise<LatestResponse> {
-  const [latest, overrides] = await db.batch([
+  const [latest, overrides, lastOk] = await db.batch([
     db.prepare(LATEST_SQL),
     db.prepare('SELECT series_key, date, value, note FROM manual_overrides ORDER BY date'),
+    db.prepare('SELECT source, MAX(finished_at) AS at FROM runs WHERE ok = 1 GROUP BY source'),
   ]);
+  const checkedAt = new Map(((lastOk?.results ?? []) as { source: string; at: string }[]).map((r) => [r.source, r.at]));
   const drafts = new Map<string, Draft>();
 
   for (const row of (latest?.results ?? []) as LatestRow[]) {
@@ -128,11 +130,11 @@ export async function buildLatest(db: D1Database): Promise<LatestResponse> {
 
   const series = [...drafts.values()]
     .sort((a, b) => (ORDER.get(a.def.key) ?? Infinity) - (ORDER.get(b.def.key) ?? Infinity) || a.def.key.localeCompare(b.def.key))
-    .map(toEntry);
+    .map((d) => toEntry(d, checkedAt.get(d.def.source_key) ?? d.fetched_at));
   return { generated_at: new Date().toISOString(), series };
 }
 
-function toEntry(d: Draft): LatestEntry {
+function toEntry(d: Draft, checkedAt: string | null): LatestEntry {
   return {
     key: d.def.key,
     name_bn: d.def.name_bn,
@@ -144,6 +146,7 @@ function toEntry(d: Draft): LatestEntry {
     value: d.value,
     date: d.date,
     fetched_at: d.fetched_at,
+    checked_at: checkedAt,
     stale: d.stale,
     overridden: d.overridden,
     meta: d.meta,

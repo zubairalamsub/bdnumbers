@@ -55,6 +55,17 @@ describe('GET /api/latest.json', () => {
     );
   });
 
+  it("reports when each value was last confirmed by its source", async () => {
+    await env.DB.prepare(
+      "INSERT INTO runs (source, started_at, finished_at, ok, points_written) VALUES ('bangladeshBank', '2026-10-22T01:00:00.000Z', '2026-10-22T01:00:03.000Z', 1, 0)",
+    ).run();
+    await refreshCaches(env);
+    const body = await (await request('/api/latest.json')).json<LatestResponse>();
+    // BB confirmed the unchanged value today; gold has no successful run, so it falls back to fetched_at.
+    expect(body.series.find((s) => s.key === 'usd_bdt_avg')!.checked_at).toBe('2026-10-22T01:00:03.000Z');
+    expect(body.series.find((s) => s.key === 'gold_22k')!.checked_at).toBe('2026-01-01T00:00:00.000Z');
+  });
+
   it('applies manual overrides', async () => {
     await env.DB.prepare("INSERT INTO manual_overrides VALUES ('usd_bdt_avg', '2026-10-19', 124, 'typo on BB site')").run();
     await refreshCaches(env);
