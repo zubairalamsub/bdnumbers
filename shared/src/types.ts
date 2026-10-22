@@ -137,4 +137,5 @@ export interface IngestResult {
   ok: boolean;
   run_id: number;
   written: number;
+  error: string | null;
 }
