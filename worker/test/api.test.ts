@@ -39,6 +39,8 @@ describe('GET /api/latest.json', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
     expect(res.headers.get('cache-control')).toBe('public, max-age=300');
     expect(res.headers.get('x-robots-tag')).toBe('noindex');
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('strict-transport-security')).toBe('max-age=31536000; includeSubDomains');
 
     const body = await res.json<LatestResponse>();
     const usd = body.series.find((s) => s.key === 'usd_bdt_avg')!;
@@ -189,6 +191,9 @@ describe('GET /embed/:key', () => {
   it('renders a Bengali widget with an attribution link', async () => {
     const res = await request('/embed/usd_bdt_avg');
     expect(res.status).toBe(200);
+    // Any site may frame a widget, but it loads and runs nothing.
+    expect(res.headers.get('content-security-policy')).toContain('frame-ancestors *');
+    expect(res.headers.get('content-security-policy')).toContain("default-src 'none'");
     const page = await res.text();
     expect(page).toContain('১২৩.৬৫');
     expect(page).toContain('ডলার রেট (গড়)');
@@ -212,6 +217,8 @@ describe('other routes', () => {
   it('serves the manual entry page, noindexed', async () => {
     const res = await request('/manual');
     expect(res.status).toBe(200);
+    expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+    expect(res.headers.get('x-frame-options')).toBe('DENY');
     expect(await res.text()).toContain('noindex');
   });
 

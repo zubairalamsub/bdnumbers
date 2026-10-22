@@ -15,13 +15,16 @@ import { escapeHtml } from '../lib/escape';
 
 export const embed = new Hono<AppEnv>();
 
+/** Widgets are meant to be framed by any site, but load nothing and run no script. */
+const EMBED_CSP = "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors *";
+
 embed.use('*', edgeCache);
 
 embed.get('/:key', async (c) => {
   const lang: Lang = c.req.query('lang') === 'en' ? 'en' : 'bn';
   const entry = (await getLatest(c.env)).series.find((s) => s.key === c.req.param('key'));
-  if (!entry) return c.html('<!doctype html><title>Not found</title><p>Unknown series.</p>', 404);
-  return c.html(renderEmbed(entry, lang, c.env.SITE_URL), 200, { 'cache-control': CACHE_CONTROL });
+  if (!entry) return c.html('<!doctype html><title>Not found</title><p>Unknown series.</p>', 404, { 'content-security-policy': EMBED_CSP });
+  return c.html(renderEmbed(entry, lang, c.env.SITE_URL), 200, { 'cache-control': CACHE_CONTROL, 'content-security-policy': EMBED_CSP });
 });
 
 const TEXT: Record<Lang, { asOf: string; stale: string; source: string }> = {

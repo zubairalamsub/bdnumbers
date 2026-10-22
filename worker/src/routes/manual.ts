@@ -6,7 +6,13 @@ import { escapeHtml } from '../lib/escape';
 /** A tiny form for entering or correcting a value by hand. Posts to /api/ingest with your INGEST_TOKEN. */
 export const manual = new Hono<AppEnv>();
 
-manual.get('/', (c) => c.html(renderManualPage(), 200, { 'cache-control': 'no-store' }));
+/** Its own inline script and style, calls to this origin only, and never inside a frame. */
+const MANUAL_CSP =
+  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
+manual.get('/', (c) =>
+  c.html(renderManualPage(), 200, { 'cache-control': 'no-store', 'content-security-policy': MANUAL_CSP, 'x-frame-options': 'DENY' }),
+);
 
 function renderManualPage(): string {
   const options = SERIES.map(

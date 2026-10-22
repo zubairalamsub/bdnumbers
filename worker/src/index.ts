@@ -8,10 +8,20 @@ import { manual } from './routes/manual';
 
 const app = new Hono<AppEnv>();
 
-// The API, embeds and forms are for the site and other apps, not for search results.
+/** For HTML pages that set no policy of their own: nothing loads, nothing frames them. */
+const LOCKED_HTML_CSP = "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
+// Headers on every response. The API, embeds and forms are for the site and other apps, not for search results.
 app.use('*', async (c, next) => {
   await next();
-  c.res.headers.set('x-robots-tag', 'noindex');
+  const h = c.res.headers;
+  h.set('x-robots-tag', 'noindex');
+  h.set('x-content-type-options', 'nosniff');
+  h.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+  h.set('referrer-policy', 'strict-origin-when-cross-origin');
+  if (h.get('content-type')?.startsWith('text/html') && !h.has('content-security-policy')) {
+    h.set('content-security-policy', LOCKED_HTML_CSP);
+  }
 });
 
 app.get('/', (c) =>

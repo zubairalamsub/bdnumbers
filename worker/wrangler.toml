@@ -1,7 +1,9 @@
 name = "bdnumbers-api"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
-workers_dev = true
+# Served only on the custom domain: no second, uncached copy at *.workers.dev or per-version preview URLs.
+workers_dev = false
+preview_urls = false
 # Custom domain, so the Workers Cache API works (it is a no-op on workers.dev).
 routes = [{ pattern = "api.bdrate.fyi", custom_domain = true }]
 
