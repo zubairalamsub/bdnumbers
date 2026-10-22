@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+
+/* Light and dark tokens. Chart series colours were validated with the dataviz palette checker
+   (#2a78d6 on #fcfcfb, #3987e5 on #1a1a19: band, chroma and 3:1 contrast all pass). */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #6e6d68;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --hairline: rgb(11 11 11 / 0.1);
+  --series: #2a78d6;
+  --series-wash: rgb(42 120 214 / 0.1);
+  --accent: #006a4e;
+  --accent-ink: #ffffff;
+  --warn: #fab219;
+  --warn-ink: #6b4a00;
+  --critical: #d03b3b;
+  --good: #0ca30c;
+  --good-ink: #006300;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #a3a29b;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --hairline: rgb(255 255 255 / 0.1);
+    --series: #3987e5;
+    --series-wash: rgb(57 135 229 / 0.12);
+    --accent: #4cc79a;
+    --accent-ink: #0d0d0d;
+    --warn-ink: #fab219;
+    --good-ink: #0ca30c;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-hind), system-ui, 'Segoe UI', sans-serif;
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-hairline: var(--hairline);
+  --color-series: var(--series);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-warn: var(--warn);
+  --color-warn-ink: var(--warn-ink);
+  --color-critical: var(--critical);
+  --color-good: var(--good);
+  --color-good-ink: var(--good-ink);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .card {
+    /* min-width: 0 lets a card shrink inside a grid column instead of widening the page. */
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 0 8px;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--grid);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .data-table th:first-child,
+  .data-table td:first-child {
+    text-align: left;
+    white-space: normal;
+  }
+  .data-table thead th {
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+}

@@ -1,0 +1,23 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+---
+
+<footer class="border-t border-hairline bg-surface">
+  <div class="mx-auto max-w-5xl space-y-2 px-4 py-6 text-sm text-ink-2 sm:px-6">
+    <p>{s.footer}</p>
+    <p>
+      <a href={localePath(lang, '/status')}>{s.nav.status}</a>
+      <span aria-hidden="true"> · </span>
+      <span>{SITE_NAME}</span>
+    </p>
+  </div>
+</footer>

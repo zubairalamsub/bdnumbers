@@ -1,0 +1,63 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import { Font } from 'astro:assets';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { API_BASE, SITE_NAME, SITE_URL } from '../config';
+import { localePath } from '../i18n';
+import '../styles/global.css';
+
+interface Props {
+  lang: Lang;
+  /** Path without the language prefix, e.g. '/dollar-rate-today'. */
+  path: string;
+  title: string;
+  description: string;
+  /** When the page's data was generated (latest.json generated_at); drives the client refresh. */
+  generatedAt: string;
+  noindex?: boolean;
+}
+
+const { lang, path, title, description, generatedAt, noindex = false } = Astro.props;
+const canonical = `${SITE_URL}${localePath(lang, path)}`;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {
+      !noindex && (
+        <>
+          <link rel="alternate" hreflang="bn" href={`${SITE_URL}${localePath('bn', path)}`} />
+          <link rel="alternate" hreflang="en" href={`${SITE_URL}${localePath('en', path)}`} />
+          <link rel="alternate" hreflang="x-default" href={`${SITE_URL}${localePath('bn', path)}`} />
+        </>
+      )
+    }
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#006a4e" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href={API_BASE} crossorigin />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={lang === 'bn' ? 'bn_BD' : 'en_US'} />
+    <Font cssVariable="--font-hind" preload />
+  </head>
+  <body class="min-h-screen font-sans antialiased" data-api={API_BASE} data-generated={generatedAt}>
+    <Header lang={lang} path={path} />
+    <main class="mx-auto max-w-5xl px-4 pb-16 pt-6 sm:px-6">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+    <script>
+      import '../scripts/live';
+    </script>
+  </body>
+</html>

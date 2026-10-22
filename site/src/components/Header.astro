@@ -1,0 +1,62 @@
+---
+import { defaultDigits, type Lang } from '@bdnumbers/shared';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  path: string;
+}
+
+const { lang, path } = Astro.props;
+const s = STRINGS[lang];
+const other: Lang = lang === 'bn' ? 'en' : 'bn';
+const links = [
+  { path: '/dollar-rate-today', label: s.nav.dollar },
+  { path: '/gold-price-today', label: s.nav.gold },
+  { path: '/silver-price-today', label: s.nav.silver },
+];
+// The toggle offers the digit system that isn't currently shown; the script keeps it in sync.
+const shown = defaultDigits(lang);
+---
+
+<header class="border-b border-hairline bg-surface">
+  <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
+    <a href={localePath(lang, '/')} class="text-lg font-semibold text-ink no-underline">
+      <span aria-hidden="true" class="mr-1 inline-grid size-7 place-items-center rounded-md bg-accent text-accent-ink">৳</span>
+      {SITE_NAME}
+    </a>
+    <nav aria-label={s.nav.home} class="order-3 w-full overflow-x-auto sm:order-none sm:w-auto">
+      <ul class="flex gap-5 whitespace-nowrap text-[0.9375rem]">
+        {
+          links.map((l) => (
+            <li>
+              <a
+                href={localePath(lang, l.path)}
+                aria-current={l.path === path ? 'page' : undefined}
+                class:list={['no-underline hover:underline', l.path === path ? 'font-semibold text-ink' : 'text-ink-2']}
+              >
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="ml-auto flex items-center gap-3 text-sm">
+      <button
+        type="button"
+        data-digits-toggle
+        data-label-beng={`${s.digitsLabel} ${s.digitsBeng}`}
+        data-label-latn={`${s.digitsLabel} ${s.digitsLatn}`}
+        aria-label={`${s.digitsLabel} ${shown === 'beng' ? s.digitsLatn : s.digitsBeng}`}
+        class="rounded-md border border-hairline px-2 py-0.5 text-ink-2 hover:text-ink"
+      >
+        {shown === 'beng' ? '123' : '১২৩'}
+      </button>
+      <a href={localePath(other, path)} hreflang={other} lang={other} class="text-ink-2 no-underline hover:underline">
+        {s.otherLang}
+      </a>
+    </div>
+  </div>
+</header>
