@@ -1,0 +1,155 @@
+---
+import {
+  KARAT_ORDER,
+  currencyName,
+  defaultDigits,
+  formatSeriesValue,
+  fractionDigits,
+  getSeriesDef,
+  type Lang,
+} from '@bdnumbers/shared';
+import ChangeText from '../components/ChangeText.astro';
+import Num from '../components/Num.astro';
+import NumberCard from '../components/NumberCard.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getChanges, getEntries, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const [usd, bid, ask] = await getEntries(['usd_bdt_avg', 'usd_bdt_low', 'usd_bdt_high']);
+const gold = await getEntries(KARAT_ORDER.map((k) => `gold_${k}`));
+const crossCodes = ['eur', 'gbp', 'inr', 'sgd', 'aud', 'cad'].filter((c) => latest.series.some((e) => e.key === `${c}_bdt_ask`));
+const cross = await getEntries(crossCodes.map((c) => `${c}_bdt_ask`));
+// A series' first value isn't a change.
+const changed = (await getChanges()).changes.filter((c) => c.previous !== null);
+const [silver, ...silverRest] = await getEntries(KARAT_ORDER.map((k) => `silver_${k}`));
+
+const usdText = formatSeriesValue(usd!.value, 'fx', digits);
+const goldText = formatSeriesValue(gold[0]!.value, 'gold', digits);
+const title =
+  lang === 'bn' ? `আজকের ডলার রেট ${usdText} টাকা, সোনা ${goldText} | ${SITE_NAME}` : `Dollar Tk ${usdText}, gold Tk ${goldText}/bhori today | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `আজ বাংলাদেশ ব্যাংকের ডলার রেট ${usdText} টাকা, ২২ ক্যারেট সোনা প্রতি ভরি ${goldText} টাকা। ডলার, ইউরো, পাউন্ড, রুপি এবং সোনা-রুপার দাম প্রতিদিন হালনাগাদ।`
+    : `Today's Bangladesh Bank dollar rate is Tk ${usdText} and 22K gold is Tk ${goldText} per bhori. Dollar, euro, pound, rupee, gold and silver prices, updated daily.`;
+---
+
+<Base lang={lang} path="/" title={title} description={description} generatedAt={latest.generated_at}>
+  <h1 class="text-2xl font-semibold sm:text-3xl">{s.tagline}</h1>
+
+  <div class="mt-5 grid gap-4 md:grid-cols-2">
+    <NumberCard entry={usd!} lang={lang} hero href={localePath(lang, '/dollar-rate-today')} label={s.nav.dollar}>
+      <p class="flex flex-wrap gap-x-4 text-sm text-ink-2">
+        <span data-series={bid!.key}>{s.table.bid}: <Num value={bid!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
+        <span data-series={ask!.key}>{s.table.ask}: <Num value={ask!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
+      </p>
+    </NumberCard>
+
+    <NumberCard
+      entry={gold[0]!}
+      lang={lang}
+      href={localePath(lang, '/gold-price-today')}
+      label={`${s.nav.gold} · ${s.karats['22k']} (${s.table.perBhori})`}
+    >
+      <ul class="mt-1 divide-y divide-grid text-[0.9375rem]">
+        {
+          gold.slice(1).map((e, i) => (
+            <li class="flex justify-between gap-3 py-1" data-series={e.key}>
+              <span class="text-ink-2">{s.karats[KARAT_ORDER[i + 1]!]}</span>
+              <span>
+                <Num value={e.value} lang={lang} field="value" class="font-semibold" />
+                <ChangeText change={e.change.prev} category="gold" lang={lang} field="change.prev" class="ml-2 text-sm text-ink-2" />
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </NumberCard>
+  </div>
+
+  <div class="mt-4 grid gap-4 md:grid-cols-2">
+    <NumberCard
+      entry={silver!}
+      lang={lang}
+      href={localePath(lang, '/silver-price-today')}
+      label={`${s.nav.silver} · ${s.karats['22k']} (${s.table.perBhori})`}
+    >
+      <ul class="mt-1 divide-y divide-grid text-[0.9375rem]">
+        {
+          silverRest.map((e, i) => (
+            <li class="flex justify-between gap-3 py-1" data-series={e.key}>
+              <span class="text-ink-2">{s.karats[KARAT_ORDER[i + 1]!]}</span>
+              <span>
+                <Num value={e.value} lang={lang} field="value" class="font-semibold" />
+                <ChangeText change={e.change.prev} category="silver" lang={lang} field="change.prev" class="ml-2 text-sm text-ink-2" />
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </NumberCard>
+
+    <section class="card overflow-x-auto p-4 sm:p-5">
+      <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
+        <a href={localePath(lang, '/dollar-rate-today')} class="text-ink-2 no-underline hover:underline">{lang === 'bn' ? 'অন্যান্য মুদ্রা (আস্ক)' : 'Other currencies (ask)'}</a>
+      </h2>
+      <table class="data-table text-[0.9375rem]">
+        <tbody>
+          {
+            cross.map((e, i) => (
+              <tr data-series={e.key}>
+                <th scope="row" class="font-normal">
+                  {currencyName(crossCodes[i]!, lang)}
+                </th>
+                <td>
+                  <Num value={e.value} fd={fractionDigits('fx', e.value)} lang={lang} field="value" />
+                </td>
+                <td>
+                  <ChangeText change={e.change.prev} category="fx" lang={lang} field="change.prev" empty="dash" class="text-sm text-ink-2" />
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  {
+    changed.length > 0 && (
+      <section class="mt-8">
+        <h2 class="mb-3 text-lg font-semibold">{lang === 'bn' ? 'আজ যা বদলেছে' : 'Changed today'}</h2>
+        <ul class="card divide-y divide-grid">
+          {changed.slice(0, 12).map((c) => {
+            const category = getSeriesDef(c.key)?.category ?? 'fx';
+            const abs = c.previous === null ? 0 : c.value - c.previous;
+            return (
+              <li class="flex flex-wrap justify-between gap-2 px-4 py-2 text-[0.9375rem]">
+                <span>{lang === 'bn' ? c.name_bn : c.name_en}</span>
+                <span>
+                  <Num value={c.value} fd={fractionDigits(category, c.value)} lang={lang} class="font-semibold" />
+                  {c.previous !== null && (
+                    <ChangeText
+                      change={{ from: c.previous, date: '', abs, pct: c.previous ? (abs / c.previous) * 100 : null }}
+                      category={category}
+                      lang={lang}
+                      class="ml-2 text-sm text-ink-2"
+                    />
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    )
+  }
+</Base>

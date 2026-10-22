@@ -1,0 +1,150 @@
+---
+import { currencyName, defaultDigits, formatDate, formatSeriesValue, fractionDigits, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeTable from '../components/ChangeTable.astro';
+import ChangeText from '../components/ChangeText.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import NumberCard from '../components/NumberCard.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getEntries, getHistory, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const [usd, bid, ask] = await getEntries(['usd_bdt_avg', 'usd_bdt_low', 'usd_bdt_high']);
+const history = await getHistory('usd_bdt_avg');
+
+// Every currency BB lists, USD first, then in catalog order.
+const codes = latest.series.flatMap((e) => /^([a-z]{3})_bdt_bid$/.exec(e.key)?.[1] ?? []);
+const rows = [
+  { code: 'usd', bid: bid!, ask: ask! },
+  ...(await Promise.all(codes.map(async (c) => {
+    const [b, a] = await getEntries([`${c}_bdt_bid`, `${c}_bdt_ask`]);
+    return { code: c, bid: b!, ask: a! };
+  }))),
+];
+
+const value = formatSeriesValue(usd!.value, 'fx', digits);
+const bidText = formatSeriesValue(bid!.value, 'fx', digits);
+const askText = formatSeriesValue(ask!.value, 'fx', digits);
+const date = formatDate(usd!.date, lang, digits);
+const title = lang === 'bn' ? `আজকের ডলার রেট: ${value} টাকা | ${SITE_NAME}` : `Dollar rate today: Tk ${value} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `বাংলাদেশ ব্যাংকের ${date} তারিখের হিসাবে ডলারের গড় রেট ${value} টাকা (বিড ${bidText}, আস্ক ${askText})। ইউরো, পাউন্ড, রুপিসহ সব মুদ্রার রেট ও চার্ট।`
+    : `Bangladesh Bank's US dollar rate for ${date}: Tk ${value} weighted average (bid ${bidText}, ask ${askText}). Euro, pound, rupee and more, with charts.`;
+const pagePath = '/dollar-rate-today';
+---
+
+<Base lang={lang} path={pagePath} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.dollar, path: pagePath }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? 'আজকের ডলার রেট' : 'Dollar rate today'}</h1>
+
+  <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
+    <NumberCard entry={usd!} lang={lang} hero label={lang === 'bn' ? 'গড় রেট (WAR), প্রতি মার্কিন ডলার' : 'Weighted average rate (WAR), per US dollar'}>
+      <p class="flex flex-wrap gap-x-4 text-sm text-ink-2">
+        <span data-series={bid!.key}>{s.table.bid}: <Num value={bid!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
+        <span data-series={ask!.key}>{s.table.ask}: <Num value={ask!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
+      </p>
+    </NumberCard>
+    <div class="card p-4 sm:p-5">
+      <ChangeTable entry={usd!} lang={lang} />
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <LineChart
+      points={history.points.map((p) => [p.date, p.value])}
+      category="fx"
+      unit="BDT"
+      lang={lang}
+      label={lang === 'bn' ? usd!.name_bn : usd!.name_en}
+    />
+    <p class="mt-2 text-sm"><a href={localePath(lang, `/history/${usd!.key}`)}>{s.history}</a></p>
+  </div>
+
+  <section class="mt-8">
+    <h2 class="mb-3 text-lg font-semibold">{lang === 'bn' ? 'সব মুদ্রার রেট (টাকায়)' : 'All currencies (in taka)'}</h2>
+    <div class="card overflow-x-auto">
+      <table class="data-table text-[0.9375rem]">
+        <thead>
+          <tr>
+            <th scope="col">{s.table.currency}</th>
+            <th scope="col">{s.table.bid}</th>
+            <th scope="col">{s.table.ask}</th>
+            <th scope="col">{s.change}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map((r) => (
+              <tr>
+                <th scope="row" class="font-normal">
+                  <a href={localePath(lang, `/history/${r.ask.key}`)} class="text-ink no-underline hover:underline">
+                    {currencyName(r.code, lang)}
+                  </a>{' '}
+                  <span class="text-sm text-muted">{r.code.toUpperCase()}</span>
+                </th>
+                <td data-series={r.bid.key}>
+                  <Num value={r.bid.value} fd={fractionDigits('fx', r.bid.value)} lang={lang} field="value" />
+                </td>
+                <td data-series={r.ask.key}>
+                  <Num value={r.ask.value} fd={fractionDigits('fx', r.ask.value)} lang={lang} field="value" />
+                </td>
+                <td data-series={r.ask.key}>
+                  <ChangeText change={r.ask.change.prev} category="fx" lang={lang} field="change.prev" empty="dash" class="text-sm text-ink-2" />
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-8 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{lang === 'bn' ? 'এই রেট কীভাবে ঠিক হয়' : 'How this rate is set'}</h2>
+    {
+      lang === 'bn' ? (
+        <>
+          <p>
+            টাকার বিপরীতে ডলারের এই রেট দেশের আন্তঃব্যাংক বৈদেশিক মুদ্রাবাজারের লেনদেনের ভিত্তিতে নির্ধারিত হয় এবং বাংলাদেশ ব্যাংক তা প্রকাশ করে।
+            বিড ও আস্ক হলো আগের কার্যদিবসে ঢাকার বাজার বন্ধের সময়কার সর্বনিম্ন ও সর্বোচ্চ আন্তঃব্যাংক রেট; গড় রেট (WAR) হলো লেনদেনের পরিমাণ অনুযায়ী ভারিত গড়।
+          </p>
+          <p>
+            অন্যান্য মুদ্রার রেট নিউইয়র্ক ও ঢাকার বাজার বন্ধের রেট থেকে হিসাব করা। ব্যাংকের কাউন্টার, রেমিট্যান্স বা খোলা বাজারের রেট এর থেকে ভিন্ন হতে পারে।
+          </p>
+        </>
+      ) : (
+        <>
+          <p>
+            This is the taka–dollar rate set by trading in Bangladesh's interbank foreign exchange market, as published by Bangladesh Bank.
+            Bid and ask are the lowest and highest interbank rates at the Dhaka close on the previous business day; the weighted average rate
+            (WAR) weights each deal by its size.
+          </p>
+          <p>
+            Rates for other currencies are derived from New York and Dhaka closing rates. Bank counter, remittance and open-market rates can
+            differ.
+          </p>
+        </>
+      )
+    }
+  </section>
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.gold, path: '/gold-price-today' },
+      { label: s.nav.silver, path: '/silver-price-today' },
+    ]}
+  />
+</Base>

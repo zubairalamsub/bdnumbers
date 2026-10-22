@@ -1,0 +1,86 @@
+---
+import { CATEGORY_PAGE, defaultDigits, formatSeriesValue, fractionDigits, unitLabel, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeText from '../components/ChangeText.astro';
+import DateText from '../components/DateText.astro';
+import EntryMeta from '../components/EntryMeta.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getEntry, getHistory, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+  seriesKey: string;
+}
+
+const { lang, seriesKey } = Astro.props;
+const s = STRINGS[lang];
+const latest = await getLatest();
+const entry = await getEntry(seriesKey);
+const history = await getHistory(seriesKey);
+const name = lang === 'bn' ? entry.name_bn : entry.name_en;
+const parent = CATEGORY_PAGE[entry.category];
+const parentLabel = entry.category === 'fx' ? s.nav.dollar : entry.category === 'gold' ? s.nav.gold : s.nav.silver;
+const rows = history.points
+  .map((p, i) => {
+    const prev = history.points[i - 1];
+    const abs = prev ? p.value - prev.value : null;
+    return { ...p, change: prev && abs !== null ? { from: prev.value, date: prev.date, abs, pct: prev.value ? (abs / prev.value) * 100 : null } : null };
+  })
+  .reverse();
+const title = `${name}: ${s.history} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `${name}: সর্বশেষ ${formatSeriesValue(entry.value, entry.category, defaultDigits(lang))} ${unitLabel(entry.unit, lang)}। দৈনিক ইতিহাস, চার্ট ও CSV ডাউনলোড।`
+    : `${name}: latest ${formatSeriesValue(entry.value, entry.category, 'latn')} ${unitLabel(entry.unit, lang)}. Daily history, chart and CSV download.`;
+const path = `/history/${seriesKey}`;
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at} noindex>
+  <Breadcrumbs lang={lang} items={[{ label: parentLabel, path: parent }, { label: name, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{name}</h1>
+  <div class="mt-2" data-series={entry.key}>
+    <EntryMeta entry={entry} lang={lang} />
+  </div>
+
+  <div class="mt-4">
+    <LineChart points={history.points.map((p) => [p.date, p.value])} category={entry.category} unit={entry.unit} lang={lang} label={name} />
+  </div>
+
+  <p class="mt-4">
+    <a href={`/history/${seriesKey}.csv`} download class="card inline-block px-3 py-1.5 no-underline hover:underline">{s.downloadCsv}</a>
+  </p>
+
+  <div class="mt-4 card overflow-x-auto">
+    <table class="data-table text-[0.9375rem]">
+      <thead>
+        <tr>
+          <th scope="col">{s.table.date}</th>
+          <th scope="col">{s.table.value} ({unitLabel(entry.unit, lang)})</th>
+          <th scope="col">{s.change}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((r) => (
+            <tr>
+              <th scope="row" class="font-normal">
+                <DateText date={r.date} lang={lang} />
+              </th>
+              <td>
+                <Num value={r.value} fd={fractionDigits(entry.category, r.value)} lang={lang} />
+                {r.overridden && <span class="ml-1 text-xs text-muted">*</span>}
+              </td>
+              <td>
+                <ChangeText change={r.change} category={entry.category} lang={lang} empty="dash" class="text-sm text-ink-2" />
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</Base>

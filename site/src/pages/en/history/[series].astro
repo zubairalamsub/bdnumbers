@@ -1,0 +1,12 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getLatest } from '../../../lib/data';
+import History from '../../../views/History.astro';
+
+export const getStaticPaths = (async () =>
+  (await getLatest()).series.map((s) => ({ params: { series: s.key } }))) satisfies GetStaticPaths;
+
+const { series } = Astro.params;
+---
+
+<History lang="en" seriesKey={series} />

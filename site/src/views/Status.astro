@@ -1,0 +1,89 @@
+---
+import { formatNumber, defaultDigits, type Lang } from '@bdnumbers/shared';
+import Ago from '../components/Ago.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest, getStatus } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = STRINGS[lang];
+const t = s.status;
+const latest = await getLatest();
+const status = await getStatus();
+const NAMES: Record<string, string> = { bangladeshBank: 'Bangladesh Bank', bajusGold: 'BAJUS' };
+const title = `${s.nav.status} | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? 'প্রতিটি উৎস থেকে সর্বশেষ কখন তথ্য আনা হয়েছে, কোনো সমস্যা হয়েছে কি না এবং কোন তথ্য পুরোনো।'
+    : 'When each source was last fetched, whether it failed, and which numbers are stale.';
+---
+
+<Base lang={lang} path="/status" title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.status, path: '/status' }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{s.nav.status}</h1>
+  <p class="mt-2 max-w-3xl text-ink-2">{description}</p>
+
+  <div class="mt-5 card overflow-x-auto">
+    <table class="data-table text-[0.9375rem]" data-status-table>
+      <thead>
+        <tr>
+          <th scope="col">{t.source}</th>
+          <th scope="col">{t.result}</th>
+          <th scope="col">{t.lastRun}</th>
+          <th scope="col">{t.lastOk}</th>
+          <th scope="col">{t.failures}</th>
+          <th scope="col">{t.staleSeries}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          status.sources.map((src) => {
+            const run = src.last_run;
+            const state = run ? (run.ok ? 'ok' : 'failed') : 'never';
+            return (
+              <>
+                <tr data-source={src.source}>
+                  <th scope="row" class="font-normal">
+                    {NAMES[src.source] ?? src.source}
+                  </th>
+                  <td
+                    data-cell="result"
+                    data-state={state}
+                    class="data-[state=failed]:font-semibold data-[state=failed]:text-critical data-[state=ok]:text-good-ink"
+                  >
+                    {run ? (run.ok ? `✓ ${t.ok}` : `✕ ${t.failed}`) : t.never}
+                  </td>
+                  <td>
+                    <Ago at={run?.started_at ?? null} lang={lang} cell="last-run" />
+                  </td>
+                  <td>
+                    <Ago at={src.last_ok_at} lang={lang} cell="last-ok" />
+                  </td>
+                  <td>
+                    <span data-cell="failures" data-num={src.failures_24h} data-fd="0">
+                      {formatNumber(src.failures_24h, defaultDigits(lang), 0)}
+                    </span>
+                  </td>
+                  <td data-cell="stale" class="whitespace-normal text-sm">
+                    {src.stale_series.length > 0 ? src.stale_series.join(', ') : t.none}
+                  </td>
+                </tr>
+                <tr data-source-error={src.source}>
+                  <td colspan="6" data-cell="error" class="whitespace-normal pt-0 text-left text-sm text-ink-2 empty:hidden">
+                    {run?.error ?? ''}
+                  </td>
+                </tr>
+              </>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </div>
+</Base>

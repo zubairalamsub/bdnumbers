@@ -1,0 +1,20 @@
+---
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest } from '../lib/data';
+
+const latest = await getLatest();
+const bn = STRINGS.bn;
+const en = STRINGS.en;
+---
+
+<Base lang="bn" path="/404" title={`${bn.notFound} | ${SITE_NAME}`} description={bn.notFound} generatedAt={latest.generated_at} noindex>
+  <h1 class="text-2xl font-semibold">{bn.notFound}</h1>
+  <p class="mt-1 text-ink-2" lang="en">{en.notFound}</p>
+  <ul class="mt-6 space-y-2">
+    <li><a href={localePath('bn', '/')}>{bn.nav.home}</a> · <a href={localePath('en', '/')} lang="en">{en.nav.home}</a></li>
+    <li><a href={localePath('bn', '/dollar-rate-today')}>{bn.nav.dollar}</a> · <a href={localePath('en', '/dollar-rate-today')} lang="en">{en.nav.dollar}</a></li>
+    <li><a href={localePath('bn', '/gold-price-today')}>{bn.nav.gold}</a> · <a href={localePath('en', '/gold-price-today')} lang="en">{en.nav.gold}</a></li>
+  </ul>
+</Base>

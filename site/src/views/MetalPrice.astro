@@ -1,0 +1,128 @@
+---
+import { BHORI_GRAMS, KARAT_ORDER, defaultDigits, formatDate, formatSeriesValue, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeTable from '../components/ChangeTable.astro';
+import ChangeText from '../components/ChangeText.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import NumberCard from '../components/NumberCard.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME } from '../config';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getEntries, getHistory, getLatest } from '../lib/data';
+
+interface Props {
+  lang: Lang;
+  metal: 'gold' | 'silver';
+}
+
+const { lang, metal } = Astro.props;
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const entries = await getEntries(KARAT_ORDER.map((k) => `${metal}_${k}`));
+const top = entries[0]!;
+const history = await getHistory(top.key);
+const perGram = (e: LatestEntry) => (typeof e.meta?.per_gram === 'number' ? e.meta.per_gram : Math.round(e.value / BHORI_GRAMS));
+
+const pagePath = metal === 'gold' ? '/gold-price-today' : '/silver-price-today';
+const navLabel = metal === 'gold' ? s.nav.gold : s.nav.silver;
+const value = formatSeriesValue(top.value, metal, digits);
+const date = formatDate(top.date, lang, digits);
+const metalBn = metal === 'gold' ? 'সোনা' : 'রুপা';
+const metalEn = metal === 'gold' ? 'gold' : 'silver';
+const title =
+  lang === 'bn'
+    ? `আজকের ${metalBn === 'সোনা' ? 'সোনার' : 'রুপার'} দাম: ২২ ক্যারেট ${value} টাকা/ভরি | ${SITE_NAME}`
+    : `${metal === 'gold' ? 'Gold' : 'Silver'} price today: 22K Tk ${value}/bhori | ${SITE_NAME}`;
+const description =
+  lang === 'bn'
+    ? `বাজুস নির্ধারিত ${date} তারিখের দাম: ২২ ক্যারেট ${metalBn} প্রতি ভরি ${value} টাকা। ২১, ১৮ ক্যারেট ও সনাতন পদ্ধতির ${metalBn}র ভরি ও গ্রামপ্রতি দাম এবং চার্ট।`
+    : `BAJUS price as of ${date}: 22 karat ${metalEn} is Tk ${value} per bhori. 21K, 18K and traditional ${metalEn} per bhori and per gram, with a price chart.`;
+const h1 =
+  lang === 'bn' ? (metal === 'gold' ? 'আজকের সোনার দাম' : 'আজকের রুপার দাম') : metal === 'gold' ? 'Gold price today' : 'Silver price today';
+---
+
+<Base lang={lang} path={pagePath} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: navLabel, path: pagePath }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{h1}</h1>
+
+  <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
+    <NumberCard entry={top} lang={lang} hero label={`${s.karats['22k']}, ${s.table.perBhori}`} />
+    <div class="card p-4 sm:p-5">
+      <ChangeTable entry={top} lang={lang} />
+    </div>
+  </div>
+
+  <section class="mt-4 card overflow-x-auto">
+    <table class="data-table text-[0.9375rem]">
+      <thead>
+        <tr>
+          <th scope="col">{s.table.purity}</th>
+          <th scope="col">{s.table.perBhori}</th>
+          <th scope="col">{s.table.perGram}</th>
+          <th scope="col">{s.change}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          entries.map((e, i) => (
+            <tr data-series={e.key}>
+              <th scope="row" class="font-normal">
+                <a href={localePath(lang, `/history/${e.key}`)} class="text-ink no-underline hover:underline">
+                  {s.karats[KARAT_ORDER[i]!]}
+                </a>
+              </th>
+              <td>
+                <Num value={e.value} lang={lang} field="value" class="font-semibold" />
+              </td>
+              <td>
+                <Num value={perGram(e)} lang={lang} field="per_gram" />
+              </td>
+              <td>
+                <ChangeText change={e.change.prev} category={metal} lang={lang} field="change.prev" empty="dash" class="text-sm text-ink-2" />
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <div class="mt-4">
+    <LineChart
+      points={history.points.map((p) => [p.date, p.value])}
+      category={metal}
+      unit="BDT/bhori"
+      lang={lang}
+      label={lang === 'bn' ? top.name_bn : top.name_en}
+    />
+    <p class="mt-2 text-sm"><a href={localePath(lang, `/history/${top.key}`)}>{s.history}</a></p>
+  </div>
+
+  <section class="mt-8 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{lang === 'bn' ? 'দাম কে ঠিক করে' : 'Who sets the price'}</h2>
+    {
+      lang === 'bn' ? (
+        <p>
+          দেশের বাজারে {metalBn === 'সোনা' ? 'সোনা' : 'রুপা'}র দাম নির্ধারণ ও ঘোষণা করে বাংলাদেশ জুয়েলার্স অ্যাসোসিয়েশন (বাজুস)। বাজুস দাম প্রকাশ করে প্রতি গ্রাম হিসাবে;
+          এখানে তা ভরিতে রূপান্তর করা হয়েছে (১ ভরি = ১১.৬৬৪ গ্রাম)। নতুন দাম ঘোষণা হলে এই পাতা নিজে থেকে হালনাগাদ হয়।
+        </p>
+      ) : (
+        <p>
+          Domestic {metalEn} prices are set and announced by the Bangladesh Jewellers Association (BAJUS). BAJUS publishes prices per gram; they
+          are converted to bhori here (1 bhori = 11.664 grams). This page updates on its own when a new price is announced.
+        </p>
+      )
+    }
+  </section>
+
+  <Related
+    lang={lang}
+    links={[
+      metal === 'gold' ? { label: s.nav.silver, path: '/silver-price-today' } : { label: s.nav.gold, path: '/gold-price-today' },
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+    ]}
+  />
+</Base>
