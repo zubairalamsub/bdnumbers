@@ -45,6 +45,13 @@ export function monthTimes(lat: number, lon: number, date: string): DayTimes[] {
 }
 
 /** "4:48 AM" / "৪:৪৮ AM" in Dhaka time. */
+/** Short row label for a timetable day: "২২ বৃহস্পতি" / "22 Thu". */
+export function dayLabel(date: string, lang: 'bn' | 'en', digits: 'beng' | 'latn'): string {
+  return new Intl.DateTimeFormat(`${lang}-u-nu-${digits}`, { day: 'numeric', weekday: 'short', timeZone: 'UTC' }).format(
+    new Date(`${date}T00:00:00Z`),
+  );
+}
+
 export function formatTime(iso: string, lang: 'bn' | 'en', digits: 'beng' | 'latn'): string {
   return new Intl.DateTimeFormat(`${lang}-u-nu-${digits}`, {
     hour: 'numeric',

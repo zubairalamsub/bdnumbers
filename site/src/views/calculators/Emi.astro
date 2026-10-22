@@ -18,6 +18,7 @@ const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
   slug="emi"
   title={bn ? 'ঋণের কিস্তি (EMI) ক্যালকুলেটর' : 'Loan EMI calculator'}
   intro={bn ? 'ঋণের পরিমাণ, সুদের হার ও মেয়াদ দিন; মাসিক কিস্তি ও মোট সুদ দেখুন।' : 'Enter the loan, rate and tenure to see the monthly instalment and total interest.'}
+  summary={{ name: 'instalment', label: bn ? 'মাসিক কিস্তি' : 'Monthly instalment' }}
 >
   <form data-calc="emi" class="grid gap-6 md:grid-cols-2">
     <div class="space-y-4">

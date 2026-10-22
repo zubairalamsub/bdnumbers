@@ -29,6 +29,7 @@ const usdDate = series.find((e) => e.key === 'usd_bdt_avg')?.date;
   slug="currency-converter"
   title={bn ? 'মুদ্রা রূপান্তর' : 'Currency converter'}
   intro={bn ? 'বাংলাদেশ ব্যাংকের প্রকাশিত রেটে টাকা ও বিদেশি মুদ্রার রূপান্তর।' : 'Convert between taka and foreign currencies at the rates Bangladesh Bank publishes.'}
+  summary={{ name: 'result', label: bn ? 'ফলাফল' : 'Result' }}
 >
   <form data-calc="currency" data-rates={JSON.stringify(rates)} class="grid gap-6 md:grid-cols-2">
     <div class="space-y-4">

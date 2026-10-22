@@ -68,7 +68,7 @@ const description =
 ---
 
 <Base lang={lang} path="/" title={title} description={description} generatedAt={latest.generated_at} jsonLd={homeLd(lang, description)}>
-  <h1 class="text-2xl font-semibold sm:text-3xl">{s.tagline}</h1>
+  <h1 class="text-xl font-semibold sm:text-3xl">{s.tagline}</h1>
 
   <div class="mt-5 grid gap-4 md:grid-cols-2">
     <NumberCard entry={usd!} lang={lang} hero href={localePath(lang, '/dollar-rate-today')} label={s.nav.dollar}>
@@ -267,12 +267,12 @@ const description =
       </h2>
       <ul class="divide-y divide-grid text-[0.9375rem]">
         {CALCULATORS.slice(0, 5).map((c) => (
-          <li class="py-1">
-            <a href={localePath(lang, `/calculators/${c.slug}`)}>{lang === 'bn' ? c.bn : c.en}</a>
+          <li>
+            <a href={localePath(lang, `/calculators/${c.slug}`)} class="block py-2">{lang === 'bn' ? c.bn : c.en}</a>
           </li>
         ))}
-        <li class="py-1">
-          <a href={localePath(lang, '/prayer-times')}>{s.nav.prayer}</a>
+        <li>
+          <a href={localePath(lang, '/prayer-times')} class="block py-2">{s.nav.prayer}</a>
         </li>
       </ul>
     </section>
@@ -287,16 +287,16 @@ const description =
             const category = getSeriesDef(c.key)?.category ?? 'fx';
             const abs = c.previous === null ? 0 : c.value - c.previous;
             return (
-              <li class="flex flex-wrap justify-between gap-2 px-4 py-2 text-[0.9375rem]">
-                <span>{lang === 'bn' ? c.name_bn : c.name_en}</span>
-                <span>
+              <li class="grid grid-cols-[1fr_auto] items-baseline gap-x-3 px-4 py-2 text-[0.9375rem]">
+                <span class="min-w-0">{lang === 'bn' ? c.name_bn : c.name_en}</span>
+                <span class="text-right">
                   <Num value={c.value} fd={fractionDigits(category, c.value)} lang={lang} class="font-semibold" />
                   {c.previous !== null && (
                     <ChangeText
                       change={{ from: c.previous, date: '', abs, pct: c.previous ? (abs / c.previous) * 100 : null }}
                       category={category}
                       lang={lang}
-                      class="ml-2 text-sm text-ink-2"
+                      class="block text-sm text-ink-2 sm:ml-2 sm:inline"
                     />
                   )}
                 </span>

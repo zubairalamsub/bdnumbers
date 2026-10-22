@@ -1,6 +1,7 @@
 ---
 import type { Lang } from '@bdnumbers/shared';
 import { Font } from 'astro:assets';
+import BottomNav from '../components/BottomNav.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { API_BASE, SITE_NAME, SITE_URL } from '../config';
@@ -49,7 +50,8 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
       )
     }
     {noindex && <meta name="robots" content="noindex" />}
-    <meta name="theme-color" content="#006a4e" />
+    <meta name="theme-color" content="#006a4e" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href={localePath(lang, '/manifest.webmanifest')} />
@@ -70,12 +72,13 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
     <Font cssVariable="--font-hind" preload />
     {jsonLd.map((data) => <script type="application/ld+json" is:inline set:html={ldJson(data)} />)}
   </head>
-  <body class="min-h-screen font-sans antialiased" data-api={API_BASE} data-generated={generatedAt}>
+  <body class="min-h-screen pb-[calc(3.5rem+env(safe-area-inset-bottom))] font-sans antialiased sm:pb-0" data-api={API_BASE} data-generated={generatedAt}>
     <Header lang={lang} path={path} />
     <main class="mx-auto max-w-5xl px-4 pb-16 pt-6 sm:px-6">
       <slot />
     </main>
     <Footer lang={lang} />
+    <BottomNav lang={lang} path={path} />
     <script>
       import '../scripts/live';
       import '../scripts/pwa';

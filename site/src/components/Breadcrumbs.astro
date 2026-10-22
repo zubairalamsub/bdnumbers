@@ -23,7 +23,7 @@ const crumbs = [{ label: s.nav.home, path: '/' }, ...items];
           {i === crumbs.length - 1 ? (
             <span aria-current="page">{c.label}</span>
           ) : (
-            <a href={localePath(lang, c.path)} class="text-ink-2">
+            <a href={localePath(lang, c.path)} class="-my-1.5 inline-block py-1.5 text-ink-2">
               {c.label}
             </a>
           )}

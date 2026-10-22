@@ -25,6 +25,7 @@ const karatOptions = (metal: 'gold' | 'silver') =>
   slug="zakat"
   title={bn ? 'যাকাত ক্যালকুলেটর' : 'Zakat calculator'}
   intro={bn ? 'আপনার যাকাতযোগ্য সম্পদ ও পরিশোধযোগ্য দেনা দিন; আজকের সোনা-রুপার দামে নিসাব ও যাকাতের পরিমাণ দেখুন।' : 'Enter your zakatable wealth and debts due; see the nisab and the zakat due at today’s gold and silver prices.'}
+  summary={{ name: 'zakat', label: bn ? 'যাকাত' : 'Zakat due' }}
 >
   <form data-calc="zakat" data-prices={JSON.stringify(prices)} class="grid gap-6 md:grid-cols-2">
     <div class="space-y-4">

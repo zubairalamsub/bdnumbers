@@ -22,6 +22,7 @@ const maxYears = Math.max(...notice.schemes.map((s) => s.upTo7_5Lakh.length));
   slug="sanchayapatra"
   title={bn ? 'সঞ্চয়পত্রের মুনাফা ক্যালকুলেটর' : 'Sanchayapatra return calculator'}
   intro={bn ? 'স্কিম, বিনিয়োগ ও মেয়াদ দিন; সরকারি হারে মুনাফা ও উৎস কর বাদে কত পাবেন দেখুন।' : 'Pick a scheme, amount and holding period to see the profit at the official rate, after source tax.'}
+  summary={{ name: 'net', label: bn ? 'কর বাদে মুনাফা' : 'Profit after tax' }}
 >
   <form data-calc="sanchayapatra" data-notice={JSON.stringify(notice)} class="grid gap-6 md:grid-cols-2">
     <div class="space-y-4">

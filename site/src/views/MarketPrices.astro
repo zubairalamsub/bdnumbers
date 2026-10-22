@@ -83,7 +83,7 @@ const path = '/market-price-today';
 
   <!-- One scrolling row: wrapping would change height when the webfont swaps in and shift the tables. -->
   <nav class="-mx-4 mt-4 flex gap-2 overflow-x-auto whitespace-nowrap px-4 pb-1 text-sm sm:mx-0 sm:px-0" aria-label={m.title}>
-    {MARKET_GROUPS.map((g) => <a href={`#${g}`} class="card px-2.5 py-1 no-underline hover:underline">{m.groups[g]}</a>)}
+    {MARKET_GROUPS.map((g) => <a href={`#${g}`} class="card shrink-0 px-3 py-1.5 no-underline hover:underline">{m.groups[g]}</a>)}
   </nav>
 
   {
@@ -99,8 +99,8 @@ const path = '/market-price-today';
                 <tr>
                   <th scope="col">{m.item}</th>
                   <th scope="col">{m.today}</th>
-                  <th scope="col">{m.weekAgo}</th>
-                  <th scope="col">{m.monthAgo}</th>
+                  <th scope="col" class="hidden sm:table-cell">{m.weekAgo}</th>
+                  <th scope="col" class="hidden sm:table-cell">{m.monthAgo}</th>
                   <th scope="col">{s.change} ({s.vs.d7})</th>
                 </tr>
               </thead>
@@ -124,8 +124,8 @@ const path = '/market-price-today';
                           </span>
                         )}
                       </td>
-                      <td class="text-ink-2">{d7[0] && d7[1] ? range(d7[0].from, d7[1].from) : '—'}</td>
-                      <td class="text-ink-2">{d30[0] && d30[1] ? range(d30[0].from, d30[1].from) : '—'}</td>
+                      <td class="hidden text-ink-2 sm:table-cell">{d7[0] && d7[1] ? range(d7[0].from, d7[1].from) : '—'}</td>
+                      <td class="hidden text-ink-2 sm:table-cell">{d30[0] && d30[1] ? range(d30[0].from, d30[1].from) : '—'}</td>
                       <td>
                         <ChangeText change={midChange(r, 'd7')} category="market" lang={lang} empty="dash" class="text-sm text-ink-2" />
                       </td>

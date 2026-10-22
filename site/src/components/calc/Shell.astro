@@ -8,19 +8,50 @@ interface Props {
   slug: string;
   title: string;
   intro: string;
+  /** The main result, pinned above the bottom bar on phones while the inputs are being filled in. */
+  summary?: { name: string; label: string };
 }
 
-// Page frame for a calculator: breadcrumbs, heading, intro, then a two-column form/results card.
-const { lang, slug, title, intro } = Astro.props;
+// Page frame for a calculator: breadcrumbs, heading, intro, then a two-column form/results card. On
+// phones the results sit below the inputs, so the main one is mirrored in a bar that stays in view
+// while typing and fades out once the full results are on screen.
+const { lang, slug, title, intro, summary } = Astro.props;
 const s = STRINGS[lang];
 ---
 
-<Breadcrumbs lang={lang} items={[{ label: s.nav.calculators, path: '/calculators' }, { label: title, path: `/calculators/${slug}` }]} />
-<h1 class="text-2xl font-semibold sm:text-3xl">{title}</h1>
-<p class="mt-2 max-w-3xl text-ink-2">{intro}</p>
-<div class="card mt-5 p-4 sm:p-6">
-  <slot />
+<div data-calc-root>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.calculators, path: '/calculators' }, { label: title, path: `/calculators/${slug}` }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{title}</h1>
+  <p class="mt-2 max-w-3xl text-ink-2">{intro}</p>
+  <div class="card mt-5 p-4 sm:p-6">
+    <slot />
+  </div>
+  {
+    summary && (
+      <div
+        class="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 mt-3 transition-opacity data-[hidden]:pointer-events-none data-[hidden]:opacity-0 md:hidden"
+        aria-hidden="true"
+        data-calc-summary
+      >
+        <div class="flex items-center justify-between gap-3 rounded-lg border border-hairline bg-surface px-4 py-2.5 shadow-lg">
+          <span class="text-sm text-ink-2">{summary.label}</span>
+          <span class="text-lg font-semibold" data-out={summary.name}>
+            —
+          </span>
+        </div>
+      </div>
+    )
+  }
+  <div class="mt-4 max-w-3xl space-y-2 text-sm text-ink-2">
+    <slot name="notes" />
+  </div>
 </div>
-<div class="mt-4 max-w-3xl space-y-2 text-sm text-ink-2">
-  <slot name="notes" />
-</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-calc-root]')) {
+    const bar = root.querySelector<HTMLElement>('[data-calc-summary]');
+    const results = root.querySelector('form dl');
+    if (!bar || !results) continue;
+    new IntersectionObserver(([entry]) => bar.toggleAttribute('data-hidden', entry!.isIntersecting)).observe(results);
+  }
+</script>

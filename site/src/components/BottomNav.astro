@@ -1,0 +1,115 @@
+---
+import type { Lang } from '@bdnumbers/shared';
+import { STRINGS, localePath } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  path: string;
+}
+
+// Phone navigation: a tab bar fixed to the bottom of the screen (within thumb reach) with the four
+// most-used pages and "More", which opens a sheet listing every page. Hidden from sm upwards, where the
+// header shows the links. The sheet uses the native popover attribute, so it needs no JavaScript.
+const { lang, path } = Astro.props;
+const s = STRINGS[lang];
+const bn = lang === 'bn';
+
+const ICONS = {
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+  dollar:
+    '<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.7 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5"/><path d="M12 6.5V8m0 8v1.5"/>',
+  gold: '<path d="M3.5 20h7.5l-1.6-5H5.1z"/><path d="M13 20h7.5l-1.6-5h-4.3z"/><path d="M8.2 13h7.6L14.2 8H9.8z"/>',
+  market: '<path d="M3 5h2.2l2.1 10h10.4L20 8H6.4"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/>',
+  more: '<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
+} as const;
+
+const tabs = [
+  { path: '/', label: s.nav.home, icon: ICONS.home },
+  { path: '/dollar-rate-today', label: bn ? 'ডলার' : 'Dollar', icon: ICONS.dollar },
+  { path: '/gold-price-today', label: bn ? 'সোনা' : 'Gold', icon: ICONS.gold },
+  { path: '/market-price-today', label: bn ? 'বাজার' : 'Market', icon: ICONS.market },
+];
+const pages = [
+  { path: '/dollar-rate-today', label: s.nav.dollar },
+  { path: '/gold-price-today', label: s.nav.gold },
+  { path: '/silver-price-today', label: s.nav.silver },
+  { path: '/market-price-today', label: s.nav.market },
+  { path: '/share-market-today', label: s.nav.stock },
+  { path: '/fuel-price', label: s.nav.fuel },
+  { path: '/lpg-price', label: s.nav.lpg },
+  { path: '/savings-rates', label: s.nav.savings },
+  { path: '/weather', label: s.nav.weather },
+  { path: '/prayer-times', label: s.nav.prayer },
+  { path: '/holidays', label: s.nav.holidays },
+  { path: '/calculators', label: s.nav.calculators },
+];
+const active = (p: string) => (p === '/' ? path === '/' : path === p || path.startsWith(`${p}/`));
+const moreActive = !tabs.some((t) => active(t.path));
+---
+
+<nav aria-label={s.nav.allPages} class="bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-surface sm:hidden">
+  <ul class="grid grid-cols-5">
+    {
+      tabs.map((t) => (
+        <li>
+          <a
+            href={localePath(lang, t.path)}
+            aria-current={active(t.path) ? 'page' : undefined}
+            class:list={[
+              'flex h-14 flex-col items-center justify-center gap-0.5 text-xs no-underline',
+              active(t.path) ? 'font-semibold text-accent' : 'text-ink-2',
+            ]}
+          >
+            <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={t.icon} />
+            {t.label}
+          </a>
+        </li>
+      ))
+    }
+    <li>
+      <button
+        type="button"
+        popovertarget="more-sheet"
+        data-more
+        class:list={['flex h-14 w-full flex-col items-center justify-center gap-0.5 text-xs', moreActive ? 'font-semibold text-accent' : 'text-ink-2']}
+      >
+        <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS.more} />
+        {s.more}
+      </button>
+    </li>
+  </ul>
+</nav>
+
+<div id="more-sheet" popover class="more-sheet sm:hidden">
+  <div class="flex items-center justify-between">
+    <p class="font-semibold">{s.nav.allPages}</p>
+    <button type="button" popovertarget="more-sheet" popovertargetaction="hide" class="grid size-10 place-items-center rounded-full text-ink-2" aria-label={s.close}>
+      <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+    </button>
+  </div>
+  <ul class="mt-2 grid grid-cols-2 gap-2">
+    {
+      pages.map((p) => (
+        <li>
+          <a
+            href={localePath(lang, p.path)}
+            aria-current={active(p.path) ? 'page' : undefined}
+            class:list={[
+              'flex min-h-12 items-center rounded-lg border px-3 py-2 no-underline',
+              active(p.path) ? 'border-accent font-semibold text-ink' : 'border-hairline text-ink',
+            ]}
+          >
+            {p.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<script>
+  // Browsers without the popover attribute: "More" jumps to the full list of pages in the footer.
+  if (!Object.prototype.hasOwnProperty.call(HTMLElement.prototype, 'popover')) {
+    document.querySelector('[data-more]')?.addEventListener('click', () => document.getElementById('all-pages')?.scrollIntoView());
+  }
+</script>

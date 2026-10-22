@@ -32,7 +32,7 @@ const shown = defaultDigits(lang);
       <span aria-hidden="true" class="mr-1 inline-grid size-7 place-items-center rounded-md bg-accent text-accent-ink">৳</span>
       {SITE_NAME}
     </a>
-    <nav aria-label={s.nav.home} class="order-3 w-full overflow-x-auto sm:order-none sm:w-auto">
+    <nav aria-label={s.nav.home} class="hidden overflow-x-auto sm:block">
       <ul class="flex gap-5 whitespace-nowrap text-[0.9375rem]">
         {
           links.map((l) => (
@@ -56,11 +56,11 @@ const shown = defaultDigits(lang);
         data-label-beng={`${s.digitsLabel} ${s.digitsBeng}`}
         data-label-latn={`${s.digitsLabel} ${s.digitsLatn}`}
         aria-label={`${s.digitsLabel} ${shown === 'beng' ? s.digitsLatn : s.digitsBeng}`}
-        class="rounded-md border border-hairline px-2 py-0.5 text-ink-2 hover:text-ink"
+        class="min-h-9 min-w-11 rounded-md border border-hairline px-2.5 text-ink-2 hover:text-ink"
       >
         {shown === 'beng' ? '123' : '১২৩'}
       </button>
-      <a href={localePath(other, path)} hreflang={other} lang={other} class="text-ink-2 no-underline hover:underline">
+      <a href={localePath(other, path)} hreflang={other} lang={other} class="inline-flex min-h-9 items-center px-1 text-ink-2 no-underline hover:underline">
         {s.otherLang}
       </a>
     </div>

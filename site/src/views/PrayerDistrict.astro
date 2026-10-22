@@ -6,7 +6,7 @@ import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
 import { faqsFor } from '../lib/seo';
-import { PRAYERS, formatTime, monthTimes, prayerTimes, ramadanDates } from '../lib/prayer';
+import { PRAYERS, dayLabel, formatTime, monthTimes, prayerTimes, ramadanDates } from '../lib/prayer';
 
 interface Props {
   lang: Lang;
@@ -87,7 +87,7 @@ const neighbours = DISTRICTS.filter((d) => d.division === district.division && d
     <section class="mt-6">
       <h2 class="mb-2 text-lg font-semibold">{lang === 'bn' ? 'এই মাসের সময়সূচি' : "This month's timetable"}</h2>
       <div class="card overflow-x-auto">
-        <table class="data-table text-sm" data-prayer-month>
+        <table class="data-table sticky-first text-sm" data-prayer-month>
           <thead>
             <tr>
               <th scope="col">{s.table.date}</th>
@@ -99,7 +99,7 @@ const neighbours = DISTRICTS.filter((d) => d.division === district.division && d
               month.map((d) => (
                 <tr data-day={d.date}>
                   <th scope="row" class="font-normal">
-                    {formatDate(d.date, lang, digits)}
+                    {dayLabel(d.date, lang, digits)}
                   </th>
                   {PRAYERS.map((p) => (
                     <td>{t(d.times[p])}</td>
@@ -183,7 +183,7 @@ const neighbours = DISTRICTS.filter((d) => d.division === district.division && d
   <script>
     import { dhakaDate, formatDate } from '@bdnumbers/shared';
     import { pageLang, readDigits } from '../lib/prefs';
-    import { PRAYERS, formatTime, monthTimes, prayerTimes } from '../lib/prayer';
+    import { PRAYERS, dayLabel, formatTime, monthTimes, prayerTimes } from '../lib/prayer';
 
     // The page may have been built days ago: recompute today and this month for the visitor's date, and mark
     // the next prayer.
@@ -217,7 +217,7 @@ const neighbours = DISTRICTS.filter((d) => d.division === district.division && d
             const th = document.createElement('th');
             th.scope = 'row';
             th.className = 'font-normal';
-            th.textContent = formatDate(d.date, lang, digits);
+            th.textContent = dayLabel(d.date, lang, digits);
             tr.append(th, ...PRAYERS.map((p) => Object.assign(document.createElement('td'), { textContent: t(d.times[p]) })));
             return tr;
           }),

@@ -19,6 +19,7 @@ const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
   slug="dps"
   title={bn ? 'ডিপিএস মেয়াদপূর্তি ক্যালকুলেটর' : 'DPS maturity calculator'}
   intro={bn ? 'প্রতি মাসে জমা, সুদের হার ও মেয়াদ দিন; মেয়াদ শেষে কত পাবেন দেখুন।' : 'Enter the monthly deposit, rate and term to see the amount at maturity.'}
+  summary={{ name: 'maturity', label: bn ? 'মেয়াদ শেষে পাবেন' : 'At maturity' }}
 >
   <form data-calc="dps" class="grid gap-6 md:grid-cols-2">
     <div class="space-y-4">

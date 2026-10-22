@@ -32,6 +32,7 @@ const asOf = metals[0] ? formatDate(metals[0].date, lang, defaultDigits(lang)) :
   slug="gold"
   title={bn ? 'সোনা-রুপার ওজন ও দাম ক্যালকুলেটর' : 'Gold and silver weight and value'}
   intro={bn ? 'ভরি-আনা-রতি বা গ্রামে ওজন দিন; অন্য এককে রূপান্তর ও বাজুসের আজকের দামে মূল্য দেখুন।' : 'Enter a weight in bhori/ana/rati or grams; see it in the other units and its value at BAJUS’s price today.'}
+  summary={{ name: 'value', label: bn ? 'আজকের দামে মূল্য' : 'Value today' }}
 >
   <form data-calc="gold" data-prices={JSON.stringify(prices)} class="grid gap-6 md:grid-cols-2">
     <div class="space-y-4">

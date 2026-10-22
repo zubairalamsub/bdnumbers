@@ -20,6 +20,8 @@ export interface CalcContext {
 
 export function bindCalculator(form: HTMLFormElement, compute: (ctx: CalcContext) => void): void {
   const lang = pageLang();
+  // The calculator's frame (Shell): includes the pinned summary bar outside the form.
+  const root = form.closest<HTMLElement>('[data-calc-root]') ?? form;
   const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
   const run = () => {
     const digits = readDigits(lang);
@@ -30,7 +32,7 @@ export function bindCalculator(form: HTMLFormElement, compute: (ctx: CalcContext
       num: (name) => parseInput(field(name)?.value ?? ''),
       str: (name) => field(name)?.value ?? '',
       out: (name, text) => {
-        for (const el of form.querySelectorAll<HTMLElement>(`[data-out="${name}"]`)) el.textContent = text;
+        for (const el of root.querySelectorAll<HTMLElement>(`[data-out="${name}"]`)) el.textContent = text;
       },
       money,
       taka: (n) => (!Number.isFinite(n) ? '—' : lang === 'bn' ? `${money(n)} টাকা` : `Tk ${money(n)}`),
