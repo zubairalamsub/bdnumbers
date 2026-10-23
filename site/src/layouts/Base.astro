@@ -71,7 +71,8 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={title} />
     <meta name="twitter:card" content="summary_large_image" />
-    <Font cssVariable="--font-hind" preload />
+    {/* Preload only the script this page is written in; the other loads on demand. */}
+    <Font cssVariable="--font-bn" preload={[{ subset: lang === 'bn' ? 'bengali' : 'latin' }]} />
     {jsonLd.map((data) => <script type="application/ld+json" is:inline set:html={ldJson(data)} />)}
   </head>
   <body class="min-h-screen pb-[calc(3.5rem+env(safe-area-inset-bottom))] font-sans antialiased sm:pb-0" data-api={API_BASE} data-generated={generatedAt}>

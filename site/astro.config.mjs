@@ -18,15 +18,22 @@ export default defineConfig({
     defaultLocale: 'bn',
     routing: { prefixDefaultLocale: false },
   },
+  // Noto Sans Bengali: the clearest Bengali at small sizes (large x-height, unambiguous digits), with
+  // matching Latin. Only the two weights the site uses (400 and 600, as static files: smaller than the
+  // variable font). Base.astro preloads just the subset a page's language needs.
+  // display: optional — the font is used only if it arrives (preloaded) before the first paint, else
+  // that page keeps the system font and the next page uses the cached one. No late swap means no layout
+  // shift and no delayed LCP; Android, most of the audience, ships Noto Sans Bengali as its system font.
   fonts: [
     {
       provider: fontProviders.fontsource(),
-      name: 'Hind Siliguri',
-      cssVariable: '--font-hind',
+      name: 'Noto Sans Bengali',
+      cssVariable: '--font-bn',
       weights: [400, 600],
       styles: ['normal'],
       subsets: ['bengali', 'latin'],
-      fallbacks: ['sans-serif'],
+      display: 'optional',
+      fallbacks: ['Noto Sans Bengali', 'sans-serif'],
     },
   ],
   vite: {
