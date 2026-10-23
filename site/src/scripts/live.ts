@@ -32,27 +32,34 @@ let lastFetch = Date.parse(document.body.dataset.generated ?? '') || 0;
 
 // ---------- rendering ----------
 
+/** Write text only when it differs: rewriting identical text repaints it, which delays LCP for nothing. */
+function setText(el: HTMLElement, text: string): void {
+  if (el.textContent !== text) el.textContent = text;
+}
+
 function renderValues(scope: ParentNode = document): void {
   for (const el of scope.querySelectorAll<HTMLElement>('[data-num]')) {
     const fd = Number(el.dataset.fd ?? 0);
-    el.textContent = formatNumber(Number(el.dataset.num), digits, fd, fd);
+    setText(el, formatNumber(Number(el.dataset.num), digits, fd, fd));
   }
   for (const el of scope.querySelectorAll<HTMLElement>('[data-change]')) {
     if (!el.dataset.abs) {
       el.hidden = el.dataset.empty !== 'dash';
       el.textContent = '—';
       el.removeAttribute('aria-label');
+      delete el.dataset.dir;
       continue;
     }
     const pct = el.dataset.pct ? Number(el.dataset.pct) : null;
     const label = changeLabel({ abs: Number(el.dataset.abs), pct }, el.dataset.cat as Category, lang, digits);
-    el.textContent = label.text;
+    setText(el, label.text);
+    el.dataset.dir = label.dir;
     el.setAttribute('aria-label', label.aria);
     el.hidden = false;
   }
   for (const el of scope.querySelectorAll<HTMLElement>('[data-date]')) {
     const date = el.dataset.date!;
-    el.textContent = formatPointDate(date, lang, digits);
+    setText(el, formatPointDate(date, lang, digits));
     el.setAttribute('datetime', date);
   }
   renderTimes(scope);
@@ -315,7 +322,7 @@ function setupDigitsToggle(): void {
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-digits-toggle]')) {
     const sync = () => {
       const next: Digits = digits === 'beng' ? 'latn' : 'beng';
-      button.textContent = next === 'latn' ? '123' : '১২৩';
+      for (const opt of button.querySelectorAll<HTMLElement>('[data-opt]')) opt.toggleAttribute('data-active', opt.dataset.opt === digits);
       button.setAttribute('aria-label', button.dataset[next === 'latn' ? 'labelLatn' : 'labelBeng'] ?? '');
     };
     button.addEventListener('click', () => {

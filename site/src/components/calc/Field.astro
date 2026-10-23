@@ -1,4 +1,6 @@
 ---
+import { parseInput } from '../../lib/prefs';
+
 interface Props {
   name: string;
   label: string;
@@ -8,7 +10,10 @@ interface Props {
 }
 
 // Text input with inputmode=decimal: type=number would reject Bengali digits (০-৯) and commas.
+// A zero starting value is shown as a placeholder instead, so there is nothing to delete before typing;
+// the calculator reads such an empty field as 0 (data-blank-zero).
 const { name, label, value, suffix, hint } = Astro.props;
+const zero = value !== undefined && parseInput(String(value)) === 0;
 ---
 
 <label class="block">
@@ -16,7 +21,9 @@ const { name, label, value, suffix, hint } = Astro.props;
   <span class="flex items-center gap-2">
     <input
       name={name}
-      value={value}
+      value={zero ? undefined : value}
+      placeholder={zero ? String(value) : undefined}
+      data-blank-zero={zero ? '' : undefined}
       inputmode="decimal"
       autocomplete="off"
       class="w-full min-w-0 rounded-md border border-hairline bg-page px-3 py-2 text-ink"

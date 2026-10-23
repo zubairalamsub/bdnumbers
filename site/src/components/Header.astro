@@ -56,9 +56,10 @@ const shown = defaultDigits(lang);
         data-label-beng={`${s.digitsLabel} ${s.digitsBeng}`}
         data-label-latn={`${s.digitsLabel} ${s.digitsLatn}`}
         aria-label={`${s.digitsLabel} ${shown === 'beng' ? s.digitsLatn : s.digitsBeng}`}
-        class="min-h-9 min-w-11 rounded-md border border-hairline px-2.5 text-ink-2 hover:text-ink"
+        class="inline-flex min-h-9 items-center gap-0.5 rounded-md border border-hairline p-0.5 text-ink-2 hover:text-ink"
       >
-        {shown === 'beng' ? '123' : '১২৩'}
+        <span data-opt="beng" data-active={shown === 'beng' ? '' : undefined} class="rounded px-1.5 leading-7">১২৩</span>
+        <span data-opt="latn" data-active={shown === 'latn' ? '' : undefined} class="rounded px-1.5 leading-7">123</span>
       </button>
       <a href={localePath(other, path)} hreflang={other} lang={other} class="inline-flex min-h-9 items-center px-1 text-ink-2 no-underline hover:underline">
         {s.otherLang}

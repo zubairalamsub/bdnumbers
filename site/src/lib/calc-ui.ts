@@ -29,7 +29,12 @@ export function bindCalculator(form: HTMLFormElement, compute: (ctx: CalcContext
     compute({
       lang,
       digits,
-      num: (name) => parseInput(field(name)?.value ?? ''),
+      num: (name) => {
+        const el = field(name);
+        const raw = el?.value ?? '';
+        // Optional amounts start blank with a "0" placeholder; left blank, they count as 0.
+        return raw.trim() === '' && el?.dataset.blankZero !== undefined ? 0 : parseInput(raw);
+      },
       str: (name) => field(name)?.value ?? '',
       out: (name, text) => {
         for (const el of root.querySelectorAll<HTMLElement>(`[data-out="${name}"]`)) el.textContent = text;

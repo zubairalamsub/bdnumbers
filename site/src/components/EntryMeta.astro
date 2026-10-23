@@ -18,7 +18,11 @@ const mirror = entry.meta?.source === 'mirror';
 
 <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
   <span>{s.asOf}: <DateText date={entry.date} lang={lang} field="date" /></span>
-  <span>{s.updated}: <Ago at={entry.checked_at} lang={lang} field="checked" /></span>
+  {/* The time is built as "22 Oct 2026, 13:00" and the script shortens it to "5 hours ago". Reserving
+      the long form's width keeps the line breaks the same before and after, so nothing below shifts. */}
+  <span class="whitespace-nowrap">
+    {s.updated}: <span class:list={['inline-block', lang === 'bn' ? 'min-w-[10.9em]' : 'min-w-[8.9em]']}><Ago at={entry.checked_at} lang={lang} field="checked" /></span>
+  </span>
   <span class="badge text-warn-ink" data-field="stale" title={s.staleHint} hidden={!entry.stale}>
     <span aria-hidden="true">⚠</span>{s.stale}
   </span>

@@ -127,13 +127,13 @@ const description = bn
       bn ? (
         <p>
           প্রতিটি উৎস প্রতিদিন সকাল ৭টা ও দুপুর ১টায় স্বয়ংক্রিয়ভাবে যাচাই করা হয়, আর আবহাওয়া প্রতি ঘণ্টায়। কোনো উৎস থেকে নতুন তথ্য পাওয়া না গেলে শেষ পাওয়া মানটি
-          "পুরোনো তথ্য" চিহ্নসহ দেখানো হয়; কখনো অনুমান করে সংখ্যা বসানো হয় না। কোন উৎস সর্বশেষ কখন সফলভাবে পড়া হয়েছে, তা{' '}
+          "হালনাগাদ হয়নি" চিহ্নসহ দেখানো হয়; কখনো অনুমান করে সংখ্যা বসানো হয় না। কোন উৎস সর্বশেষ কখন সফলভাবে পড়া হয়েছে, তা{' '}
           <a href={localePath(lang, '/status')}>{s.nav.status}</a> পাতায় দেখা যায়।
         </p>
       ) : (
         <p>
           Each source is checked automatically at 7 am and 1 pm Dhaka time every day, and the weather every hour. If a source cannot be read, the last value
-          is shown marked as old; a number is never guessed. The <a href={localePath(lang, '/status')}>{s.nav.status}</a> page shows when
+          is shown marked "Not refreshed"; a number is never guessed. The <a href={localePath(lang, '/status')}>{s.nav.status}</a> page shows when
           each source was last read successfully.
         </p>
       )

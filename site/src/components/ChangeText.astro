@@ -22,6 +22,7 @@ const label = change ? changeLabel(change, category, lang, defaultDigits(lang)) 
   data-change
   data-field={field}
   data-cat={category}
+  data-dir={label?.dir}
   data-abs={change?.abs ?? ''}
   data-pct={change?.pct ?? ''}
   data-empty={empty}
