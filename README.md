@@ -175,6 +175,15 @@ cd worker && npx tsx scripts/backfill-gold.ts            # dry run: what it woul
 cd worker && npx tsx scripts/backfill-gold.ts --ingest   # write (safe to re-run)
 ```
 
+### Dollar history backfill
+
+Bangladesh Bank's [Interbank FX Market](https://www.bb.org.bd/en/index.php/fxmarket/interbank_fxmarket) page lists each trading day's lowest, highest and weighted average (WAR) USD/BDT rate, one month per query (market SPOT), back to July 2025. BB answers scripts with a bot check, so the monthly tables were read in a browser on 2026-10-25 and saved unchanged in [`worker/scripts/data/`](worker/scripts/data). The exchange-rate page the Worker reads shows, on each date, the interbank figures of the previous business day: its 19 Oct page has 18 Oct's 123.60 / 123.72 / 123.65. So each row is stored under the next trading day's date, as `usd_bdt_low` / `usd_bdt_high` / `usd_bdt_avg`. BB's "Highest" and "Lowest" columns are swapped in many 2025 rows, so low and high are the smaller and larger of the two. The script checks the mapping against dates the Worker already has (19 Oct matched) and writes only earlier dates: 314 days, 3 Jul 2025 to 18 Oct 2026.
+
+```bash
+cd worker && npx tsx scripts/backfill-usd.ts            # dry run, with the overlap check
+cd worker && npx tsx scripts/backfill-usd.ts --ingest   # write (safe to re-run)
+```
+
 ### Seeding history
 
 So charts aren't empty at launch, load history from CSVs. Name each file `<series_key>.csv` (for example `usd_bdt_avg.csv` or `gold_22k.csv`) and give it a `date,value` header row:
@@ -221,7 +230,8 @@ Everything here is on free plans. Report problems as described in [SECURITY.md](
 - **Health:** `/api/status.json` shows each source's last run, error, 24 h failures and stale series. For live logs, run `npx wrangler tail` (observability is on).
 - **Wrong value from a source:** post an override, either through `/manual` with *Override* ticked or with `"override": true` to `/api/ingest`. The override wins for that series and date and shows `overridden: true`.
 - **A site changed its layout:** the run fails and the data goes stale. Save the new page as a fixture, update the parser and its test, and push; CI deploys it.
-- **Blocked from Cloudflare's network:** move that source to a GitHub Actions job that POSTs to `/api/ingest`.
+- **Failure alerts:** after every batch the Worker emails the owner (from `alerts@bdrate.fyi` through Cloudflare Email Routing, free) when a source has failed twice in a row, and once more when it works again; an outage never sends more than those two emails. The recipient is the `ALERT_TO` Worker secret, a verified Email Routing destination, so the address stays out of this repository. Without it, alerts are off.
+- **Blocked from Cloudflare's network:** a source whose parser takes a page can be relayed: fetch the page anywhere else and `POST /api/ingest/html/<source>` with the `INGEST_TOKEN`. The Worker parses and validates it exactly as in a normal run and logs it as that source's run (trigger `relay`). BAJUS has shown Cloudflare's bot check to the Worker since 2026-10-23, so [`gold-relay.yml`](.github/workflows/gold-relay.yml) runs 20 minutes after each daily batch and, when the Worker's BAJUS fetch failed or fell back to the UNB mirror, fetches BAJUS from GitHub's network and relays it. It needs the `INGEST_TOKEN` repository secret. For a source that can't be fetched as one page, post points to `/api/ingest` instead.
 - **Savings rates changed:** when `/status` warns that the directorate links a new notice, transcribe its table into `SAVINGS_NOTICE` in `shared/src/catalog/periodic.ts` and push. Do the same for `site/src/lib/mfs-fees.ts` when an operator changes its charges.
 
 ## Free-tier limits
