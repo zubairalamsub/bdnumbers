@@ -71,7 +71,10 @@ Every product page carries schema.org Product JSON-LD, so one parser reads them 
 - **"5G" in names:** a model is listed with and without it, so "5G"/"4G" splits a model only when shops sell both versions.
 - **Prices left out:** a price far below the model's others is dropped from the comparison. Apple Gadgets, for one, lists pre-order deposits as prices.
 - **Official or unofficial:** an offer is official or unofficial only when the shop says so. Otherwise it goes in the "unofficial/other" column; official and unofficial prices are never mixed.
-- **Crawl:** a queue in D1 (`phone_pages`). Every hour each shop gets a run in its own invocation, and each page is fetched and parsed in another, at most 45 per shop run. Listing pages and sitemaps are re-read daily, products in stock daily, out of stock every 2 days, and unpriced ones every 3. A page that 404s twice is dropped.
+- **Crawl:** a queue in D1 (`phone_pages`). Every hour each shop gets a run in its own invocation, and each page is fetched and parsed in another, at most 45 per shop run.
+  - **Pace:** one page at a time with 1.5 s between pages, about 20 requests a minute. On 2026-10-25 a burst of about 90 a minute got a Cloudflare challenge from Sumash Tech.
+  - **Blocks:** a run stops after 3 blocked answers (403/429) in a row.
+  - **Overlap:** a shop's run waits if the previous one is still going. Listing pages and sitemaps are re-read daily, products in stock daily, out of stock every 2 days, and unpriced ones every 3. A page that 404s twice is dropped.
 - **History:** every price or stock change is kept (`phone_price_log`). The daily batch records each model's lowest official and unofficial price (`phone_daily`), which the model pages chart; history starts on 2026-10-25.
 - **Models and site builds:** a model's slug is fixed when it is first seen (`phone_models`), so its page URL never changes. When phone prices change, the daily batch triggers a site build even if no other number moved.
 - **Switching it off:** `PHONE_CRAWL = "off"` in `[vars]` stops the crawl without a code change.

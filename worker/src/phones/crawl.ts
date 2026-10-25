@@ -20,8 +20,15 @@ export type PageKind = 'listing' | 'sitemap' | 'product';
  * subrequests, so this leaves room.
  */
 export const PAGES_PER_RUN = 45;
-/** Pages fetched at once within a shop. */
-const CONCURRENCY = 2;
+/**
+ * Pause between a shop's pages, one at a time: about 20 requests a minute. Faster, Sumash's Cloudflare
+ * answered with a bot challenge (2026-10-25). CRAWL_GAP_MS overrides it (tests use 0).
+ */
+const PAGE_GAP_MS = 1500;
+/** Blocked answers in a row (403, 429) after which a run stops: hammering a block only makes it last. */
+const MAX_BLOCKED = 3;
+/** A run this recent that hasn't finished is still going: the next one waits rather than overlap it. */
+const RUN_LOCK_MS = 30 * 60_000;
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -129,6 +136,11 @@ export async function runShop(
   const source = `phones:${shopId}`;
   const shop = shopCrawl(shopId);
   if (!shop) return { source, ok: false, error: `unknown shop ${shopId}`, written: 0, run_id: null };
+  const running = await env.DB.prepare('SELECT id FROM runs WHERE source = ?1 AND finished_at IS NULL AND started_at > ?2 LIMIT 1')
+    .bind(source, iso(now.getTime() - RUN_LOCK_MS))
+    .first<{ id: number }>();
+  // Not a failure: the run already going covers this hour. No run row, so it never trips an alert.
+  if (running) return { source, ok: true, error: `run ${running.id} is still going`, written: 0, run_id: null };
   const runId = await startRun(env.DB, source, trigger, now.toISOString());
   try {
     const checked = await crawl(env, shop, invoke, now.getTime());
@@ -170,23 +182,24 @@ async function crawl(env: Env, shop: ShopCrawl, invoke: PageInvoker, now: number
   const listingDue = new Map((listings!.results as Array<{ url: string; next_check: string }>).map((r) => [r.url, r.next_check]));
   const queued = new Set(queue.map((p) => p.url));
 
+  const gap = Number(env.CRAWL_GAP_MS ?? PAGE_GAP_MS);
   const checked: Checked[] = [];
-  while (queue.length > 0 && checked.length < PAGES_PER_RUN) {
-    const batch = queue.splice(0, Math.min(CONCURRENCY, PAGES_PER_RUN - checked.length));
-    const results = await Promise.all(batch.map((page) => invoke(shop.id, page.url, page.kind)));
-    batch.forEach((page, i) => {
-      const result = results[i]!;
-      checked.push({ page, result });
-      const n = listingPage(shop, page.url);
-      if (n === null || result.status !== 'ok' || !('links' in result) || result.links.length === 0) return;
-      const next = shop.discovery.type === 'listing' ? shop.discovery.page(n + 1) : null;
-      const due = next ? listingDue.get(next) : undefined;
-      if (next && !queued.has(next) && (due === undefined || due <= iso(now))) {
-        queued.add(next);
-        const firstProduct = queue.findIndex((p) => p.kind === 'product');
-        queue.splice(firstProduct < 0 ? queue.length : firstProduct, 0, { url: next, kind: 'listing', fails: 0 });
-      }
-    });
+  let blocked = 0;
+  while (queue.length > 0 && checked.length < PAGES_PER_RUN && blocked < MAX_BLOCKED) {
+    if (checked.length > 0 && gap > 0) await new Promise((resolve) => setTimeout(resolve, gap));
+    const page = queue.shift()!;
+    const result = await invoke(shop.id, page.url, page.kind);
+    checked.push({ page, result });
+    blocked = result.status === 'error' && / HTTP (403|429)\b/.test(result.detail) ? blocked + 1 : 0;
+    const n = listingPage(shop, page.url);
+    if (n === null || result.status !== 'ok' || !('links' in result) || result.links.length === 0) continue;
+    const next = shop.discovery.type === 'listing' ? shop.discovery.page(n + 1) : null;
+    const due = next ? listingDue.get(next) : undefined;
+    if (next && !queued.has(next) && (due === undefined || due <= iso(now))) {
+      queued.add(next);
+      const firstProduct = queue.findIndex((p) => p.kind === 'product');
+      queue.splice(firstProduct < 0 ? queue.length : firstProduct, 0, { url: next, kind: 'listing', fails: 0 });
+    }
   }
   return checked;
 }

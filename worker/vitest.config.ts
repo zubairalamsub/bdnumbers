@@ -15,6 +15,7 @@ export default defineConfig(async () => {
             RETRY_DELAY_MS: '0',
             // The phone crawl is tested on its own (phones.test.ts); batch tests leave the shops alone.
             PHONE_CRAWL: 'off',
+            CRAWL_GAP_MS: '0',
             INGEST_TOKEN: 'test-ingest-token',
             INTERNAL_TOKEN: 'test-internal-token',
             PAGES_DEPLOY_HOOK: 'https://deploy-hook.test/hook',

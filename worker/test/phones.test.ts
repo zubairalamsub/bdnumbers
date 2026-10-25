@@ -285,6 +285,27 @@ describe('runShop', () => {
     expect(await runShop(env, 'rio', 'test', undefined, hours(1))).toMatchObject({ ok: false, error: expect.stringMatching(/^no prices on 16 product pages/) });
   });
 
+  it('stops after three blocked answers in a row instead of reading on', async () => {
+    mockFetch({ [RIO_PAGE(1)]: html(rioList), [RIO_PAGE(2)]: html('<html></html>') });
+    await runShop(env, 'rio', 'test', undefined, T0);
+    vi.restoreAllMocks();
+    const spy = mockFetch({ 'https://riointernational.com.bd/': httpStatus(403) });
+    const result = await runShop(env, 'rio', 'test', undefined, hours(1));
+    expect(result).toMatchObject({ ok: false, error: expect.stringMatching(/^all 3 pages failed; .*HTTP 403/) });
+    // Three pages, each fetched twice (one retry).
+    expect(calledUrls(spy)).toHaveLength(6);
+  });
+
+  it('leaves a shop alone while its previous run is still going', async () => {
+    await env.DB.prepare("INSERT INTO runs (source, started_at, trigger) VALUES ('phones:rio', ?1, 'cron')").bind(T0.toISOString()).run();
+    const spy = mockFetch({});
+    expect(await runShop(env, 'rio', 'test', undefined, new Date(T0.getTime() + 60_000))).toMatchObject({ ok: true, run_id: null, written: 0 });
+    expect(calledUrls(spy)).toHaveLength(0);
+    // A run left open for over half an hour died (CPU limit, deploy); the next one goes ahead.
+    mockFetch({ [RIO_PAGE(1)]: html(rioList), [RIO_PAGE(2)]: html('<html></html>') });
+    expect(await runShop(env, 'rio', 'test', undefined, hours(1))).toMatchObject({ ok: true, run_id: expect.any(Number) });
+  });
+
   it('fails when the shop cannot be read at all', async () => {
     mockFetch({ [RIO_PAGE(1)]: httpStatus(403) });
     const result = await runShop(env, 'rio', 'test', undefined, T0);

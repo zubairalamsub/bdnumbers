@@ -14,6 +14,8 @@ export interface Env {
   RETRY_DELAY_MS?: string;
   /** "off" stops the hourly phone shop crawl (and the daily phone snapshot); anything else leaves it on. */
   PHONE_CRAWL?: string;
+  /** Pause between a shop's pages in the phone crawl, ms; default 1500. Tests set 0. */
+  CRAWL_GAP_MS?: string;
 
   INGEST_TOKEN?: string;
   INTERNAL_TOKEN?: string;
