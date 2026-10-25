@@ -11,6 +11,7 @@ import agA57 from './fixtures/applegadgets-galaxy-a57-5g-2026-10-25.html?raw';
 import dazzleX6e from './fixtures/dazzle-honor-x6e-official-2026-10-25.html?raw';
 import dazzleList from './fixtures/dazzle-phones-page-1-2026-10-25.html?raw';
 import ggA57 from './fixtures/gadgetandgear-galaxy-a57-5g-12gb-256gb-2026-10-25.html?raw';
+import ggIphone17 from './fixtures/gadgetandgear-iphone-17-2026-10-26.html?raw';
 import kryNothing from './fixtures/kry-nothing-phone-4a-2026-10-25.html?raw';
 import krySitemap from './fixtures/kry-sitemap-2026-10-25.xml?raw';
 import rioHonor from './fixtures/rio-honor-200-5g-2026-10-25.html?raw';
@@ -147,6 +148,26 @@ describe('shop pages', () => {
     });
     // Announced but not priced yet.
     expect(productOutcome(productData(sumashIqoo))).toEqual({ status: 'no_price', name: 'iQOO 16' });
+  });
+
+  it('take "Official" from Gadget & Gear page titles, where it says so', () => {
+    const iphone = productData(ggIphone17);
+    expect(iphone.title).toBe('iPhone 17 Price in Bangladesh | Official | Gadget & Gear');
+    expect(productOutcome(iphone, { kindInTitle: true })).toMatchObject({ status: 'ok', offer: { key: 'iphone17', price: 154999, kind: 'official' } });
+    // Only for the shop that writes it there, and a title without it says nothing.
+    expect(productOutcome(iphone)).toMatchObject({ status: 'ok', offer: { kind: null } });
+    expect(productOutcome(productData(ggA57), { kindInTitle: true })).toMatchObject({ status: 'ok', offer: { kind: null } });
+  });
+
+  it('let a category rule a product out, but not a phone filed under its brand', () => {
+    const a57 = productData(agA57);
+    // Apple Gadgets files some phones as just "Samsung" or "POCO > Xiaomi".
+    expect(productOutcome({ ...a57, category: 'Samsung' }).status).toBe('ok');
+    expect(productOutcome({ ...a57, name: 'POCO M8 5G', category: 'POCO > Xiaomi' }).status).toBe('ok');
+    expect(
+      productOutcome({ ...a57, name: 'Samsung RT47K6231UT/D3 Twin Cooling Refrigerator - 465L', category: 'Home Appliances > Refrigerator & Freezer' }),
+    ).toMatchObject({ status: 'not_phone' });
+    expect(productOutcome({ ...a57, name: 'OnePlus Bullets Wireless Z3', category: 'Audio > Neckband' })).toMatchObject({ status: 'not_phone' });
   });
 
   it('fail loudly on a page without product data', () => {

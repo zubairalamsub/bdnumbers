@@ -62,7 +62,7 @@ export async function processPage(env: Env, shopId: string, url: string, kind: P
       if (err instanceof ParseError) return { status: 'no_price', detail: err.message };
       throw err;
     }
-    const outcome = productOutcome(data);
+    const outcome = productOutcome(data, { kindInTitle: shop.kindInTitle });
     if (outcome.status === 'ok') return { status: 'ok', offer: outcome.offer };
     return { status: outcome.status, detail: outcome.status === 'not_phone' ? `${outcome.name}: ${outcome.reason}` : outcome.name };
   } catch (err) {

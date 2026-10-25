@@ -13,6 +13,8 @@ export interface ShopCrawl {
   id: string;
   origin: string;
   discovery: ShopDiscovery;
+  /** The shop marks official phones in the page title rather than the product name. */
+  kindInTitle?: boolean;
 }
 
 export const SHOP_CRAWLS: readonly ShopCrawl[] = [
@@ -32,6 +34,8 @@ export const SHOP_CRAWLS: readonly ShopCrawl[] = [
     origin: 'https://gadgetandgear.com',
     // One product per RAM/storage variant ("…-12gb-256gb").
     discovery: { type: 'sitemap', url: 'https://gadgetandgear.com/sitemap.xml', product: /^https:\/\/gadgetandgear\.com\/product\/[^/?#]+$/ },
+    // "iPhone 17 Price in Bangladesh | Official | Gadget & Gear"
+    kindInTitle: true,
   },
   {
     id: 'kry',

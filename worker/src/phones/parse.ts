@@ -42,6 +42,8 @@ export interface ProductData {
   stock: PhoneStock;
   /** The shop's category, when the JSON-LD gives one ("Mobile Phone > Samsung"). */
   category: string | null;
+  /** The page's <title>. */
+  title: string | null;
 }
 
 type Json = Record<string, unknown>;
@@ -109,8 +111,15 @@ export function productData(html: string): ProductData {
     high: high !== null && price !== null && high > price ? high : null,
     stock: stockOf(offers[0]?.availability),
     category: text(product.category),
+    title: text(/<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1]),
   };
 }
+
+/** Categories that are plainly not phones. */
+const NOT_PHONE_CATEGORY =
+  /appliance|audio|accessor|watch|wearable|tablet|ipad|laptop|computer|monitor|\btv\b|television|camera|gaming|console|speaker|headphone|earphone|earbud|neckband|power ?bank|charger|cable|cover|case|refrigerator|washing|oven|kitchen|smart home|router/i;
+
+const kindIn = (s: string): PhoneKind | null => (/\bun-?official\b/i.test(s) ? 'unofficial' : /\bofficial\b/i.test(s) ? 'official' : null);
 
 /** A shop's offer for a phone, ready to store. */
 export interface PhoneOfferData {
@@ -133,12 +142,20 @@ export type ProductOutcome =
   | { status: 'not_phone'; name: string; reason: string };
 
 /** Turn a product page's data into an offer, or say why it isn't one. */
-export function productOutcome(data: ProductData): ProductOutcome {
+export function productOutcome(data: ProductData, options: { kindInTitle?: boolean } = {}): ProductOutcome {
   const { name } = data;
-  // Shops that give a category: it must be a phone category (Apple Gadgets: "Mobile Phone > Samsung").
-  if (data.category && !/phone/i.test(data.category)) return { status: 'not_phone', name, reason: `category "${data.category}"` };
+  // A shop's category can rule a product out ("Home Appliances > Refrigerator"), but not in: Apple Gadgets
+  // files some phones under the brand alone ("Samsung", "POCO > Xiaomi"), and Sumash files them under
+  // "Smartphones/Accessories". The name decides the rest.
+  const category = data.category;
+  if (category && !/phone/i.test(category) && NOT_PHONE_CATEGORY.test(category)) {
+    return { status: 'not_phone', name, reason: `category "${category}"` };
+  }
   const parsed = parsePhoneName(name, data.brand);
   if (!parsed) return { status: 'not_phone', name, reason: 'name is not a phone we recognise' };
+  // Gadget & Gear says "Official" in some page titles ("iPhone 17 Price in Bangladesh | Official | …") but not
+  // in the product name. Only a shop's own word counts: a title without it leaves the kind unstated.
+  const kind = parsed.kind ?? (options.kindInTitle && data.title ? kindIn(data.title) : null);
   if (data.price === null) return { status: 'no_price', name };
   if (data.price < PHONE_MIN_PRICE || data.price > PHONE_MAX_PRICE) {
     return { status: 'not_phone', name, reason: `price ${data.price} is outside ${PHONE_MIN_PRICE}–${PHONE_MAX_PRICE}` };
@@ -152,7 +169,7 @@ export function productOutcome(data: ProductData): ProductOutcome {
       brand: parsed.brand,
       display: parsed.name,
       variant: parsed.variant,
-      kind: parsed.kind,
+      kind,
       price: data.price,
       high: data.high,
       stock: data.stock,
