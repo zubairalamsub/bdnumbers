@@ -91,6 +91,18 @@ const toOffer = (r: OfferRow): PhoneOffer => ({
 
 const lowest = (offers: readonly OfferRow[]) => (offers.length > 0 ? Math.min(...offers.map((o) => o.price)) : null);
 
+/** Below this share of a model's median price, a "price" is a booking deposit or a mismatched product. */
+const OUTLIER_SHARE = 0.4;
+
+/** Drop prices far below the model's others (Apple Gadgets lists a ৳10,000 pre-order deposit as the price, say). */
+export function withoutOutliers(offers: readonly OfferRow[]): OfferRow[] {
+  if (offers.length < 2) return [...offers];
+  const prices = offers.map((o) => o.price).sort((a, b) => a - b);
+  const mid = prices.length / 2;
+  const median = prices.length % 2 ? prices[Math.floor(mid)]! : (prices[mid - 1]! + prices[mid]!) / 2;
+  return offers.filter((o) => o.price >= median * OUTLIER_SHARE);
+}
+
 export interface PublishOutcome {
   models: number;
   offers: number;
@@ -109,7 +121,7 @@ export async function publishPhones(env: Env, now = new Date()): Promise<Publish
     ).bind(since),
     env.DB.prepare('SELECT key, slug, name, first_seen FROM phone_models'),
   ]);
-  const groups = groupOffers(offerRows!.results as OfferRow[]);
+  const groups = groupOffers(offerRows!.results as OfferRow[]).map((g) => ({ ...g, offers: withoutOutliers(g.offers) }));
   const known = new Map((modelRows!.results as Array<{ key: string; slug: string; name: string; first_seen: string }>).map((m) => [m.key, m]));
   const slugs = new Set([...known.values()].map((m) => m.slug));
 

@@ -6,10 +6,10 @@
 import { dhakaDate } from '@bdnumbers/shared';
 import { finishRun, runBatched, startRun } from '../db';
 import type { Env } from '../env';
-import { errorMessage } from '../lib/errors';
+import { ParseError, errorMessage } from '../lib/errors';
 import { fetchText, httpStatusOf } from '../lib/http';
 import type { RunResult } from '../run';
-import { listingLinks, productData, productOutcome, sitemapLinks, type PhoneOfferData } from './parse';
+import { listingLinks, productData, productOutcome, sitemapLinks, type PhoneOfferData, type ProductData } from './parse';
 import { SHOP_CRAWLS, listingPage, seedUrl, shopCrawl, type ShopCrawl } from './shops';
 
 export type PageKind = 'listing' | 'sitemap' | 'product';
@@ -45,7 +45,17 @@ export async function processPage(env: Env, shopId: string, url: string, kind: P
   try {
     if (kind === 'listing') return { status: 'ok', links: listingLinks(shop, body) };
     if (kind === 'sitemap') return { status: 'ok', links: sitemapLinks(shop, body) };
-    const outcome = productOutcome(productData(body));
+    let data: ProductData;
+    try {
+      data = productData(body);
+    } catch (err) {
+      // A product page that loads but carries no product data: a discontinued phone (Gadget & Gear keeps
+      // their pages up without it). Checked again in a few days, like an unpriced one; if every product
+      // page in a run comes back like this, the run fails (see verdict).
+      if (err instanceof ParseError) return { status: 'no_price', detail: err.message };
+      throw err;
+    }
+    const outcome = productOutcome(data);
     if (outcome.status === 'ok') return { status: 'ok', offer: outcome.offer };
     return { status: outcome.status, detail: outcome.status === 'not_phone' ? `${outcome.name}: ${outcome.reason}` : outcome.name };
   } catch (err) {
@@ -276,6 +286,11 @@ function verdict(shop: ShopCrawl, checked: readonly Checked[]): { ok: boolean; n
   }
   if (checked.length > 0 && errors.length === checked.length) {
     return { ok: false, note: `all ${checked.length} pages failed; first: ${detail(errors[0]!)}` };
+  }
+  // Ten or more product pages and not one price: the shop's pages changed shape.
+  const products = checked.filter((c) => c.page.kind === 'product' && c.result.status !== 'error' && c.result.status !== 'gone');
+  if (products.length >= 10 && products.every((c) => c.result.status === 'no_price')) {
+    return { ok: false, note: `no prices on ${products.length} product pages; first: ${detail(products[0]!)}` };
   }
   if (errors.length > 0) return { ok: true, note: `${errors.length} of ${checked.length} pages failed; first: ${detail(errors[0]!)}` };
   return { ok: true, note: null };

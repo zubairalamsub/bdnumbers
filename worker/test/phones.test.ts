@@ -5,7 +5,7 @@ import { runBatch } from '../src/cron';
 import type { Env } from '../src/env';
 import { PAGES_PER_RUN, runShop } from '../src/phones/crawl';
 import { listingLinks, productData, productOutcome, sitemapLinks } from '../src/phones/parse';
-import { PHONES_HISTORY_KEY, PHONES_KEY, groupOffers, publishPhones, snapshotPhones, type OfferRow } from '../src/phones/publish';
+import { PHONES_HISTORY_KEY, PHONES_KEY, groupOffers, publishPhones, snapshotPhones, withoutOutliers, type OfferRow } from '../src/phones/publish';
 import { SHOP_CRAWLS, shopCrawl } from '../src/phones/shops';
 import agA57 from './fixtures/applegadgets-galaxy-a57-5g-2026-10-25.html?raw';
 import dazzleX6e from './fixtures/dazzle-honor-x6e-official-2026-10-25.html?raw';
@@ -180,6 +180,17 @@ describe('groupOffers', () => {
     expect(groups[0]!.offers).toHaveLength(3);
   });
 
+  it('leaves out a "price" that is really a booking deposit', () => {
+    const rows = [
+      offer({ url: 'a', shop: 'dazzle', model_key: 'iphoneduo', display: 'iPhone Duo', price: 389990, brand: 'apple' }),
+      offer({ url: 'b', shop: 'kry', model_key: 'iphoneduo', display: 'iPhone Duo', price: 419999, brand: 'apple' }),
+      offer({ url: 'c', shop: 'applegadgets', model_key: 'iphoneduo', display: 'iPhone Duo', price: 10000, brand: 'apple', stock: 'pre' }),
+    ];
+    expect(withoutOutliers(rows).map((o) => o.shop)).toEqual(['dazzle', 'kry']);
+    // An unofficial phone a third cheaper than the official one is a real price.
+    expect(withoutOutliers([rows[0]!, { ...rows[1]!, price: 260000 }])).toHaveLength(2);
+  });
+
   it('keeps 4G and 5G versions apart when shops sell both', () => {
     const groups = groupOffers([
       offer({ url: 'a', shop: 'rio', model_key: 'redminote15', network: '4g', display: 'Redmi Note 15 4G', price: 21000, brand: 'xiaomi' }),
@@ -249,6 +260,29 @@ describe('runShop', () => {
     expect(await runShop(env, 'rio', 'test', undefined, T0)).toMatchObject({ ok: true });
     expect(calledUrls(spy)).toHaveLength(PAGES_PER_RUN);
     expect(calledUrls(spy).at(-1)).toBe(RIO_PAGE(PAGES_PER_RUN));
+  });
+
+  it('passes over old product pages without product data, but fails when no page has any', async () => {
+    mockFetch({
+      [RIO_PAGE(1)]: html(rioList),
+      [RIO_PAGE(2)]: html('<html></html>'),
+      [HONOR]: html(rioHonor),
+      'https://riointernational.com.bd/product/': html('<html><title>Discontinued phone</title></html>'),
+    });
+    await runShop(env, 'rio', 'test', undefined, T0);
+    // One price among sixteen pages: the other fifteen are set aside for a few days, not errors.
+    expect(await runShop(env, 'rio', 'test', undefined, hours(1))).toMatchObject({ ok: true, error: null, written: 1 });
+    expect((await pages()).filter((p) => p.status === 'no_price')).toHaveLength(15);
+
+    await resetStorage();
+    vi.restoreAllMocks();
+    mockFetch({
+      [RIO_PAGE(1)]: html(rioList),
+      [RIO_PAGE(2)]: html('<html></html>'),
+      'https://riointernational.com.bd/product/': html('<html><title>Redesigned</title></html>'),
+    });
+    await runShop(env, 'rio', 'test', undefined, T0);
+    expect(await runShop(env, 'rio', 'test', undefined, hours(1))).toMatchObject({ ok: false, error: expect.stringMatching(/^no prices on 16 product pages/) });
   });
 
   it('fails when the shop cannot be read at all', async () => {
