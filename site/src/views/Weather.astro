@@ -73,7 +73,7 @@ const path = '/weather';
               <span class="ml-0.5 text-lg font-normal text-ink-2">{unitLabel('°C', lang)}</span>
             </p>
             <p class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-              <span data-field="symbol">{sky ? `${sky.icon} ${sky.text}` : ''}</span>
+              <span><span class="wx-icon" data-field="icon" aria-hidden="true">{sky?.icon ?? ''}</span> <span data-field="sky">{sky?.text ?? ''}</span></span>
               {high !== null && low !== null && (
                 <span class="whitespace-nowrap text-ink-2" title={`${w.next24}: ${w.high} / ${w.low}`}>
                   <span class="sr-only">{w.next24}: {w.high}</span>

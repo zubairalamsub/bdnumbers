@@ -214,7 +214,7 @@ const description =
                 <li class="flex items-center justify-between gap-3 py-1.5" data-series={e!.key}>
                   <span>{lang === 'bn' ? city.bn : city.en}</span>
                   <span class="text-right">
-                    <span class="text-sm text-ink-2" data-field="symbol">{sky ? `${sky.icon} ${sky.text}` : ''}</span>{' '}
+                    <span class="text-sm text-ink-2"><span class="wx-icon" data-field="icon" aria-hidden="true">{sky?.icon ?? ''}</span> <span data-field="sky">{sky?.text ?? ''}</span></span>{' '}
                     <span class="font-semibold"><Num value={e!.value} fd={1} lang={lang} field="value" />°</span>
                   </span>
                 </li>

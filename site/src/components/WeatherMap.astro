@@ -23,9 +23,10 @@ const PLACE: Record<string, 'right' | 'left' | 'above' | 'below'> = {
   sylhet: 'above',
   chattogram: 'below',
 };
+/** Map units, and the matching position in % of the whole-country view (the script moves it on zoom). */
 const pct = (lat: number, lon: number) => {
   const [x, y] = bdProject(lat, lon);
-  return { left: (x / BD_MAP.width) * 100, top: (y / BD_MAP.height) * 100 };
+  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, left: (x / BD_MAP.width) * 100, top: (y / BD_MAP.height) * 100 };
 };
 const bay = pct(21.25, 90.05);
 
@@ -68,24 +69,37 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
     </div>
     <p class="mt-1 text-xs text-muted" data-metric-unit>{bn ? 'একক' : 'Unit'}: <span>{METRICS[0].unit}</span></p>
 
-    <div class="relative mx-auto mt-2 w-full max-w-[400px]">
-      <svg viewBox={`0 0 ${BD_MAP.width} ${BD_MAP.height}`} class="block h-auto w-full" aria-hidden="true">
-        {BD_MAP.divisions.map((d) => <path d={d.d} data-division={d.id} class="bd-division" />)}
+    <div
+      class="map-frame relative mx-auto mt-2 w-full max-w-[400px] select-none overflow-hidden rounded-lg"
+      style={`aspect-ratio:${BD_MAP.width}/${BD_MAP.height}`}
+      data-map-frame
+    >
+      <svg viewBox={`0 0 ${BD_MAP.width} ${BD_MAP.height}`} class="absolute inset-0 h-full w-full" data-map-svg aria-hidden="true">
+        <g>{BD_MAP.divisions.map((d) => <path d={d.d} data-division={d.id} class="bd-division" vector-effect="non-scaling-stroke" />)}</g>
+        <g data-district-layer></g>
       </svg>
-      <span class="pointer-events-none absolute -translate-x-1/2 text-xs italic text-muted" style={`left:${bay.left}%;top:${bay.top}%`} aria-hidden="true">
+      <span
+        class="pointer-events-none absolute -translate-x-1/2 text-xs italic text-muted"
+        data-x={bay.x}
+        data-y={bay.y}
+        style={`left:${bay.left}%;top:${bay.top}%`}
+        aria-hidden="true"
+      >
         {bn ? 'বঙ্গোপসাগর' : 'Bay of Bengal'}
       </span>
-      <ul>
+      <ul data-chips>
         {
           cities.map(({ city, temp, humidity, rain, wind }) => {
             const p = pct(city.lat, city.lon);
             const sky = weatherCondition(temp.meta?.symbol, lang);
             return (
               <li>
-                <span class="map-dot" style={`left:${p.left}%;top:${p.top}%`} aria-hidden="true" />
+                <span class="map-dot" data-x={p.x} data-y={p.y} style={`left:${p.left}%;top:${p.top}%`} aria-hidden="true" />
                 <a
                   href={`#weather-${city.id}`}
                   data-map-city={city.id}
+                  data-x={p.x}
+                  data-y={p.y}
                   data-place={PLACE[city.id] ?? 'right'}
                   class="map-chip"
                   style={`left:${p.left}%;top:${p.top}%`}
@@ -93,7 +107,7 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
                   <span class="block text-xs text-ink-2">{name(city)}</span>
                   <span class="block whitespace-nowrap text-sm font-semibold text-ink">
                     <span data-m="temp" data-series={temp.key}>
-                      <span data-field="icon" aria-hidden="true">{sky?.icon ?? ''}</span>
+                      <span class="wx-icon" data-field="icon" aria-hidden="true">{sky?.icon ?? ''}</span>
                       <Num value={temp.value} fd={1} lang={lang} field="value" />°
                     </span>
                     {humidity && (
@@ -118,10 +132,27 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
           })
         }
       </ul>
+      <div class="absolute bottom-2 left-2 flex flex-col gap-1" role="group" aria-label={bn ? 'জুম' : 'Zoom'} data-zoom-controls>
+        <button type="button" class="map-btn" data-zoom="in" aria-label={bn ? 'জুম বাড়ান' : 'Zoom in'}>+</button>
+        <button type="button" class="map-btn" data-zoom="out" aria-label={bn ? 'জুম কমান' : 'Zoom out'} disabled>−</button>
+        <button type="button" class="map-btn" data-zoom="reset" aria-label={bn ? 'পুরো দেশ' : 'Whole country'} disabled>⤢</button>
+      </div>
     </div>
+    <p class="mt-2 text-xs text-ink-2">
+      {
+        bn
+          ? 'জুম করলে ৬৪ জেলার আবহাওয়া দেখাবে: বিভাগে চাপুন, + বোতাম চাপুন বা দুই আঙুলে বড় করুন। জেলায় চাপলে বিস্তারিত।'
+          : 'Zoom in for all 64 districts: tap a division, press +, or pinch. Tap a district for details.'
+      }
+    </p>
+    <div data-map-detail aria-live="polite" hidden></div>
     <p class="mt-2 text-xs text-muted">
-      {bn ? 'প্রতিটি বিভাগীয় শহরের মান; শহরে চাপলে বিস্তারিত।' : 'One reading per division city; tap a city for details.'}
-      {' '}{bn ? 'মানচিত্র: geoBoundaries (CC0)।' : 'Map: geoBoundaries (CC0).'}
+      {bn ? 'বিভাগীয় শহরে চাপলে নিচে তার বিস্তারিত কার্ড। ' : 'Division cities link to their cards below. '}
+      {
+        bn
+          ? 'মানচিত্র: geoBoundaries (বিভাগ, CC0); জেলার সীমানা: বাংলাদেশ পরিসংখ্যান ব্যুরো ও OCHA (CC BY 3.0 IGO)।'
+          : 'Map: geoBoundaries (divisions, CC0); district boundaries: Bangladesh Bureau of Statistics and OCHA (CC BY 3.0 IGO).'
+      }
     </p>
   </section>
 
@@ -157,16 +188,45 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
   </section>
 </div>
 
-<style>
+<style is:global>
+  /* Global: the script adds district outlines and labels that scoped styles wouldn't reach. */
+  .map-frame {
+    touch-action: pan-y;
+  }
+  .map-frame[data-zoomed] {
+    touch-action: none;
+    cursor: grab;
+  }
+  .map-frame[data-dragging] {
+    cursor: grabbing;
+  }
   .bd-division {
     fill: color-mix(in oklab, var(--accent) 20%, var(--surface));
     stroke: var(--surface);
-    stroke-width: 1.2;
+    stroke-width: 1.5;
     stroke-linejoin: round;
     transition: fill 120ms;
+    cursor: zoom-in;
+  }
+  .map-frame[data-districts] .bd-division {
+    cursor: inherit;
   }
   .bd-division[data-active] {
     fill: color-mix(in oklab, var(--accent) 38%, var(--surface));
+  }
+  .bd-district {
+    fill: transparent;
+    stroke: var(--surface);
+    stroke-width: 0.75;
+    stroke-linejoin: round;
+    cursor: pointer;
+  }
+  .map-frame:not([data-districts]) [data-district-layer],
+  .map-frame:not([data-districts]) .district-chips {
+    display: none;
+  }
+  .bd-district[data-active] {
+    fill: color-mix(in oklab, var(--accent) 30%, transparent);
   }
   .map-dot {
     position: absolute;
@@ -176,6 +236,7 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
     background: var(--ink);
     box-shadow: 0 0 0 2px var(--surface);
     transform: translate(-50%, -50%);
+    pointer-events: none;
   }
   .map-chip {
     position: absolute;
@@ -189,6 +250,14 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
     text-decoration: none;
     transform: translate(6px, -50%);
   }
+  .map-chip.district {
+    padding: 0 5px 1px;
+    border-radius: 6px;
+  }
+  .map-chip[data-collided],
+  .map-dot[data-collided] {
+    visibility: hidden;
+  }
   .map-chip:hover,
   .map-chip:focus-visible {
     border-color: var(--accent);
@@ -201,6 +270,26 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
   }
   .map-chip[data-place='below'] {
     transform: translate(-50%, 6px);
+  }
+  .map-chip[data-place='center'] {
+    transform: translate(-50%, -50%);
+  }
+  .map-btn {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 1.25rem;
+    line-height: 1;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+  }
+  .map-btn:disabled {
+    color: var(--muted);
+    opacity: 0.6;
   }
   .range-now {
     position: absolute;
@@ -219,55 +308,10 @@ const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
 </style>
 
 <script>
-  // Metric switch, division highlight, and re-laying the temperature ranges after a live refresh.
-  const map = document.querySelector<HTMLElement>('[data-weather-map]');
-  if (map) {
-    const buttons = [...map.querySelectorAll<HTMLButtonElement>('[data-metric-btn]')];
-    const unit = map.querySelector<HTMLElement>('[data-metric-unit] span');
-    for (const button of buttons) {
-      button.addEventListener('click', () => {
-        const metric = button.dataset.metricBtn!;
-        for (const b of buttons) b.setAttribute('aria-pressed', String(b === button));
-        for (const el of map.querySelectorAll<HTMLElement>('[data-m]')) el.hidden = el.dataset.m !== metric;
-        if (unit) unit.textContent = button.dataset.unit ?? '';
-      });
-    }
-    for (const chip of map.querySelectorAll<HTMLElement>('[data-map-city]')) {
-      const division = map.querySelector<SVGPathElement>(`[data-division="${chip.dataset.mapCity}"]`);
-      const on = () => division?.setAttribute('data-active', '');
-      const off = () => division?.removeAttribute('data-active');
-      chip.addEventListener('pointerenter', on);
-      chip.addEventListener('pointerleave', off);
-      chip.addEventListener('focus', on);
-      chip.addEventListener('blur', off);
-    }
-  }
+  import { layoutRanges, setupWeatherMap } from '../scripts/weather-map';
 
+  const map = document.querySelector<HTMLElement>('[data-weather-map]');
+  if (map) setupWeatherMap(map);
   const list = document.querySelector<HTMLElement>('[data-temp-ranges]');
-  function layoutRanges(): void {
-    if (!list) return;
-    const value = (row: HTMLElement, field: string) => Number(row.querySelector<HTMLElement>(`[data-field="${field}"]`)?.dataset.num);
-    const rows = [...list.querySelectorAll<HTMLElement>('[data-range-row]')].map((row) => ({
-      row,
-      now: value(row, 'value'),
-      low: value(row, 'meta.min24'),
-      high: value(row, 'meta.max24'),
-    }));
-    const all = rows.flatMap((r) => [r.now, r.low, r.high]).filter(Number.isFinite);
-    if (all.length === 0) return;
-    const lo = Math.floor(Math.min(...all)) - 1;
-    const hi = Math.ceil(Math.max(...all)) + 1;
-    const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
-    for (const r of rows) {
-      const bar = r.row.querySelector<HTMLElement>('[data-range-bar]');
-      const dot = r.row.querySelector<HTMLElement>('[data-range-now]');
-      if (bar && Number.isFinite(r.low) && Number.isFinite(r.high)) {
-        bar.style.left = `${at(r.low)}%`;
-        bar.style.width = `${at(r.high) - at(r.low)}%`;
-      }
-      if (dot && Number.isFinite(r.now)) dot.style.left = `${at(r.now)}%`;
-    }
-    rows.sort((a, b) => b.now - a.now).forEach((r) => list.append(r.row));
-  }
-  document.addEventListener('bdrate:refreshed', layoutRanges);
+  if (list) document.addEventListener('bdrate:refreshed', () => layoutRanges(list));
 </script>

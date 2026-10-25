@@ -237,6 +237,11 @@
   display: none;
 }
 
+/* Weather icons (☀️ ⛅️ ☁️) in colour: without an emoji font first, Windows draws some as black symbols. */
+.wx-icon {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+}
+
 /* Digits switch: both options visible, the one in use filled in. */
 [data-digits-toggle] [data-opt][data-active] {
   background: var(--ink);
