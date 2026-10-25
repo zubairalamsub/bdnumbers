@@ -21,6 +21,7 @@ import { digitsKey, readDigits } from '../lib/prefs';
 import { REFRESH_MS, changeLabel, formatDateTime, formatPointDate } from '../lib/view';
 
 const DIGITS_EVENT = 'bdrate:digits';
+const REFRESHED_EVENT = 'bdrate:refreshed';
 
 const root = document.documentElement;
 const lang: Lang = root.lang === 'en' ? 'en' : 'bn';
@@ -120,7 +121,7 @@ function applyEntry(container: HTMLElement, entry: LatestEntry): void {
     else if (field === 'symbol') {
       const condition = weatherCondition(entry.meta?.symbol, lang);
       el.textContent = condition ? `${condition.icon} ${condition.text}` : '';
-    } else if (field.startsWith('meta.')) {
+    } else if (field === 'icon') el.textContent = weatherCondition(entry.meta?.symbol, lang)?.icon ?? ''; else if (field.startsWith('meta.')) {
       const value = entry.meta?.[field.slice('meta.'.length)];
       el.hidden = typeof value !== 'number';
       if (typeof value === 'number') el.dataset.num = String(value);
@@ -155,6 +156,8 @@ async function refreshLatest(): Promise<void> {
     if (entry) applyEntry(container, entry);
   }
   renderValues();
+  // For widgets that lay themselves out from the values (the weather map's temperature ranges).
+  document.dispatchEvent(new Event(REFRESHED_EVENT));
 }
 
 async function refreshStatus(): Promise<void> {

@@ -1,0 +1,273 @@
+---
+import { weatherCondition, type Lang, type LatestEntry, type WeatherCity } from '@bdnumbers/shared';
+import { STRINGS } from '../i18n';
+import { BD_MAP, bdProject } from '../lib/bd-map';
+import Num from './Num.astro';
+
+interface Props {
+  lang: Lang;
+  cities: ReadonlyArray<{ city: WeatherCity; temp: LatestEntry; humidity?: LatestEntry; wind?: LatestEntry; rain?: LatestEntry }>;
+}
+
+// The eight division cities on a map of Bangladesh (one reading per city, so the divisions are only a
+// backdrop, not shaded by value), with a switch between temperature, humidity, rain and wind, and next to
+// it each city's temperature range for the next 24 hours. Values refresh with the rest of the page.
+const { lang, cities } = Astro.props;
+const bn = lang === 'bn';
+const w = STRINGS[lang].weather;
+const name = (c: WeatherCity) => (bn ? c.bn : c.en);
+
+/** Where each city's label sits relative to its dot, chosen so no two labels overlap. */
+const PLACE: Record<string, 'right' | 'left' | 'above' | 'below'> = {
+  khulna: 'left',
+  sylhet: 'above',
+  chattogram: 'below',
+};
+const pct = (lat: number, lon: number) => {
+  const [x, y] = bdProject(lat, lon);
+  return { left: (x / BD_MAP.width) * 100, top: (y / BD_MAP.height) * 100 };
+};
+const bay = pct(21.25, 90.05);
+
+const METRICS = [
+  { id: 'temp', label: bn ? 'তাপমাত্রা' : 'Temperature', unit: bn ? '°সে' : '°C' },
+  { id: 'humidity', label: bn ? 'আর্দ্রতা' : 'Humidity', unit: '%' },
+  { id: 'rain', label: bn ? 'বৃষ্টি' : 'Rain', unit: bn ? 'মিমি, পরের ১ ঘণ্টা' : 'mm, next hour' },
+  { id: 'wind', label: bn ? 'বাতাস' : 'Wind', unit: bn ? 'কিমি/ঘণ্টা' : 'km/h' },
+] as const;
+
+// Temperature ranges: one scale for every row, padded a degree either side.
+const num = (v: unknown) => (typeof v === 'number' ? v : null);
+const ranges = cities
+  .map(({ city, temp }) => ({ city, temp, low: num(temp.meta?.min24) ?? temp.value, high: num(temp.meta?.max24) ?? temp.value }))
+  .sort((a, b) => b.temp.value - a.temp.value);
+const lo = Math.floor(Math.min(...ranges.map((r) => Math.min(r.low, r.temp.value)))) - 1;
+const hi = Math.ceil(Math.max(...ranges.map((r) => Math.max(r.high, r.temp.value)))) + 1;
+const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
+---
+
+<div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
+  <section class="card p-4 sm:p-5" data-weather-map aria-labelledby="weather-map-title">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 id="weather-map-title" class="text-lg font-semibold">{bn ? 'মানচিত্রে আজকের আবহাওয়া' : "Today's weather on the map"}</h2>
+      <div role="group" aria-label={bn ? 'মানচিত্রে দেখান' : 'Show on the map'} class="flex flex-wrap gap-1 text-sm">
+        {
+          METRICS.map((m) => (
+            <button
+              type="button"
+              data-metric-btn={m.id}
+              data-unit={m.unit}
+              aria-pressed={m.id === 'temp' ? 'true' : 'false'}
+              class="min-h-8 rounded-md border border-hairline px-2 text-ink-2 hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-page"
+            >
+              {m.label}
+            </button>
+          ))
+        }
+      </div>
+    </div>
+    <p class="mt-1 text-xs text-muted" data-metric-unit>{bn ? 'একক' : 'Unit'}: <span>{METRICS[0].unit}</span></p>
+
+    <div class="relative mx-auto mt-2 w-full max-w-[400px]">
+      <svg viewBox={`0 0 ${BD_MAP.width} ${BD_MAP.height}`} class="block h-auto w-full" aria-hidden="true">
+        {BD_MAP.divisions.map((d) => <path d={d.d} data-division={d.id} class="bd-division" />)}
+      </svg>
+      <span class="pointer-events-none absolute -translate-x-1/2 text-xs italic text-muted" style={`left:${bay.left}%;top:${bay.top}%`} aria-hidden="true">
+        {bn ? 'বঙ্গোপসাগর' : 'Bay of Bengal'}
+      </span>
+      <ul>
+        {
+          cities.map(({ city, temp, humidity, rain, wind }) => {
+            const p = pct(city.lat, city.lon);
+            const sky = weatherCondition(temp.meta?.symbol, lang);
+            return (
+              <li>
+                <span class="map-dot" style={`left:${p.left}%;top:${p.top}%`} aria-hidden="true" />
+                <a
+                  href={`#weather-${city.id}`}
+                  data-map-city={city.id}
+                  data-place={PLACE[city.id] ?? 'right'}
+                  class="map-chip"
+                  style={`left:${p.left}%;top:${p.top}%`}
+                >
+                  <span class="block text-xs text-ink-2">{name(city)}</span>
+                  <span class="block whitespace-nowrap text-sm font-semibold text-ink">
+                    <span data-m="temp" data-series={temp.key}>
+                      <span data-field="icon" aria-hidden="true">{sky?.icon ?? ''}</span>
+                      <Num value={temp.value} fd={1} lang={lang} field="value" />°
+                    </span>
+                    {humidity && (
+                      <span data-m="humidity" data-series={humidity.key} hidden>
+                        <Num value={humidity.value} fd={0} lang={lang} field="value" />%
+                      </span>
+                    )}
+                    {rain && (
+                      <span data-m="rain" data-series={rain.key} hidden>
+                        <Num value={rain.value} fd={1} lang={lang} field="value" />
+                      </span>
+                    )}
+                    {wind && (
+                      <span data-m="wind" data-series={wind.key} hidden>
+                        <Num value={wind.value} fd={0} lang={lang} field="value" />
+                      </span>
+                    )}
+                  </span>
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </div>
+    <p class="mt-2 text-xs text-muted">
+      {bn ? 'প্রতিটি বিভাগীয় শহরের মান; শহরে চাপলে বিস্তারিত।' : 'One reading per division city; tap a city for details.'}
+      {' '}{bn ? 'মানচিত্র: geoBoundaries (CC0)।' : 'Map: geoBoundaries (CC0).'}
+    </p>
+  </section>
+
+  <section class="card p-4 sm:p-5" aria-labelledby="weather-range-title">
+    <h2 id="weather-range-title" class="text-lg font-semibold">{bn ? 'পরের ২৪ ঘণ্টার তাপমাত্রা' : 'Temperature, next 24 hours'}</h2>
+    <p class="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-muted">
+      <span class="inline-flex items-center gap-1"><span class="inline-block h-2 w-5 rounded-full bg-series" aria-hidden="true"></span>{w.low}–{w.high}</span>
+      <span class="inline-flex items-center gap-1"><span class="range-now static inline-block" aria-hidden="true"></span>{bn ? 'এখন' : 'Now'}</span>
+    </p>
+    <ol class="mt-3 space-y-2.5" data-temp-ranges>
+      {
+        ranges.map(({ city, temp, low, high }) => (
+          <li class="grid grid-cols-[5.5rem_1fr] items-center gap-x-3 text-sm" data-series={temp.key} data-range-row>
+            <a href={`#weather-${city.id}`} class="truncate text-ink no-underline hover:underline">
+              {name(city)}
+            </a>
+            <span class="flex flex-col">
+              <span class="relative block h-3" aria-hidden="true">
+                <span class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-grid" />
+                <span data-range-bar class="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-series" style={`left:${at(low)}%;width:${at(high) - at(low)}%`} />
+                <span data-range-now class="range-now" style={`left:${at(temp.value)}%`} />
+              </span>
+              <span class="mt-0.5 text-xs text-ink-2">
+                <Num value={low} fd={0} lang={lang} field="meta.min24" />°–<Num value={high} fd={0} lang={lang} field="meta.max24" />° ·{' '}
+                {bn ? 'এখন' : 'now'} <Num value={temp.value} fd={1} lang={lang} field="value" class="font-semibold text-ink" />°
+              </span>
+            </span>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="mt-3 text-xs text-muted">{bn ? 'সব শহর একই স্কেলে; এখন সবচেয়ে গরম শহর ওপরে।' : 'All cities on one scale; the warmest right now first.'}</p>
+  </section>
+</div>
+
+<style>
+  .bd-division {
+    fill: color-mix(in oklab, var(--accent) 20%, var(--surface));
+    stroke: var(--surface);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+    transition: fill 120ms;
+  }
+  .bd-division[data-active] {
+    fill: color-mix(in oklab, var(--accent) 38%, var(--surface));
+  }
+  .map-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--ink);
+    box-shadow: 0 0 0 2px var(--surface);
+    transform: translate(-50%, -50%);
+  }
+  .map-chip {
+    position: absolute;
+    padding: 1px 6px 2px;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+    line-height: 1.3;
+    text-align: center;
+    text-decoration: none;
+    transform: translate(6px, -50%);
+  }
+  .map-chip:hover,
+  .map-chip:focus-visible {
+    border-color: var(--accent);
+  }
+  .map-chip[data-place='left'] {
+    transform: translate(calc(-100% - 6px), -50%);
+  }
+  .map-chip[data-place='above'] {
+    transform: translate(-50%, calc(-100% - 6px));
+  }
+  .map-chip[data-place='below'] {
+    transform: translate(-50%, 6px);
+  }
+  .range-now {
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--ink);
+    box-shadow: 0 0 0 2px var(--surface);
+    transform: translate(-50%, -50%);
+  }
+  .range-now.static {
+    position: static;
+    transform: none;
+  }
+</style>
+
+<script>
+  // Metric switch, division highlight, and re-laying the temperature ranges after a live refresh.
+  const map = document.querySelector<HTMLElement>('[data-weather-map]');
+  if (map) {
+    const buttons = [...map.querySelectorAll<HTMLButtonElement>('[data-metric-btn]')];
+    const unit = map.querySelector<HTMLElement>('[data-metric-unit] span');
+    for (const button of buttons) {
+      button.addEventListener('click', () => {
+        const metric = button.dataset.metricBtn!;
+        for (const b of buttons) b.setAttribute('aria-pressed', String(b === button));
+        for (const el of map.querySelectorAll<HTMLElement>('[data-m]')) el.hidden = el.dataset.m !== metric;
+        if (unit) unit.textContent = button.dataset.unit ?? '';
+      });
+    }
+    for (const chip of map.querySelectorAll<HTMLElement>('[data-map-city]')) {
+      const division = map.querySelector<SVGPathElement>(`[data-division="${chip.dataset.mapCity}"]`);
+      const on = () => division?.setAttribute('data-active', '');
+      const off = () => division?.removeAttribute('data-active');
+      chip.addEventListener('pointerenter', on);
+      chip.addEventListener('pointerleave', off);
+      chip.addEventListener('focus', on);
+      chip.addEventListener('blur', off);
+    }
+  }
+
+  const list = document.querySelector<HTMLElement>('[data-temp-ranges]');
+  function layoutRanges(): void {
+    if (!list) return;
+    const value = (row: HTMLElement, field: string) => Number(row.querySelector<HTMLElement>(`[data-field="${field}"]`)?.dataset.num);
+    const rows = [...list.querySelectorAll<HTMLElement>('[data-range-row]')].map((row) => ({
+      row,
+      now: value(row, 'value'),
+      low: value(row, 'meta.min24'),
+      high: value(row, 'meta.max24'),
+    }));
+    const all = rows.flatMap((r) => [r.now, r.low, r.high]).filter(Number.isFinite);
+    if (all.length === 0) return;
+    const lo = Math.floor(Math.min(...all)) - 1;
+    const hi = Math.ceil(Math.max(...all)) + 1;
+    const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
+    for (const r of rows) {
+      const bar = r.row.querySelector<HTMLElement>('[data-range-bar]');
+      const dot = r.row.querySelector<HTMLElement>('[data-range-now]');
+      if (bar && Number.isFinite(r.low) && Number.isFinite(r.high)) {
+        bar.style.left = `${at(r.low)}%`;
+        bar.style.width = `${at(r.high) - at(r.low)}%`;
+      }
+      if (dot && Number.isFinite(r.now)) dot.style.left = `${at(r.now)}%`;
+    }
+    rows.sort((a, b) => b.now - a.now).forEach((r) => list.append(r.row));
+  }
+  document.addEventListener('bdrate:refreshed', layoutRanges);
+</script>

@@ -16,6 +16,7 @@ import LineChart from '../components/LineChart.astro';
 import Num from '../components/Num.astro';
 import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
+import WeatherMap from '../components/WeatherMap.astro';
 import { STRINGS } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getHistory, getLatest } from '../lib/data';
@@ -55,15 +56,18 @@ const path = '/weather';
   <Breadcrumbs lang={lang} items={[{ label: s.nav.weather, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{w.title}</h1>
 
-  <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <WeatherMap lang={lang} cities={cities} />
+
+  <h2 class="mb-3 mt-8 text-lg font-semibold">{lang === 'bn' ? 'বিভাগীয় শহরের আবহাওয়া' : 'Weather in each division city'}</h2>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     {
       cities.map(({ city, temp, humidity, wind, rain }, i) => {
         const sky = weatherCondition(temp.meta?.symbol, lang);
         const high = num(temp.meta?.max24);
         const low = num(temp.meta?.min24);
         return (
-          <article class="card flex flex-col gap-1 p-4" data-series={temp.key}>
-            <h2 class="text-[0.9375rem] font-semibold text-ink-2">{lang === 'bn' ? city.bn : city.en}</h2>
+          <article class="card flex scroll-mt-4 flex-col gap-1 p-4 target:ring-2 target:ring-accent" id={`weather-${city.id}`} data-series={temp.key}>
+            <h3 class="text-[0.9375rem] font-semibold text-ink-2">{lang === 'bn' ? city.bn : city.en}</h3>
             <p class:list={['font-semibold leading-tight', i === 0 ? 'text-5xl' : 'text-3xl']}>
               <Num value={temp.value} fd={1} lang={lang} field="value" />
               <span class="ml-0.5 text-lg font-normal text-ink-2">{unitLabel('°C', lang)}</span>

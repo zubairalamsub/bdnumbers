@@ -39,15 +39,15 @@ export const WEATHER_METRICS: Record<
 
 /** MET Norway symbol codes → short descriptions (the _day/_night/_polartwilight suffix is dropped). */
 const CONDITIONS: Array<[RegExp, { bn: string; en: string; icon: string }]> = [
-  [/thunder/, { bn: 'বজ্রসহ বৃষ্টি', en: 'Rain and thunder', icon: '⛈' }],
+  [/thunder/, { bn: 'বজ্রসহ বৃষ্টি', en: 'Rain and thunder', icon: '⛈️' }],
   [/^heavyrain/, { bn: 'ভারী বৃষ্টি', en: 'Heavy rain', icon: '🌧' }],
   [/^lightrain/, { bn: 'হালকা বৃষ্টি', en: 'Light rain', icon: '🌦' }],
   [/^rain/, { bn: 'বৃষ্টি', en: 'Rain', icon: '🌧' }],
-  [/^fog/, { bn: 'কুয়াশা', en: 'Fog', icon: '🌫' }],
-  [/^cloudy/, { bn: 'মেঘলা', en: 'Cloudy', icon: '☁' }],
-  [/^partlycloudy/, { bn: 'আংশিক মেঘলা', en: 'Partly cloudy', icon: '⛅' }],
+  [/^fog/, { bn: 'কুয়াশা', en: 'Fog', icon: '🌫️' }],
+  [/^cloudy/, { bn: 'মেঘলা', en: 'Cloudy', icon: '☁️' }],
+  [/^partlycloudy/, { bn: 'আংশিক মেঘলা', en: 'Partly cloudy', icon: '⛅️' }],
   [/^fair/, { bn: 'প্রায় পরিষ্কার', en: 'Mostly clear', icon: '🌤' }],
-  [/^clearsky/, { bn: 'পরিষ্কার আকাশ', en: 'Clear sky', icon: '☀' }],
+  [/^clearsky/, { bn: 'পরিষ্কার আকাশ', en: 'Clear sky', icon: '☀️' }],
 ];
 
 export function weatherCondition(symbol: unknown, lang: 'bn' | 'en'): { text: string; icon: string } | null {
