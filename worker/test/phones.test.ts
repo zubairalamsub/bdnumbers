@@ -3,7 +3,7 @@ import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runBatch } from '../src/cron';
 import type { Env } from '../src/env';
-import { runShop } from '../src/phones/crawl';
+import { PAGES_PER_RUN, runShop } from '../src/phones/crawl';
 import { listingLinks, productData, productOutcome, sitemapLinks } from '../src/phones/parse';
 import { PHONES_HISTORY_KEY, PHONES_KEY, groupOffers, publishPhones, snapshotPhones, type OfferRow } from '../src/phones/publish';
 import { SHOP_CRAWLS, shopCrawl } from '../src/phones/shops';
@@ -241,6 +241,14 @@ describe('runShop', () => {
     ]);
     // The other pages 404ed twice: given up on.
     expect((await pages()).filter((p) => p.status === 'gone')).toHaveLength(15);
+  });
+
+  it(`reads at most ${PAGES_PER_RUN} pages a run (each is one of the invocation's 50 subrequests)`, async () => {
+    // Every listing page "has phones", so the listing would go on for ever.
+    const spy = mockFetch({ 'https://riointernational.com.bd/category/mobile/': html(rioList) });
+    expect(await runShop(env, 'rio', 'test', undefined, T0)).toMatchObject({ ok: true });
+    expect(calledUrls(spy)).toHaveLength(PAGES_PER_RUN);
+    expect(calledUrls(spy).at(-1)).toBe(RIO_PAGE(PAGES_PER_RUN));
   });
 
   it('fails when the shop cannot be read at all', async () => {

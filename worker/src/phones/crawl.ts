@@ -1,8 +1,8 @@
 // The phone price crawl. Each hour every shop gets a run (its own invocation through SELF) that reads the
 // pages due in its queue (phone_pages): listing pages and sitemaps find product URLs, product pages give
 // prices. Each page is fetched and parsed in an invocation of its own, so no single invocation comes near
-// the free plan's 10 ms CPU limit, and a shop gets at most PRODUCTS_PER_RUN product pages an hour: every
-// phone is re-read about once a day without the shops ever seeing more than a request a minute or two.
+// the free plan's 10 ms CPU limit, and a shop gets at most PAGES_PER_RUN pages an hour: every phone is
+// re-read about once a day without a shop ever seeing more than a request a minute or so.
 import { dhakaDate } from '@bdnumbers/shared';
 import { finishRun, runBatched, startRun } from '../db';
 import type { Env } from '../env';
@@ -14,10 +14,12 @@ import { SHOP_CRAWLS, listingPage, seedUrl, shopCrawl, type ShopCrawl } from './
 
 export type PageKind = 'listing' | 'sitemap' | 'product';
 
-/** Product pages each shop run reads (an hour apart): ~860 a day per shop, more than any shop lists. */
-export const PRODUCTS_PER_RUN = 36;
-/** Listing and sitemap pages each run may read: enough for a shop's whole listing on the first run. */
-const DISCOVERY_PER_RUN = 80;
+/**
+ * Pages each shop run reads, listing pages and sitemaps first: ~1,000 a day per shop, more than any shop
+ * lists. Each page is a call through SELF, and the free plan allows a Worker invocation 50 such
+ * subrequests, so this leaves room.
+ */
+export const PAGES_PER_RUN = 45;
 /** Pages fetched at once within a shop. */
 const CONCURRENCY = 2;
 
@@ -75,8 +77,6 @@ interface QueuedPage {
   url: string;
   kind: PageKind;
   fails: number;
-  /** Already in phone_pages (false for a listing page found during this run). */
-  known: boolean;
 }
 
 interface Checked {
@@ -144,25 +144,25 @@ async function crawl(env: Env, shop: ShopCrawl, invoke: PageInvoker, now: number
     env.DB.prepare(
       `SELECT url, kind, fails FROM phone_pages WHERE shop = ?1 AND kind != 'product' AND next_check <= ?2
        ORDER BY next_check LIMIT ?3`,
-    ).bind(shop.id, iso(now), DISCOVERY_PER_RUN),
+    ).bind(shop.id, iso(now), PAGES_PER_RUN),
     env.DB.prepare(
       `SELECT url, kind, fails FROM phone_pages WHERE shop = ?1 AND kind = 'product' AND next_check <= ?2
        AND status != 'gone' ORDER BY next_check LIMIT ?3`,
-    ).bind(shop.id, iso(now), PRODUCTS_PER_RUN),
+    ).bind(shop.id, iso(now), PAGES_PER_RUN),
     env.DB.prepare(`SELECT url, next_check FROM phone_pages WHERE shop = ?1 AND kind = 'listing'`).bind(shop.id),
   ]);
   type Row = { url: string; kind: PageKind; fails: number };
-  const queue: QueuedPage[] = [...(discovery!.results as Row[]), ...(products!.results as Row[])].map((r) => ({ ...r, known: true }));
+  const queue: QueuedPage[] = [...(discovery!.results as Row[]), ...(products!.results as Row[])];
   // Listing pages (in page order) and the sitemap first, then products. Finding products on listing page n
-  // puts page n+1 in this run if it is new or due.
+  // puts page n+1 next in this run if it is new or due.
   const order = (p: QueuedPage) => (p.kind === 'product' ? Number.MAX_SAFE_INTEGER : (listingPage(shop, p.url) ?? 0));
   queue.sort((a, b) => order(a) - order(b));
   const listingDue = new Map((listings!.results as Array<{ url: string; next_check: string }>).map((r) => [r.url, r.next_check]));
   const queued = new Set(queue.map((p) => p.url));
 
   const checked: Checked[] = [];
-  while (queue.length > 0) {
-    const batch = queue.splice(0, CONCURRENCY);
+  while (queue.length > 0 && checked.length < PAGES_PER_RUN) {
+    const batch = queue.splice(0, Math.min(CONCURRENCY, PAGES_PER_RUN - checked.length));
     const results = await Promise.all(batch.map((page) => invoke(shop.id, page.url, page.kind)));
     batch.forEach((page, i) => {
       const result = results[i]!;
@@ -171,9 +171,10 @@ async function crawl(env: Env, shop: ShopCrawl, invoke: PageInvoker, now: number
       if (n === null || result.status !== 'ok' || !('links' in result) || result.links.length === 0) return;
       const next = shop.discovery.type === 'listing' ? shop.discovery.page(n + 1) : null;
       const due = next ? listingDue.get(next) : undefined;
-      if (next && !queued.has(next) && (due === undefined || due <= iso(now)) && queued.size < DISCOVERY_PER_RUN + PRODUCTS_PER_RUN) {
+      if (next && !queued.has(next) && (due === undefined || due <= iso(now))) {
         queued.add(next);
-        queue.push({ url: next, kind: 'listing', fails: 0, known: due !== undefined });
+        const firstProduct = queue.findIndex((p) => p.kind === 'product');
+        queue.splice(firstProduct < 0 ? queue.length : firstProduct, 0, { url: next, kind: 'listing', fails: 0 });
       }
     });
   }
