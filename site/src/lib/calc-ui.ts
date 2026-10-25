@@ -40,7 +40,8 @@ export function bindCalculator(form: HTMLFormElement, compute: (ctx: CalcContext
         for (const el of root.querySelectorAll<HTMLElement>(`[data-out="${name}"]`)) el.textContent = text;
       },
       money,
-      taka: (n) => (!Number.isFinite(n) ? '—' : lang === 'bn' ? `${money(n)} টাকা` : `Tk ${money(n)}`),
+      // A no-break space keeps an amount and its currency on one line in narrow table cells.
+      taka: (n) => (!Number.isFinite(n) ? '—' : lang === 'bn' ? `${money(n)} টাকা` : `Tk ${money(n)}`),
     });
   };
   form.addEventListener('input', run);

@@ -63,7 +63,8 @@ const h1 =
         <tr>
           <th scope="col">{s.table.purity}</th>
           <th scope="col">{s.table.perBhori}</th>
-          <th scope="col">{s.table.perGram}</th>
+          {/* On phones the per-gram price sits under the per-bhori one, so the table fits without scrolling. */}
+          <th scope="col" class="hidden sm:table-cell">{s.table.perGram}</th>
           <th scope="col">{s.change}</th>
         </tr>
       </thead>
@@ -71,19 +72,22 @@ const h1 =
         {
           entries.map((e, i) => (
             <tr data-series={e.key}>
-              <th scope="row" class="font-normal">
+              <th scope="row" class="whitespace-nowrap font-normal">
                 <a href={localePath(lang, `/history/${e.key}`)} class="text-ink no-underline hover:underline">
                   {s.karats[KARAT_ORDER[i]!]}
                 </a>
               </th>
               <td>
                 <Num value={e.value} lang={lang} field="value" class="font-semibold" />
+                <span class="block text-xs text-muted sm:hidden">
+                  <Num value={perGram(e)} lang={lang} field="per_gram" />/{lang === 'bn' ? 'গ্রাম' : 'g'}
+                </span>
               </td>
-              <td>
+              <td class="hidden sm:table-cell">
                 <Num value={perGram(e)} lang={lang} field="per_gram" />
               </td>
-              <td>
-                <ChangeText change={e.change.prev} category={metal} lang={lang} field="change.prev" empty="dash" class="text-sm text-ink-2" />
+              <td class="whitespace-normal sm:whitespace-nowrap">
+                <ChangeText change={e.change.prev} category={metal} lang={lang} field="change.prev" empty="dash" wrap class="text-sm text-ink-2" />
               </td>
             </tr>
           ))

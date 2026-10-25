@@ -15,8 +15,8 @@ const d = (n: number) => (bn ? toBengaliDigits(String(n)) : String(n));
 const rateLabel = (o: { per1000?: number; percent?: number }) =>
   o.per1000 !== undefined
     ? bn
-      ? `হাজারে ${formatNumber(o.per1000, digits, 2)} টাকা`
-      : `Tk ${formatNumber(o.per1000, digits, 2)} per 1,000`
+      ? `হাজারে ${formatNumber(o.per1000, digits, 2)} টাকা`
+      : `Tk ${formatNumber(o.per1000, digits, 2)} per 1,000`
     : `${formatNumber(o.percent ?? 0, digits, 2)}%`;
 ---
 
@@ -35,7 +35,7 @@ const rateLabel = (o: { per1000?: number; percent?: number }) =>
         <section class="mt-6">
           <h2 class="mb-2 text-lg font-semibold">{svc.name}</h2>
           <div class="overflow-x-auto">
-            <table class="data-table text-[0.9375rem]">
+            <table class="data-table wrap-cells text-[0.9375rem]">
               <thead>
                 <tr>
                   <th scope="col">{bn ? 'কোথা থেকে' : 'Where'}</th>

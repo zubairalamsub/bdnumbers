@@ -136,6 +136,21 @@
     text-align: left;
     white-space: normal;
   }
+  /* Phones: headers ("১ সপ্তাহ আগে", "মোট কাটবে") are usually wider than the numbers under them, so
+     they may wrap, and cells get tighter padding; most tables then fit without scrolling sideways. */
+  @media (max-width: 639px) {
+    .data-table th,
+    .data-table td {
+      padding: 8px;
+    }
+    .data-table thead th {
+      white-space: normal;
+    }
+    /* Tables whose cells are short phrases ("হাজারে ১৮.৫ টাকা") rather than bare numbers. */
+    .data-table.wrap-cells td {
+      white-space: normal;
+    }
+  }
   /* Tables of words rather than numbers. */
   .data-table.text-table th,
   .data-table.text-table td {

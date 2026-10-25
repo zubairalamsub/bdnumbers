@@ -85,7 +85,8 @@ const pagePath = '/dollar-rate-today';
             <th scope="col">{s.table.currency}</th>
             <th scope="col">{s.table.bid}</th>
             <th scope="col">{s.table.ask}</th>
-            <th scope="col">{s.change}</th>
+            {/* Hidden on phones so names fit on one line; the dollar's own change is in the card above. */}
+            <th scope="col" class="hidden sm:table-cell">{s.change}</th>
           </tr>
         </thead>
         <tbody>
@@ -96,7 +97,7 @@ const pagePath = '/dollar-rate-today';
                   <a href={localePath(lang, `/history/${r.ask.key}`)} class="text-ink no-underline hover:underline">
                     {currencyName(r.code, lang)}
                   </a>{' '}
-                  <span class="text-sm text-muted">{r.code.toUpperCase()}</span>
+                  <span class="whitespace-nowrap text-sm text-muted">{r.code.toUpperCase()}</span>
                 </th>
                 <td data-series={r.bid.key}>
                   <Num value={r.bid.value} fd={fractionDigits('fx', r.bid.value)} lang={lang} field="value" />
@@ -104,7 +105,7 @@ const pagePath = '/dollar-rate-today';
                 <td data-series={r.ask.key}>
                   <Num value={r.ask.value} fd={fractionDigits('fx', r.ask.value)} lang={lang} field="value" />
                 </td>
-                <td data-series={r.ask.key}>
+                <td data-series={r.ask.key} class="hidden sm:table-cell">
                   <ChangeText change={r.ask.change.prev} category="fx" lang={lang} field="change.prev" empty="dash" class="text-sm text-ink-2" />
                 </td>
               </tr>

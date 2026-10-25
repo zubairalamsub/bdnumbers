@@ -41,7 +41,8 @@ const description =
 const path = '/share-market-today';
 const numberCols = [
   { key: 'dse_dsex', label: 'DSEX' },
-  { key: 'dse_dses', label: 'DSES' },
+  // DSES (the Shariah index) is the least looked-up column; phones skip it so the table fits.
+  { key: 'dse_dses', label: 'DSES', phone: false },
   { key: 'dse_ds30', label: 'DS30' },
   { key: 'dse_turnover', label: lang === 'bn' ? 'লেনদেন (কোটি)' : 'Turnover (crore)' },
 ] as const;
@@ -82,7 +83,7 @@ const numberCols = [
         <thead>
           <tr>
             <th scope="col">{s.table.date}</th>
-            {numberCols.map((c) => <th scope="col">{c.label}</th>)}
+            {numberCols.map((c) => <th scope="col" class:list={{ 'hidden sm:table-cell': 'phone' in c }}>{c.label}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -93,7 +94,7 @@ const numberCols = [
                   <DateText date={d} lang={lang} />
                 </th>
                 {numberCols.map((c) => (
-                  <td>{row[c.key] === undefined ? '—' : <Num value={row[c.key]!} fd={2} lang={lang} />}</td>
+                  <td class:list={{ 'hidden sm:table-cell': 'phone' in c }}>{row[c.key] === undefined ? '—' : <Num value={row[c.key]!} fd={2} lang={lang} />}</td>
                 ))}
               </tr>
             ))

@@ -119,7 +119,7 @@ const path = '/market-price-today';
                       <td class="font-semibold">
                         <span data-series={r.min.key}><Num value={r.min.value} lang={lang} field="value" /></span>–<span data-series={r.max.key}><Num value={r.max.value} lang={lang} field="value" /></span>
                         {r.max.date !== marketDate && (
-                          <span class="block text-xs font-normal text-muted">
+                          <span class="block min-w-[9em] whitespace-normal text-xs font-normal text-muted">
                             {m.notToday} <DateText date={r.max.date} lang={lang} />
                           </span>
                         )}

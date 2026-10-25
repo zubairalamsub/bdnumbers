@@ -10,15 +10,17 @@ interface Props {
   field?: string;
   /** With no change to show: hide the element, or show a dash (in tables). */
   empty?: 'hide' | 'dash';
+  /** Let the percentage wrap onto its own line (narrow table cells on phones). */
+  wrap?: boolean;
   class?: string;
 }
 
-const { change, category, lang, field, empty = 'hide', class: className } = Astro.props;
+const { change, category, lang, field, empty = 'hide', wrap = false, class: className } = Astro.props;
 const label = change ? changeLabel(change, category, lang, defaultDigits(lang)) : null;
 ---
 
 <span
-  class:list={['whitespace-nowrap', className]}
+  class:list={[wrap ? 'sm:whitespace-nowrap' : 'whitespace-nowrap', className]}
   data-change
   data-field={field}
   data-cat={category}
