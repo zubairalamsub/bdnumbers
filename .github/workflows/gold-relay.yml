@@ -36,21 +36,26 @@ jobs:
           echo "relay=${need:-true}" >> "$GITHUB_OUTPUT"
           echo "Worker's last BAJUS run needs a relay: ${need:-unknown}"
 
+      # On 2026-10-25 BAJUS showed GitHub's network the same bot check. That is logged as a warning, not a
+      # failure, so a blocked day doesn't send failure emails; the Worker's own alerts cover the outage.
       - name: Fetch the BAJUS price page
+        id: fetch
         if: steps.need.outputs.relay == 'true'
         run: |
           code=$(curl -sS -L -o bajus.html -w '%{http_code}' \
             -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' \
-            https://www.bajus.org/gold-price)
+            https://www.bajus.org/gold-price) || code=000
           if [ "$code" != "200" ] || ! grep -q 'gold-table' bajus.html; then
-            title=$(grep -o -m1 '<title>[^<]*' bajus.html | sed 's/<title>//')
-            echo "::error::BAJUS returned HTTP $code (title: ${title:-none}); it blocks GitHub's network too."
-            exit 1
+            title=$(grep -o -m1 '<title>[^<]*' bajus.html 2>/dev/null | sed 's/<title>//')
+            echo "::warning::BAJUS returned HTTP $code (title: ${title:-none}) to GitHub's network as well; nothing relayed."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
           echo "BAJUS page fetched ($(wc -c < bajus.html) bytes)."
 
       - name: Relay it to the Worker
-        if: steps.need.outputs.relay == 'true'
+        if: steps.need.outputs.relay == 'true' && steps.fetch.outputs.ok == 'true'
         env:
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
         run: |
