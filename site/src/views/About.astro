@@ -5,6 +5,7 @@ import { CONTACT_EMAIL, SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
+import { DATA_LICENSE } from '../lib/seo';
 
 interface Props {
   lang: Lang;
@@ -153,6 +154,15 @@ const description = bn
         </p>
       )
     }
+
+    <h2 class="pt-2 text-xl font-semibold" id="reuse">{bn ? 'তথ্য পুনর্ব্যবহার' : 'Reusing the numbers'}</h2>
+    <p>
+      {bn ? 'এখানে সংকলিত সংখ্যাগুলো যে কেউ ' : 'Anyone may reuse the numbers compiled here under '}
+      <a href={DATA_LICENSE} rel="license noopener" target="_blank">CC BY 4.0</a>
+      {bn
+        ? ' লাইসেন্সে ব্যবহার করতে পারেন; শুধু bdrate.fyi এবং মূল উৎসের নাম উল্লেখ করুন।'
+        : ': just credit bdrate.fyi and the original source.'}
+    </p>
 
     <h2 class="pt-2 text-xl font-semibold">{bn ? 'যোগাযোগ' : 'Contact'}</h2>
     <p>

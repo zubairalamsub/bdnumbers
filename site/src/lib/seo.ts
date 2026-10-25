@@ -120,6 +120,13 @@ export type JsonLd = Record<string, unknown>;
 
 export const absoluteUrl = (lang: Lang, path: string) => `${SITE_URL}${localePath(lang, path)}`;
 
+/**
+ * The compiled numbers may be reused with credit (Google's Dataset rich results ask for a licence).
+ * The underlying figures are public facts from the sources named on each page; MET Norway's weather is
+ * itself CC BY 4.0, so the same licence passes its attribution requirement on.
+ */
+export const DATA_LICENSE = 'https://creativecommons.org/licenses/by/4.0/';
+
 const ORGANIZATION = {
   '@type': 'Organization',
   '@id': `${SITE_URL}/#organization`,
@@ -196,6 +203,7 @@ export function datasetLd(d: DatasetInput): JsonLd {
     inLanguage: d.lang,
     keywords: d.keywords,
     isAccessibleForFree: true,
+    license: DATA_LICENSE,
     creator: ORGANIZATION,
     isBasedOn: [...new Set(d.entries.map((e) => e.source_url))],
     spatialCoverage: { '@type': 'Place', name: d.place ?? 'Bangladesh' },

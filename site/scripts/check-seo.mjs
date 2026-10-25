@@ -88,6 +88,7 @@ function checkJsonLd(page, data, canonical) {
       need(typeof data.description === 'string' && length(data.description) >= 50, 'needs a description of at least 50 characters');
       need(data.url === canonical, 'url must be the canonical URL');
       need(data.creator?.name, 'needs a creator');
+      need(typeof data.license === 'string' && data.license.startsWith('https://'), 'needs a license URL (Search Console flags its absence)');
       need(/^\d{4}-\d{2}-\d{2}\/\d{4}-\d{2}-\d{2}$/.test(data.temporalCoverage ?? ''), 'temporalCoverage must be a date range');
       need(data.variableMeasured?.length > 0, 'needs variableMeasured');
       need(
