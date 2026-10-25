@@ -1,9 +1,12 @@
 import type { IngestPayload, Point } from '@bdnumbers/shared';
 import { Hono } from 'hono';
 import { refreshCaches } from '../cache';
+import { triggerPagesDeploy } from '../deploy';
 import type { AppEnv, Env } from '../env';
 import { bearerMatches } from '../lib/auth';
-import { ingestPoints } from '../run';
+import { ingestPoints, runSource } from '../run';
+import { bajusGold, parseBajus } from '../sources/bajusGold';
+import type { Source } from '../sources/types';
 
 const MAX_POINTS = 2000;
 const LIMIT = 10;
@@ -32,6 +35,38 @@ ingest.post('/', async (c) => {
 
   const result = await ingestPoints(c.env, parsed.payload);
   if (result.ok) c.executionCtx.waitUntil(refreshCaches(c.env));
+  return c.json(result, result.ok ? 200 : 422);
+});
+
+/**
+ * Sources whose page can be fetched elsewhere and relayed here as raw HTML, for when the site shows the
+ * Worker a bot check (BAJUS does, since 2026-10-23). The page goes through the source's own parser and
+ * the usual validation, and is logged as an ordinary run of that source with trigger "relay".
+ */
+const RELAY: Record<string, { source: Source; parse: (html: string) => Promise<Point[]> }> = {
+  bajusGold: { source: bajusGold, parse: (html) => parseBajus(html) },
+};
+const MAX_RELAY_BYTES = 2_000_000;
+
+ingest.post('/html/:source', async (c) => {
+  const client = c.req.header('cf-connecting-ip') ?? 'unknown';
+  if (!(await allowRequest(c.env, client))) {
+    return c.json({ error: 'rate limited' }, 429, { 'retry-after': '60' });
+  }
+  if (!c.env.INGEST_TOKEN) return c.json({ error: 'ingest is disabled (INGEST_TOKEN not set)' }, 503);
+  if (!(await bearerMatches(c.req.header('authorization'), c.env.INGEST_TOKEN))) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+  const relay = RELAY[c.req.param('source')];
+  if (!relay) return c.json({ error: `no relay for ${c.req.param('source')}; supported: ${Object.keys(RELAY).join(', ')}` }, 404);
+  const html = await c.req.text();
+  if (html.length === 0 || html.length > MAX_RELAY_BYTES) return c.json({ error: `body must be 1..${MAX_RELAY_BYTES} bytes of HTML` }, 400);
+
+  const result = await runSource(c.env, { ...relay.source, fetch: () => relay.parse(html) }, 'relay');
+  if (result.ok) {
+    await refreshCaches(c.env);
+    if (result.written > 0) c.executionCtx.waitUntil(triggerPagesDeploy(c.env));
+  }
   return c.json(result, result.ok ? 200 : 422);
 });
 

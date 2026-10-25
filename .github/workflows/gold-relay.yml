@@ -1,0 +1,64 @@
+name: gold-relay
+
+# Since 2026-10-23 bajus.org shows Cloudflare's bot check to the Worker. Twenty minutes after each daily
+# batch, if the Worker's last BAJUS fetch failed (or fell back to the UNB news mirror), this job fetches
+# the price page from GitHub's network and posts it to POST /api/ingest/html/bajusGold. The Worker parses
+# and validates it exactly as in a normal run. Needs the INGEST_TOKEN repository secret.
+on:
+  schedule:
+    - cron: '20 1,7 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/gold-relay.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gold-relay
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Did the Worker reach BAJUS?
+        id: need
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "relay=true" >> "$GITHUB_OUTPUT"; echo "Run by ${{ github.event_name }}: relaying regardless."; exit 0
+          fi
+          need=$(curl -fsS https://api.bdrate.fyi/api/status.json \
+            | jq -r '.sources[] | select(.source == "bajusGold") | .last_run
+                     | ((.ok | not) or ((.error // "") | test("BAJUS failed")))')
+          echo "relay=${need:-true}" >> "$GITHUB_OUTPUT"
+          echo "Worker's last BAJUS run needs a relay: ${need:-unknown}"
+
+      - name: Fetch the BAJUS price page
+        if: steps.need.outputs.relay == 'true'
+        run: |
+          code=$(curl -sS -L -o bajus.html -w '%{http_code}' \
+            -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' \
+            https://www.bajus.org/gold-price)
+          if [ "$code" != "200" ] || ! grep -q 'gold-table' bajus.html; then
+            title=$(grep -o -m1 '<title>[^<]*' bajus.html | sed 's/<title>//')
+            echo "::error::BAJUS returned HTTP $code (title: ${title:-none}); it blocks GitHub's network too."
+            exit 1
+          fi
+          echo "BAJUS page fetched ($(wc -c < bajus.html) bytes)."
+
+      - name: Relay it to the Worker
+        if: steps.need.outputs.relay == 'true'
+        env:
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+        run: |
+          if [ -z "$INGEST_TOKEN" ]; then
+            echo "::warning::INGEST_TOKEN repository secret is not set; fetched BAJUS but did not relay it."
+            exit 0
+          fi
+          curl -sS --fail-with-body -X POST https://api.bdrate.fyi/api/ingest/html/bajusGold \
+            -H "authorization: Bearer $INGEST_TOKEN" -H 'content-type: text/html; charset=utf-8' \
+            --data-binary @bajus.html
+          echo

@@ -1,9 +1,10 @@
 import type { ChangesResponse, IngestResult, LatestResponse, SeriesHistory, StatusResponse } from '@bdnumbers/shared';
 import { dhakaDate } from '@bdnumbers/shared';
 import { env } from 'cloudflare:workers';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { refreshCaches } from '../src/cache';
-import { request, resetStorage, seedPoints } from './helpers';
+import type { RunResult } from '../src/run';
+import { DEPLOY_HOOK, FIXTURES, allSourceRoutes, calledUrls, mockFetch, request, resetStorage, seedPoints } from './helpers';
 
 const INGEST_AUTH = { authorization: 'Bearer test-ingest-token', 'content-type': 'application/json' };
 
@@ -184,6 +185,38 @@ describe('POST /api/ingest', () => {
     }
     expect(statuses.slice(0, 10).every((s) => s === 401)).toBe(true);
     expect(statuses.at(-1)).toBe(429);
+  });
+});
+
+describe('POST /api/ingest/html/:source (relay)', () => {
+  const relay = (source: string, body: string, auth = 'Bearer test-ingest-token') =>
+    request(`/api/ingest/html/${source}`, {
+      method: 'POST',
+      headers: { authorization: auth, 'content-type': 'text/html', 'cf-connecting-ip': freshIp() },
+      body,
+    });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('requires the token and a source that supports relaying', async () => {
+    expect((await relay('bajusGold', FIXTURES.bajus, 'Bearer wrong')).status).toBe(401);
+    expect((await relay('bangladeshBank', '<p>x</p>')).status).toBe(404);
+  });
+
+  it('parses a relayed BAJUS page exactly like a normal run, and rebuilds the site', async () => {
+    const spy = mockFetch(allSourceRoutes());
+    const res = await relay('bajusGold', FIXTURES.bajus);
+    expect(res.status).toBe(200);
+    // All 4 gold and 4 silver karats (the seeded 22K point lacks the page's per-gram details, so it counts too).
+    expect(await res.json<RunResult>()).toMatchObject({ source: 'bajusGold', ok: true, written: 8 });
+    const run = await env.DB.prepare("SELECT ok, trigger FROM runs WHERE source = 'bajusGold'").first();
+    expect(run).toEqual({ ok: 1, trigger: 'relay' });
+    expect(calledUrls(spy)).toContain(DEPLOY_HOOK);
+  });
+
+  it('fails the run on a page that is not the price table, e.g. the bot check itself', async () => {
+    const res = await relay('bajusGold', '<html><head><title>Just a moment...</title></head></html>');
+    expect(res.status).toBe(422);
+    expect((await res.json<RunResult>()).error).toMatch(/gold-table not found .*Just a moment/);
   });
 });
 
