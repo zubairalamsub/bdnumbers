@@ -12,6 +12,8 @@ export interface Env {
   RUN_MODE: string;
   /** Wait before the single retry of a failed source fetch; default 3000. Tests set 0. */
   RETRY_DELAY_MS?: string;
+  /** "off" stops the hourly phone shop crawl (and the daily phone snapshot); anything else leaves it on. */
+  PHONE_CRAWL?: string;
 
   INGEST_TOKEN?: string;
   INTERNAL_TOKEN?: string;

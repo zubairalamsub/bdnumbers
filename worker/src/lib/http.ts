@@ -38,10 +38,15 @@ class FetchError extends Error {
   constructor(
     message: string,
     readonly retryable: boolean,
+    /** The HTTP status, when the server answered. */
+    readonly status: number | null = null,
   ) {
     super(message);
   }
 }
+
+/** The HTTP status a fetchText/fetchBytes/fetchJson failure came with, or null (network error, timeout). */
+export const httpStatusOf = (err: unknown): number | null => (err instanceof FetchError ? err.status : null);
 
 async function fetchOnce(env: Env, url: string, accept: string): Promise<Response> {
   let res: Response;
@@ -67,5 +72,6 @@ async function fetchOnce(env: Env, url: string, accept: string): Promise<Respons
   throw new FetchError(
     `GET ${url} returned HTTP ${res.status}${details.length ? ` (${details.join(', ')})` : ''}`,
     RETRY_STATUSES.has(res.status),
+    res.status,
   );
 }

@@ -5,6 +5,9 @@ import { runBatch } from '../cron';
 import { fetchDivisionWeather } from '../districtWeather';
 import type { AppEnv } from '../env';
 import { bearerMatches } from '../lib/auth';
+import { processPage, runShop, type PageKind } from '../phones/crawl';
+import { publishPhones, snapshotPhones } from '../phones/publish';
+import { shopCrawl } from '../phones/shops';
 import { runSource } from '../run';
 import { getSource } from '../sources';
 
@@ -30,6 +33,28 @@ internal.post('/district-weather/:division', async (c) => {
   if (!(division in DIVISIONS)) return c.json({ error: 'unknown division' }, 404);
   return c.json(await fetchDivisionWeather(c.env, division as DivisionId));
 });
+
+/** One shop's phone crawl run (the hourly cron's fan-out target). */
+internal.post('/phones/shop/:shop', async (c) => {
+  const shop = c.req.param('shop');
+  if (!shopCrawl(shop)) return c.json({ error: 'unknown shop' }, 404);
+  return c.json(await runShop(c.env, shop, c.req.query('trigger') ?? 'manual'));
+});
+
+/** One page of a shop: fetched and parsed in its own invocation (a shop run's fan-out target). */
+internal.post('/phones/page', async (c) => {
+  const body = await c.req.json<{ shop?: string; url?: string; kind?: string }>().catch(() => null);
+  const kinds: readonly string[] = ['listing', 'sitemap', 'product'];
+  if (!body?.shop || !shopCrawl(body.shop) || !body.url || !kinds.includes(body.kind ?? '')) {
+    return c.json({ error: 'needs shop, url and kind' }, 400);
+  }
+  const origin = shopCrawl(body.shop)!.origin;
+  if (!body.url.startsWith(`${origin}/`)) return c.json({ error: `url must be on ${origin}` }, 400);
+  return c.json(await processPage(c.env, body.shop, body.url, body.kind as PageKind));
+});
+
+internal.post('/phones/publish', async (c) => c.json(await publishPhones(c.env)));
+internal.post('/phones/snapshot', async (c) => c.json(await snapshotPhones(c.env)));
 
 internal.post('/batch/:batch', async (c) => {
   const batch = c.req.param('batch');

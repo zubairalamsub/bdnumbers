@@ -153,7 +153,8 @@ export async function pruneRuns(db: D1Database, keepDays = 90): Promise<void> {
   await db.prepare('DELETE FROM runs WHERE started_at < ?1').bind(cutoff).run();
 }
 
-async function runBatched(db: D1Database, statements: readonly D1PreparedStatement[]): Promise<number> {
+/** Run statements in D1 batches of CHUNK; returns the rows changed. */
+export async function runBatched(db: D1Database, statements: readonly D1PreparedStatement[]): Promise<number> {
   let changes = 0;
   for (let i = 0; i < statements.length; i += CHUNK) {
     const results = await db.batch(statements.slice(i, i + CHUNK));

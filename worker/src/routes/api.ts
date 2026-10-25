@@ -3,7 +3,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { CACHE_CONTROL, edgeCache, getLatest, getStatus } from '../cache';
 import { DISTRICT_WEATHER_KEY } from '../districtWeather';
-import type { AppEnv } from '../env';
+import type { AppEnv, Env } from '../env';
+import { PHONES_HISTORY_KEY, PHONES_KEY } from '../phones/publish';
 import { buildChanges, buildHistory } from '../queries';
 import { ingest } from './ingest';
 
@@ -23,12 +24,21 @@ api.get('/latest.json', async (c) => {
 
 api.get('/status.json', async (c) => c.json(await getStatus(c.env), 200, { 'cache-control': CACHE_CONTROL }));
 
+/** A JSON document stored in KV as is, or a 404 saying it isn't there yet. */
+async function kvJson(env: Env, key: string, missing: string): Promise<Response> {
+  const body = await env.CACHE.get(key);
+  if (!body) return Response.json({ error: missing }, { status: 404 });
+  return new Response(body, { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': CACHE_CONTROL } });
+}
+
 /** Current weather in every district headquarters (the weather map's zoomed-in layer); updated hourly. */
-api.get('/weather/districts.json', async (c) => {
-  const snapshot = await c.env.CACHE.get(DISTRICT_WEATHER_KEY);
-  if (!snapshot) return c.json({ error: 'no district weather yet' }, 404);
-  return c.body(snapshot, 200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': CACHE_CONTROL });
-});
+api.get('/weather/districts.json', async (c) => kvJson(c.env, DISTRICT_WEATHER_KEY, 'no district weather yet'));
+
+/** Every phone model with each shop's price (rebuilt when a crawl finds a change); 404 until the first crawl. */
+api.get('/phones.json', async (c) => kvJson(c.env, PHONES_KEY, 'no phone prices yet'));
+
+/** Each model's lowest prices by day and recent price changes at each shop (rebuilt daily). */
+api.get('/phones/history.json', async (c) => kvJson(c.env, PHONES_HISTORY_KEY, 'no phone price history yet'));
 
 api.get('/changes.json', async (c) =>
   c.json(await buildChanges(c.env.DB, dhakaDate()), 200, { 'cache-control': CACHE_CONTROL }),

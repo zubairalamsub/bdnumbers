@@ -7,3 +7,4 @@ export * from './catalog/weather';
 export * from './catalog/periodic';
 export * from './catalog/districts';
 export * from './catalog/notify';
+export * from './catalog/phones';

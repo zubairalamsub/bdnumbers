@@ -34,6 +34,8 @@ app.get('/', (c) =>
       'GET /api/changes.json',
       'GET /api/status.json',
       'GET /api/weather/districts.json',
+      'GET /api/phones.json',
+      'GET /api/phones/history.json',
       'POST /api/ingest (bearer token)',
       'GET /embed/:key?lang=bn|en',
     ],

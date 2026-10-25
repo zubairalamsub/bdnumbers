@@ -7,6 +7,7 @@ import { sendDigest, type DigestOutcome } from './digest';
 import type { Env } from './env';
 import { errorMessage } from './lib/errors';
 import { batchChanges, sendPushes, type PushOutcome } from './notify';
+import { dailyPhones, markPhonesDeployed, refreshPhones, type DailyPhonesOutcome } from './phones';
 import { failSource, runSource, type RunResult } from './run';
 import { sourcesFor } from './sources';
 import type { Batch, Source } from './sources/types';
@@ -68,7 +69,12 @@ export interface BatchResult {
   alerts: AlertOutcome;
   /** Hourly batches also refresh the district weather snapshot for the map. */
   districtWeather: DistrictWeatherOutcome | 'skipped';
+  /** Hourly batches crawl the phone shops (their runs are in `results` as phones:<shop>); daily ones record the day's prices. */
+  phones: DailyPhonesOutcome | 'crawled' | 'skipped';
 }
+
+/** The phone crawl can be switched off (PHONE_CRAWL = "off") without a code change, e.g. if a shop asks. */
+const phonesOn = (env: Env) => env.PHONE_CRAWL !== 'off';
 
 /**
  * Run every source in a batch concurrently. One source failing never stops the others. Afterwards the
@@ -86,8 +92,10 @@ export async function runBatch(
 ): Promise<BatchResult> {
   const startedAt = new Date().toISOString();
   const sources = sourcesFor(batch);
-  // The district snapshot is stored before the caches are rebuilt, so the cache-version bump covers it.
-  const [results, districtWeather] = await Promise.all([
+  const hourly = batch === 'hourly';
+  // The district snapshot and phone prices are stored before the caches are rebuilt, so the cache-version
+  // bump covers them.
+  const [sourceResults, districtWeather, phoneResults] = await Promise.all([
     Promise.all(
       sources.map((source) =>
         invoke(source, trigger).catch(
@@ -95,14 +103,23 @@ export async function runBatch(
         ),
       ),
     ),
-    batch === 'hourly'
+    hourly
       ? refreshDistrictWeather(env).catch((err): 'skipped' => {
           console.error(`district weather failed: ${errorMessage(err)}`);
           return 'skipped';
         })
       : ('skipped' as const),
+    hourly && phonesOn(env)
+      ? refreshPhones(env, trigger).catch((err): RunResult[] => {
+          console.error(`phone crawl failed: ${errorMessage(err)}`);
+          return [];
+        })
+      : [],
   ]);
-  const written = results.reduce((sum, r) => sum + r.written, 0);
+  const results = [...sourceResults, ...phoneResults];
+  // Series values only: they decide the site build and pushes (phone prices have their own check below).
+  const written = sourceResults.reduce((sum, r) => sum + r.written, 0);
+  const phones: BatchResult['phones'] = hourly ? (phonesOn(env) ? 'crawled' : 'skipped') : phonesOn(env) ? await dailyPhones(env) : 'skipped';
 
   let deploy: DeployOutcome = 'skipped';
   let push: BatchResult['push'] = 'skipped';
@@ -111,17 +128,19 @@ export async function runBatch(
     await refreshCaches(env);
     if (batch === 'daily') {
       await pruneRuns(env.DB);
-      if (written > 0) {
+      const phonesChanged = typeof phones === 'object' && phones.changed;
+      if (written > 0 || phonesChanged) {
         deploy = await triggerPagesDeploy(env);
-        push = (await sendPushes(env, await batchChanges(env, startedAt))).outcome;
+        if (deploy === 'triggered' && typeof phones === 'object') await markPhonesDeployed(env, phones.hash);
       }
+      if (written > 0) push = (await sendPushes(env, await batchChanges(env, startedAt))).outcome;
       digest = await sendDigest(env, now);
     }
   }
 
   const alerts = await checkAlerts(env, results, now);
 
-  const summary: BatchResult = { batch, trigger, results, written, deploy, push, digest, alerts, districtWeather };
+  const summary: BatchResult = { batch, trigger, results, written, deploy, push, digest, alerts, districtWeather, phones };
   console.log(JSON.stringify(summary));
   return summary;
 }

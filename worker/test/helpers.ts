@@ -114,7 +114,17 @@ export function calledUrls(spy: ReturnType<typeof mockFetch>): string[] {
 /** Empty D1 and KV. Storage persists between tests in a file, so call this in beforeEach. */
 export async function resetStorage(): Promise<void> {
   await env.DB.batch(
-    ['points', 'runs', 'series', 'manual_overrides'].map((table) => env.DB.prepare(`DELETE FROM ${table}`)),
+    [
+      'points',
+      'runs',
+      'series',
+      'manual_overrides',
+      'phone_pages',
+      'phone_offers',
+      'phone_price_log',
+      'phone_models',
+      'phone_daily',
+    ].map((table) => env.DB.prepare(`DELETE FROM ${table}`)),
   );
   const { keys } = await env.CACHE.list();
   await Promise.all(keys.map((k) => env.CACHE.delete(k.name)));
