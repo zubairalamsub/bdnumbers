@@ -94,7 +94,9 @@ describe('scheduled()', () => {
     await worker.scheduled(createScheduledController({ cron: HOURLY_CRON }), env);
 
     expect((await runs()).map((r) => [r.source, r.ok, r.points_written])).toEqual([['weather', 1, 32]]);
-    expect(calledUrls(fetchSpy).filter((u) => u.startsWith('https://api.met.no/'))).toHaveLength(8);
+    // 8 division cities for the weather series, 56 more districts for the map's snapshot.
+    expect(calledUrls(fetchSpy).filter((u) => u.startsWith('https://api.met.no/'))).toHaveLength(64);
+    expect(Object.keys((await env.CACHE.get<{ districts: object }>('weather-districts.json', 'json'))!.districts)).toHaveLength(56);
     expect(calledUrls(fetchSpy)).not.toContain(DEPLOY_HOOK);
     expect((await getLatest(env)).series.filter((s) => s.category === 'weather')).toHaveLength(32);
   });

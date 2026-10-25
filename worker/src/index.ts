@@ -33,6 +33,7 @@ app.get('/', (c) =>
       'GET /api/series/:key.json?from=YYYY-MM-DD&to=YYYY-MM-DD',
       'GET /api/changes.json',
       'GET /api/status.json',
+      'GET /api/weather/districts.json',
       'POST /api/ingest (bearer token)',
       'GET /embed/:key?lang=bn|en',
     ],

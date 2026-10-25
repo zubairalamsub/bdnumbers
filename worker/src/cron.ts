@@ -2,6 +2,7 @@ import { checkAlerts, type AlertOutcome } from './alerts';
 import { refreshCaches } from './cache';
 import { pruneRuns } from './db';
 import { triggerPagesDeploy, type DeployOutcome } from './deploy';
+import { refreshDistrictWeather, type DistrictWeatherOutcome } from './districtWeather';
 import { sendDigest, type DigestOutcome } from './digest';
 import type { Env } from './env';
 import { errorMessage } from './lib/errors';
@@ -65,6 +66,8 @@ export interface BatchResult {
   push: PushOutcome | 'skipped';
   digest: DigestOutcome | 'skipped';
   alerts: AlertOutcome;
+  /** Hourly batches also refresh the district weather snapshot for the map. */
+  districtWeather: DistrictWeatherOutcome | 'skipped';
 }
 
 /**
@@ -83,13 +86,22 @@ export async function runBatch(
 ): Promise<BatchResult> {
   const startedAt = new Date().toISOString();
   const sources = sourcesFor(batch);
-  const results = await Promise.all(
-    sources.map((source) =>
-      invoke(source, trigger).catch(
-        (err): RunResult => ({ source: source.key, ok: false, error: errorMessage(err), written: 0, run_id: null }),
+  // The district snapshot is stored before the caches are rebuilt, so the cache-version bump covers it.
+  const [results, districtWeather] = await Promise.all([
+    Promise.all(
+      sources.map((source) =>
+        invoke(source, trigger).catch(
+          (err): RunResult => ({ source: source.key, ok: false, error: errorMessage(err), written: 0, run_id: null }),
+        ),
       ),
     ),
-  );
+    batch === 'hourly'
+      ? refreshDistrictWeather(env).catch((err): 'skipped' => {
+          console.error(`district weather failed: ${errorMessage(err)}`);
+          return 'skipped';
+        })
+      : ('skipped' as const),
+  ]);
   const written = results.reduce((sum, r) => sum + r.written, 0);
 
   let deploy: DeployOutcome = 'skipped';
@@ -109,7 +121,7 @@ export async function runBatch(
 
   const alerts = await checkAlerts(env, results, now);
 
-  const summary: BatchResult = { batch, trigger, results, written, deploy, push, digest, alerts };
+  const summary: BatchResult = { batch, trigger, results, written, deploy, push, digest, alerts, districtWeather };
   console.log(JSON.stringify(summary));
   return summary;
 }

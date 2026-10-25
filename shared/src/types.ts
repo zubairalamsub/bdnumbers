@@ -126,6 +126,29 @@ export interface SourceStatus {
   stale_series: string[];
 }
 
+/** One district's weather right now, in /api/weather/districts.json (Dhaka-local hour, °C, %, km/h, mm). */
+export interface DistrictWeather {
+  time: string;
+  temp: number;
+  humidity: number;
+  wind: number;
+  /** Rain over the next hour. */
+  rain: number;
+  /** MET Norway symbol code, e.g. "partlycloudy_day". */
+  symbol: string | null;
+  /** The next 24 hours' high and low. */
+  max24: number | null;
+  min24: number | null;
+  /** True when this hour's fetch failed and the previous reading was kept. */
+  stale: boolean;
+}
+
+export interface DistrictWeatherResponse {
+  generated_at: string;
+  /** By district id (catalog/districts.ts); the eight division cities are series of their own instead. */
+  districts: Record<string, DistrictWeather>;
+}
+
 export interface StatusResponse {
   generated_at: string;
   sources: SourceStatus[];

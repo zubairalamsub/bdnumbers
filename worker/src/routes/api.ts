@@ -2,6 +2,7 @@ import { dhakaDate, getSeriesDef, isPointDate } from '@bdnumbers/shared';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { CACHE_CONTROL, edgeCache, getLatest, getStatus } from '../cache';
+import { DISTRICT_WEATHER_KEY } from '../districtWeather';
 import type { AppEnv } from '../env';
 import { buildChanges, buildHistory } from '../queries';
 import { ingest } from './ingest';
@@ -21,6 +22,13 @@ api.get('/latest.json', async (c) => {
 });
 
 api.get('/status.json', async (c) => c.json(await getStatus(c.env), 200, { 'cache-control': CACHE_CONTROL }));
+
+/** Current weather in every district headquarters (the weather map's zoomed-in layer); updated hourly. */
+api.get('/weather/districts.json', async (c) => {
+  const snapshot = await c.env.CACHE.get(DISTRICT_WEATHER_KEY);
+  if (!snapshot) return c.json({ error: 'no district weather yet' }, 404);
+  return c.body(snapshot, 200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': CACHE_CONTROL });
+});
 
 api.get('/changes.json', async (c) =>
   c.json(await buildChanges(c.env.DB, dhakaDate()), 200, { 'cache-control': CACHE_CONTROL }),
