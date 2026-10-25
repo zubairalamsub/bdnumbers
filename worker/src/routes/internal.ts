@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { sendTestAlert } from '../alerts';
 import { runBatch } from '../cron';
 import type { AppEnv } from '../env';
 import { bearerMatches } from '../lib/auth';
@@ -25,4 +26,10 @@ internal.post('/batch/:batch', async (c) => {
   const batch = c.req.param('batch');
   if (batch !== 'daily' && batch !== 'hourly') return c.json({ error: 'batch must be daily or hourly' }, 404);
   return c.json(await runBatch(c.env, batch, 'manual'));
+});
+
+/** Send one test email through the alert path, to check the binding, sender and ALERT_TO end to end. */
+internal.post('/alerts/test', async (c) => {
+  const outcome = await sendTestAlert(c.env);
+  return c.json({ outcome }, outcome === 'sent' ? 200 : outcome === 'not-configured' ? 503 : 502);
 });

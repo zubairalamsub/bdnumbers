@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildMime, checkAlerts } from '../src/alerts';
+import { buildMime, checkAlerts, sendTestAlert } from '../src/alerts';
 import type { Env } from '../src/env';
 import type { RunResult } from '../src/run';
 import { resetStorage } from './helpers';
@@ -60,6 +60,15 @@ describe('failure alerts', () => {
     await run('bangladeshBank', false);
     expect(await checkAlerts(e, [await run('bangladeshBank', false)], NOW)).toBe('failed');
     expect(await env.CACHE.get('alert:bangladeshBank')).toBeNull();
+  });
+});
+
+describe('sendTestAlert', () => {
+  it('sends one test email, or reports that alerts are off', async () => {
+    expect(await sendTestAlert(env as Env, NOW)).toBe('not-configured');
+    const { env: e, send } = alertEnv();
+    expect(await sendTestAlert(e, NOW)).toBe('sent');
+    expect(send).toHaveBeenCalledTimes(1);
   });
 });
 

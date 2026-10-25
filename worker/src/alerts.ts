@@ -67,6 +67,24 @@ export async function checkAlerts(env: Env, results: readonly RunResult[], now =
   return 'sent';
 }
 
+/** One email saying alerts work (POST /internal/alerts/test). */
+export async function sendTestAlert(env: Env, now = new Date()): Promise<AlertOutcome> {
+  if (!env.ALERT_EMAIL || !env.ALERT_TO) return 'not-configured';
+  const text = [
+    'This is a test of the bdrate.fyi failure alerts.',
+    '',
+    'From now on you get one email when a data source fails twice in a row, and one when it works again.',
+    `Status of every source: ${env.SITE_URL}/status`,
+  ].join('\n');
+  try {
+    await sendEmail(env, env.ALERT_TO, 'bdrate.fyi: test alert', text, now);
+    return 'sent';
+  } catch (err) {
+    console.error(`test alert failed: ${errorMessage(err)}`);
+    return 'failed';
+  }
+}
+
 /** A plain-text email as raw MIME (what the send_email binding takes). */
 export function buildMime(from: string, to: string, subject: string, text: string, now: Date): string {
   return [
