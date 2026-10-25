@@ -59,7 +59,10 @@ describe('FAQs', () => {
 describe('keywords.json', () => {
   it('has an entry for every indexable page', () => {
     for (const { path } of INDEXABLE_PAGES) {
-      const key = path.startsWith('/prayer-times/') ? '/prayer-times/{district}' : path;
+      // Templated pages (one per district, currency or commodity) share an entry.
+      const template = { '/prayer-times/': '{district}', '/currency/': '{currency}', '/market-price/': '{item}' };
+      const prefix = Object.keys(template).find((p) => path.startsWith(p)) as keyof typeof template | undefined;
+      const key = prefix ? prefix + template[prefix] : path;
       expect(KEYWORDS[key], path).toBeDefined();
     }
   });

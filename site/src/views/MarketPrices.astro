@@ -18,7 +18,9 @@ import PageSeo from '../components/PageSeo.astro';
 import Related from '../components/Related.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
+import { commodityOf, commodityPath } from '../lib/commodities';
 import { getLatest } from '../lib/data';
+import { midChange } from '../lib/market';
 
 interface Props {
   lang: Lang;
@@ -42,15 +44,6 @@ const marketDate = rows.reduce((d, r) => (r.max.date > d ? r.max.date : d), '');
 const checkedAt = rows.find((r) => r.max.date === marketDate)?.max.checked_at ?? null;
 const stale = rows.some((r) => r.max.stale);
 
-/** Change in the midpoint of the range between two days, as the ChangeText component wants it. */
-function midChange(r: (typeof rows)[number], period: 'd7' | 'd30') {
-  const a = r.min.change[period];
-  const b = r.max.change[period];
-  if (!a || !b) return null;
-  const now = (r.min.value + r.max.value) / 2;
-  const then = (a.from + b.from) / 2;
-  return { from: then, date: b.date, abs: now - then, pct: then ? ((now - then) / then) * 100 : null };
-}
 const range = (lo: number, hi: number) =>
   lo === hi ? formatNumber(hi, digits, 0) : `${formatNumber(lo, digits, 0)}–${formatNumber(hi, digits, 0)}`;
 
@@ -111,7 +104,7 @@ const path = '/market-price-today';
                   return (
                     <tr>
                       <th scope="row" class="font-normal">
-                        <a href={localePath(lang, `/history/${r.max.key}`)} class="text-ink no-underline hover:underline">
+                        <a href={localePath(lang, commodityPath(commodityOf(r.item.id)!))} class="text-ink no-underline hover:underline">
                           {lang === 'bn' ? r.item.bn : r.item.en}
                         </a>
                         <span class="block text-xs text-muted">{unitLabel(`BDT/${r.item.unit}`, lang)}</span>
@@ -127,7 +120,7 @@ const path = '/market-price-today';
                       <td class="hidden text-ink-2 sm:table-cell">{d7[0] && d7[1] ? range(d7[0].from, d7[1].from) : '—'}</td>
                       <td class="hidden text-ink-2 sm:table-cell">{d30[0] && d30[1] ? range(d30[0].from, d30[1].from) : '—'}</td>
                       <td>
-                        <ChangeText change={midChange(r, 'd7')} category="market" lang={lang} empty="dash" class="text-sm text-ink-2" />
+                        <ChangeText change={midChange(r.min, r.max, 'd7')} category="market" lang={lang} empty="dash" class="text-sm text-ink-2" />
                       </td>
                     </tr>
                   );

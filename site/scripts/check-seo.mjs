@@ -50,6 +50,8 @@ function urlPath(file) {
 function keywordEntry(pagePath) {
   if (keywords[pagePath]) return keywords[pagePath];
   if (/^\/prayer-times\/[a-z-]+$/.test(pagePath)) return keywords['/prayer-times/{district}'];
+  if (/^\/currency\/[a-z-]+$/.test(pagePath)) return keywords['/currency/{currency}'];
+  if (/^\/market-price\/[a-z-]+$/.test(pagePath)) return keywords['/market-price/{item}'];
   return null;
 }
 

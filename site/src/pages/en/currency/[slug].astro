@@ -1,0 +1,11 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { CURRENCY_PAGES, type CurrencyPage } from '../../../lib/currencies';
+import CurrencyRate from '../../../views/CurrencyRate.astro';
+
+export const getStaticPaths = (() => CURRENCY_PAGES.map((currency) => ({ params: { slug: currency.slug }, props: { currency } }))) satisfies GetStaticPaths;
+
+const { currency } = Astro.props as { currency: CurrencyPage };
+---
+
+<CurrencyRate lang="en" currency={currency} />

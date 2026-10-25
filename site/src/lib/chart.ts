@@ -2,6 +2,15 @@ import { addDays, formatDate, formatShortDate, type Digits, type Lang } from '@b
 
 /** [date, value] pairs, oldest first. */
 export type Pt = [date: string, value: number];
+/** Midpoints of two series (e.g. a bid and an ask, or a lowest and a highest price), on the dates both have. */
+export function midpoints(a: readonly Pt[], b: readonly Pt[]): Pt[] {
+  const other = new Map(b);
+  return a.flatMap(([date, x]) => {
+    const y = other.get(date);
+    return y === undefined ? [] : [[date, (x + y) / 2] as Pt];
+  });
+}
+
 export type Range = '30' | '90' | '365' | 'all';
 export const RANGES: readonly Range[] = ['30', '90', '365', 'all'];
 

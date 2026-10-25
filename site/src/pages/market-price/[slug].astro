@@ -1,0 +1,11 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { COMMODITIES, type Commodity } from '../../lib/commodities';
+import CommodityPrice from '../../views/CommodityPrice.astro';
+
+export const getStaticPaths = (() => COMMODITIES.map((commodity) => ({ params: { slug: commodity.slug }, props: { commodity } }))) satisfies GetStaticPaths;
+
+const { commodity } = Astro.props as { commodity: Commodity };
+---
+
+<CommodityPrice lang="bn" commodity={commodity} />

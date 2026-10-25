@@ -103,6 +103,22 @@
       "en": ["{district} namaz time today", "{district} iftar time", "{district} maghrib time"]
     }
   },
+  "/currency/{currency}": {
+    "bn": "আজকের {currency} রেট",
+    "en": "{currency} rate today",
+    "longTail": {
+      "bn": ["১ {currency} সমান কত টাকা", "{currency} টাকার রেট", "১০০০ {currency} কত টাকা", "{currency} রেট বাংলাদেশ"],
+      "en": ["{currency} to BDT", "1 {currency} to taka", "{currency} to Bangladeshi taka today"]
+    }
+  },
+  "/market-price/{item}": {
+    "bn": "আজকের {item} দাম",
+    "en": "{item} price today",
+    "longTail": {
+      "bn": ["ঢাকায় {item} দাম", "{item} কেজি কত", "{item} বাজারদর", "{item} দাম কত আজ"],
+      "en": ["{item} price in Bangladesh", "{item} price in Dhaka", "{item} price per kg"]
+    }
+  },
   "/calculators": {
     "bn": "ক্যালকুলেটর",
     "en": "calculators",

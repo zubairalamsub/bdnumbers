@@ -4,6 +4,7 @@ import Field from '../../components/calc/Field.astro';
 import Result from '../../components/calc/Result.astro';
 import Select from '../../components/calc/Select.astro';
 import Shell from '../../components/calc/Shell.astro';
+import { CURRENCY_PAGES, currencyByCode } from '../../lib/currencies';
 
 interface Props {
   lang: Lang;
@@ -21,6 +22,13 @@ for (const e of series) {
   const code = /^([a-z]{3})_bdt_bid$/.exec(e.key)?.[1];
   if (code && byKey.has(`${code}_bdt_ask`)) rates[code] = { bid: e.value, ask: byKey.get(`${code}_bdt_ask`)! };
 }
+// Gulf currencies fixed to the dollar: the dollar's rates over the peg.
+if (rates.usd) {
+  for (const c of CURRENCY_PAGES.filter((x) => x.peg)) {
+    const per = c.peg!.perUsd;
+    rates[c.code] = { bid: rates.usd.bid / per, ask: rates.usd.ask / per, ...(rates.usd.avg ? { avg: rates.usd.avg / per } : {}) };
+  }
+}
 const usdDate = series.find((e) => e.key === 'usd_bdt_avg')?.date;
 ---
 
@@ -37,7 +45,7 @@ const usdDate = series.find((e) => e.key === 'usd_bdt_avg')?.date;
       <Select
         name="currency"
         label={bn ? 'মুদ্রা' : 'Currency'}
-        options={Object.keys(rates).map((c) => ({ value: c, label: `${currencyName(c, lang)} (${c.toUpperCase()})`, selected: c === 'usd' }))}
+        options={Object.keys(rates).map((c) => ({ value: c, label: `${currencyByCode(c)?.[lang] ?? currencyName(c, lang)} (${c.toUpperCase()})`, selected: c === 'usd' }))}
       />
       <Select
         name="direction"
@@ -65,8 +73,8 @@ const usdDate = series.find((e) => e.key === 'usd_bdt_avg')?.date;
   <p slot="notes">
     {
       bn
-        ? `রেট বাংলাদেশ ব্যাংকের আন্তঃব্যাংক রেট${usdDate ? ` (${formatDate(usdDate, lang, defaultDigits(lang))})` : ''}। ব্যাংকের কাউন্টার, মানি এক্সচেঞ্জ বা রেমিট্যান্সের রেট ভিন্ন হতে পারে।`
-        : `Rates are Bangladesh Bank's interbank rates${usdDate ? ` (${formatDate(usdDate, lang, defaultDigits(lang))})` : ''}. Bank counter, money changer and remittance rates can differ.`
+        ? `রেট বাংলাদেশ ব্যাংকের আন্তঃব্যাংক রেট${usdDate ? ` (${formatDate(usdDate, lang, defaultDigits(lang))})` : ''}। সৌদি রিয়াল, দিরহামসহ উপসাগরীয় মুদ্রার রেট ডলার রেটকে তাদের নির্ধারিত বিনিময় হার দিয়ে ভাগ করে হিসাব করা। ব্যাংকের কাউন্টার, মানি এক্সচেঞ্জ বা রেমিট্যান্সের রেট ভিন্ন হতে পারে।`
+        : `Rates are Bangladesh Bank's interbank rates${usdDate ? ` (${formatDate(usdDate, lang, defaultDigits(lang))})` : ''}. Gulf currencies (riyal, dirham and others) are the dollar rate divided by their fixed peg. Bank counter, money changer and remittance rates can differ.`
     }
   </p>
 </Shell>

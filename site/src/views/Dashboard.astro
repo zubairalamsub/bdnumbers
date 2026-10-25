@@ -22,6 +22,8 @@ import UsdBackup from '../components/UsdBackup.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { CALCULATORS } from '../lib/calculators';
+import { commodityOf, commodityPath } from '../lib/commodities';
+import { currencyByCode, currencyPath, pegEntry } from '../lib/currencies';
 import { homeLd } from '../lib/seo';
 import { getChanges, getEntries, getLatest } from '../lib/data';
 
@@ -35,8 +37,12 @@ const digits = defaultDigits(lang);
 const latest = await getLatest();
 const [usd, bid, ask] = await getEntries(['usd_bdt_avg', 'usd_bdt_low', 'usd_bdt_high']);
 const gold = await getEntries(KARAT_ORDER.map((k) => `gold_${k}`));
-const crossCodes = ['eur', 'gbp', 'inr', 'sgd', 'aud', 'cad'].filter((c) => latest.series.some((e) => e.key === `${c}_bdt_ask`));
-const cross = await getEntries(crossCodes.map((c) => `${c}_bdt_ask`));
+const crossCodes = ['eur', 'gbp', 'inr', 'sgd'].filter((c) => latest.series.some((e) => e.key === `${c}_bdt_ask`));
+// Gulf currencies first (most remittances come from there), at the dollar's ask over their peg, then cross rates.
+const otherCurrencies = [
+  ...['sar', 'aed'].map((code) => ({ code, entry: pegEntry(ask!, currencyByCode(code)!) })),
+  ...(await getEntries(crossCodes.map((c) => `${c}_bdt_ask`))).map((entry, i) => ({ code: crossCodes[i]!, entry })),
+];
 // A series' first value isn't a change, and hourly weather would drown out everything else.
 const changed = (await getChanges()).changes.filter(
   (c) => c.previous !== null && getSeriesDef(c.key)?.category !== 'weather',
@@ -131,10 +137,12 @@ const description =
       <table class="data-table text-[0.9375rem]">
         <tbody>
           {
-            cross.map((e, i) => (
+            otherCurrencies.map(({ code, entry: e }) => (
               <tr data-series={e.key}>
                 <th scope="row" class="font-normal">
-                  {currencyName(crossCodes[i]!, lang)}
+                  <a href={localePath(lang, currencyPath(currencyByCode(code)!))} class="text-ink no-underline hover:underline">
+                    {currencyByCode(code)?.[lang] ?? currencyName(code, lang)}
+                  </a>
                 </th>
                 <td>
                   <Num value={e.value} fd={fractionDigits('fx', e.value)} lang={lang} field="value" />
@@ -162,7 +170,9 @@ const description =
           <ul class="divide-y divide-grid text-[0.9375rem]">
             {marketItems.map((r) => (
               <li class="flex justify-between gap-3 py-1">
-                <span>{lang === 'bn' ? r.item.bn : r.item.en}</span>
+                <a href={localePath(lang, commodityPath(commodityOf(r.item.id)!))} class="text-ink no-underline hover:underline">
+                  {lang === 'bn' ? r.item.bn : r.item.en}
+                </a>
                 <span class="whitespace-nowrap text-right">
                   <span class="font-semibold">
                     <span data-series={r.min!.key}><Num value={r.min!.value} lang={lang} field="value" /></span>–<span data-series={r.max!.key}><Num value={r.max!.value} lang={lang} field="value" /></span>

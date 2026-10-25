@@ -1,0 +1,257 @@
+---
+import { defaultDigits, formatDate, formatNumber, formatSeriesValue, fractionDigits, toBengaliDigits, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import AdSlot from '../components/AdSlot.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeTable from '../components/ChangeTable.astro';
+import Faq from '../components/Faq.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import NumberCard from '../components/NumberCard.astro';
+import Related from '../components/Related.astro';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { midpoints } from '../lib/chart';
+import { CURRENCY_PAGES, currencyPath, midEntry, pegEntry, type CurrencyPage } from '../lib/currencies';
+import { getEntries, getHistory, getLatest } from '../lib/data';
+import { datasetLd, keywordsFor, ldJson, type Faq as FaqItem } from '../lib/seo';
+
+interface Props {
+  lang: Lang;
+  currency: CurrencyPage;
+}
+
+const { lang, currency: c } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const name = bn ? c.bn : c.en;
+const CODE = c.code.toUpperCase();
+const peg = c.peg;
+
+// The headline figure, the bid/ask it sits between, and its history.
+let main: LatestEntry;
+let bid: number;
+let ask: number;
+let points: Array<[string, number]>;
+let usd: LatestEntry | undefined;
+/** Bangladesh Bank's own bid and ask entries (cross rates only), for the Dataset JSON-LD. */
+let published: LatestEntry[] = [];
+if (peg) {
+  const [avg, low, high] = (await getEntries(['usd_bdt_avg', 'usd_bdt_low', 'usd_bdt_high'])) as [LatestEntry, LatestEntry, LatestEntry];
+  usd = avg;
+  main = pegEntry(avg, c);
+  bid = low.value / peg.perUsd;
+  ask = high.value / peg.perUsd;
+  points = (await getHistory('usd_bdt_avg')).points.map((p) => [p.date, p.value / peg.perUsd]);
+} else {
+  const [b, a] = (await getEntries([`${c.code}_bdt_bid`, `${c.code}_bdt_ask`])) as [LatestEntry, LatestEntry];
+  published = [a, b];
+  main = midEntry(b, a, c);
+  bid = b.value;
+  ask = a.value;
+  const [bidHistory, askHistory] = await Promise.all([getHistory(b.key), getHistory(a.key)]);
+  points = midpoints(
+    bidHistory.points.map((p) => [p.date, p.value]),
+    askHistory.points.map((p) => [p.date, p.value]),
+  );
+}
+
+const fx = (n: number) => formatSeriesValue(n, 'fx', digits);
+const fd = fractionDigits('fx', main.value);
+const value = fx(main.value);
+const date = formatDate(main.date, lang, digits);
+const v100 = formatNumber(main.value * 100, digits, 2);
+const v1000 = formatNumber(main.value * 1000, digits, 2);
+// Amounts people look up ("১০০০ রিয়াল কত টাকা"); currencies worth little get larger amounts.
+const amounts = main.value >= 20 ? [1, 10, 50, 100, 500, 1000, 5000, 10000] : [1, 10, 100, 500, 1000, 5000, 10000, 100000];
+
+const title = bn
+  ? [`আজকের ${c.bn} রেট: ${value} টাকা`, `আজকের ${c.bn} রেট`]
+  : [`${c.en} rate today: Tk ${value}`, `${c.en} rate today`];
+const description = peg
+  ? bn
+    ? `বাংলাদেশ ব্যাংকের ${date} তারিখের ডলার রেট থেকে হিসাব: ১ ${c.bn} = ${value} টাকা, ১০০০ ${c.bn} = ${v1000} টাকা। চার্ট, পরিবর্তন ও হিসাবের নিয়ম।`
+    : `1 ${c.en} = Tk ${value}, worked out from Bangladesh Bank's dollar rate for ${date} and the official peg. 1,000 ${CODE} = Tk ${v1000}. Chart and changes.`
+  : bn
+    ? `বাংলাদেশ ব্যাংকের ${date} তারিখের রেটে ১ ${c.bn} = ${value} টাকা (বিড ${fx(bid)}, আস্ক ${fx(ask)})। ১০০০ ${c.bn} = ${v1000} টাকা। চার্ট ও পরিবর্তন।`
+    : `Bangladesh Bank's rate for ${date}: 1 ${c.en} = Tk ${value} (bid ${fx(bid)}, ask ${fx(ask)}). 1,000 ${CODE} = Tk ${v1000}. Chart and changes.`;
+const path = currencyPath(c);
+
+const perUsd = peg ? formatNumber(peg.perUsd, digits, 4) : '';
+const faqs: FaqItem[] = bn
+  ? [
+      {
+        q: `আজ ১ ${c.bn} সমান কত টাকা?`,
+        a: peg
+          ? `বাংলাদেশ ব্যাংকের ${date} তারিখের ডলারের গড় রেট (${fx(usd!.value)} টাকা) এবং ${c.bn}-এর নির্ধারিত বিনিময় হার (১ ডলার = ${perUsd} ${c.bn}) অনুযায়ী ১ ${c.bn} = ${value} টাকা।`
+          : `বাংলাদেশ ব্যাংকের ${date} তারিখের হিসাবে ১ ${c.bn} = ${value} টাকা (বিড ${fx(bid)} ও আস্ক ${fx(ask)} টাকার মাঝামাঝি)।`,
+      },
+      { q: `১০০০ ${c.bn} সমান কত টাকা?`, a: `একই রেটে ১,০০০ ${c.bn} = ${v1000} টাকা এবং ১০০ ${c.bn} = ${v100} টাকা। অন্য পরিমাণের হিসাব ওপরের টেবিলে আছে।` },
+      peg
+        ? {
+            q: `${c.bn}-এর রেট কীভাবে হিসাব করা হয়?`,
+            a: `${peg.bank.bn} ${toBengaliDigits(String(peg.since))} সাল থেকে ${c.bn}-এর দাম মার্কিন ডলারের সঙ্গে বেঁধে রেখেছে: ১ ডলার = ${perUsd} ${c.bn}। তাই টাকায় ${c.bn}-এর রেট = বাংলাদেশ ব্যাংকের ডলার রেট ÷ ${perUsd}। বাংলাদেশ ব্যাংক নিজে ${c.bn}-এর রেট প্রকাশ করে না।`,
+          }
+        : {
+            q: `${c.bn}-এর এই রেট কোথা থেকে আসে?`,
+            a: `বাংলাদেশ ব্যাংক প্রতি কর্মদিবসে টাকার বিপরীতে প্রধান মুদ্রাগুলোর ক্রস রেট প্রকাশ করে, যা নিউইয়র্ক ও ঢাকার বাজার বন্ধের রেট থেকে হিসাব করা। বিড হলো যে দামে ব্যাংক ${c.bn} কেনে, আস্ক হলো যে দামে বিক্রি করে।`,
+          },
+      {
+        q: `রেমিট্যান্স পাঠালে বা ব্যাংকে ভাঙালে কি এই রেটই পাব?`,
+        a: `হুবহু নয়। এটি আন্তঃব্যাংক বাজারের রেট; ব্যাংক, এক্সচেঞ্জ হাউস ও রেমিট্যান্স সেবা নিজেদের রেট ও চার্জ ঠিক করে, যা সাধারণত এর কাছাকাছি থাকে। খোলাবাজারে নগদ মুদ্রার দাম আলাদা হতে পারে।`,
+      },
+      {
+        q: `${c.bn}-এর রেট কখন হালনাগাদ হয়?`,
+        a: `বাংলাদেশ ব্যাংক কর্মদিবসে রেট প্রকাশ করে; নতুন রেট এলেই এই পাতা বদলে যায়। সাইটটি দিনে দুবার, সকাল ৭টা ও দুপুর ১টায়, নতুন রেট খোঁজে। ছুটির দিনে সর্বশেষ কর্মদিবসের রেট থাকে।`,
+      },
+    ]
+  : [
+      {
+        q: `How many taka is 1 ${c.en} today?`,
+        a: peg
+          ? `At Bangladesh Bank's average dollar rate for ${date} (Tk ${fx(usd!.value)}) and the ${c.en}'s fixed rate of ${perUsd} to the dollar, 1 ${c.en} = Tk ${value}.`
+          : `Bangladesh Bank's rate for ${date} puts 1 ${c.en} at Tk ${value}, midway between the bid (Tk ${fx(bid)}) and the ask (Tk ${fx(ask)}).`,
+      },
+      { q: `How many taka is 1,000 ${c.en}?`, a: `At the same rate, 1,000 ${CODE} = Tk ${v1000} and 100 ${CODE} = Tk ${v100}. The table above has other amounts.` },
+      peg
+        ? {
+            q: `How is the ${c.en} rate worked out?`,
+            a: `${peg.bank.en.charAt(0).toUpperCase()}${peg.bank.en.slice(1)} has fixed the ${c.en} to the US dollar since ${peg.since}: 1 dollar = ${perUsd} ${CODE}. So the taka rate of the ${c.en} is Bangladesh Bank's dollar rate divided by ${perUsd}. Bangladesh Bank doesn't publish a ${c.en} rate itself.`,
+          }
+        : {
+            q: `Where does this ${c.en} rate come from?`,
+            a: `Bangladesh Bank publishes cross rates of the taka against major currencies every working day, derived from New York and Dhaka closing rates. The bid is what a bank pays for one ${c.en}; the ask is what it sells one for.`,
+          },
+      {
+        q: 'Will I get this rate for a remittance or at a bank?',
+        a: 'Not exactly. This is the interbank rate; banks, exchange houses and remittance services set their own rates and fees, usually close to it. Cash on the open market can cost more or less.',
+      },
+      {
+        q: `When is the ${c.en} rate updated?`,
+        a: 'Bangladesh Bank publishes rates on working days, and this page changes as soon as a new one appears. The site checks twice a day, at 7 am and 1 pm Dhaka time. On holidays the last working day’s rate stays up.',
+      },
+    ];
+
+// Other currencies, Gulf ones first for a Gulf page, then the rest in list order.
+const others = CURRENCY_PAGES.filter((o) => o.code !== c.code).sort((a, b) => Number(!!b.peg === !!peg) - Number(!!a.peg === !!peg));
+const dataset = peg
+  ? null
+  : datasetLd({
+      lang,
+      path,
+      name: bn ? `বাংলাদেশ ব্যাংকের ${c.bn} রেট` : `Bangladesh Bank ${c.en} rate`,
+      description,
+      entries: published,
+      since: points[0]?.[0] ?? main.date,
+      keywords: keywordsFor('/currency/{currency}', lang, { currency: name }),
+    });
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.dollar, path: '/dollar-rate-today' }, { label: name, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? `আজকের ${c.bn} রেট` : `${c.en} rate today`}</h1>
+
+  <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
+    <NumberCard entry={main} lang={lang} hero label={bn ? `প্রতি ১ ${c.bn} (${CODE}), টাকায়` : `Taka per ${c.en} (${CODE})`}>
+      <p class="flex flex-wrap gap-x-4 text-sm text-ink-2">
+        <span>{s.table.bid}: <Num value={bid} fd={fd} lang={lang} class="font-semibold text-ink" /></span>
+        <span>{s.table.ask}: <Num value={ask} fd={fd} lang={lang} class="font-semibold text-ink" /></span>
+      </p>
+      {
+        peg && (
+          <p class="text-sm text-ink-2">
+            {bn
+              ? `ডলারের রেট ÷ ${perUsd} (নির্ধারিত হার: ১ ডলার = ${perUsd} ${c.bn})`
+              : `Dollar rate ÷ ${perUsd} (fixed rate: 1 dollar = ${perUsd} ${CODE})`}
+          </p>
+        )
+      }
+    </NumberCard>
+    <div class="card p-4 sm:p-5">
+      <ChangeTable entry={main} lang={lang} />
+    </div>
+  </div>
+
+  {
+    points.length >= 2 && (
+      <div class="mt-4">
+        <LineChart points={points} category="fx" unit="BDT" lang={lang} label={bn ? main.name_bn : main.name_en} />
+      </div>
+    )
+  }
+
+  <section class="mt-8">
+    <h2 class="mb-3 text-lg font-semibold">{bn ? `${c.bn} থেকে টাকা` : `${c.en} to taka`}</h2>
+    <div class="card overflow-x-auto">
+      <table class="data-table text-[0.9375rem]">
+        <thead>
+          <tr>
+            <th scope="col">{name}</th>
+            <th scope="col">{bn ? 'টাকা' : 'Taka'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            amounts.map((a) => (
+              <tr>
+                <th scope="row" class="font-normal">
+                  {formatNumber(a, digits, 0)} {bn ? c.bn : CODE}
+                </th>
+                <td>
+                  <Num value={Math.round(main.value * a * 100) / 100} fd={2} lang={lang} />
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-sm">
+      <a href={localePath(lang, '/calculators/currency-converter')}>{bn ? 'যেকোনো পরিমাণের হিসাব: মুদ্রা রূপান্তর ক্যালকুলেটর' : 'Any amount: currency converter'}</a>
+    </p>
+  </section>
+
+  <section class="mt-8 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{bn ? 'এই রেট সম্পর্কে' : 'About this rate'}</h2>
+    {
+      peg ? (
+        bn ? (
+          <p>
+            {c.bn} {c.where.bn} মুদ্রা। {peg.bank.bn} {toBengaliDigits(String(peg.since))} সাল থেকে এর দাম মার্কিন ডলারের সঙ্গে নির্দিষ্ট রেখেছে (১ ডলার = {perUsd} {c.bn}),
+            তাই টাকার বিপরীতে {c.bn}-এর রেট ডলারের রেটের সঙ্গে একই হারে ওঠানামা করে। এখানে বাংলাদেশ ব্যাংকের প্রকাশিত ডলারের গড় রেটকে (WAR) {perUsd} দিয়ে ভাগ করে রেট দেখানো হয়েছে;
+            বিড ও আস্কও একইভাবে হিসাব করা। ব্যাংক, এক্সচেঞ্জ হাউস ও রেমিট্যান্সের রেট এর থেকে কিছুটা ভিন্ন হতে পারে।
+          </p>
+        ) : (
+          <p>
+            The {c.en} is the currency of {c.where.en}. {peg.bank.en.charAt(0).toUpperCase()}{peg.bank.en.slice(1)} has held it at a fixed rate to the US dollar since {peg.since}
+            (1 dollar = {perUsd} {CODE}), so against the taka it moves exactly with the dollar. This page divides Bangladesh Bank's weighted average dollar rate by {perUsd};
+            the bid and ask are worked out the same way. Bank, exchange-house and remittance rates can differ a little.
+          </p>
+        )
+      ) : bn ? (
+        <p>
+          {c.bn} {c.where.bn} মুদ্রা। বাংলাদেশ ব্যাংক প্রতি কর্মদিবসে টাকার বিপরীতে এর বিড ও আস্ক রেট প্রকাশ করে; এখানে বড় করে দেখানো রেটটি এই দুটির মাঝামাঝি।
+          বিড হলো যে দামে ব্যাংক {c.bn} কেনে, আস্ক হলো যে দামে বিক্রি করে। ব্যাংকের কাউন্টার, রেমিট্যান্স বা খোলাবাজারের রেট এর থেকে ভিন্ন হতে পারে।
+        </p>
+      ) : (
+        <p>
+          The {c.en} is the currency of {c.where.en}. Bangladesh Bank publishes its bid and ask against the taka every working day; the large figure on this page is
+          the midpoint of the two. The bid is what a bank pays for one {c.en}, the ask what it sells one for. Bank counter, remittance and open-market rates can differ.
+        </p>
+      )
+    }
+  </section>
+
+  <AdSlot lang={lang} />
+  <Faq lang={lang} faqs={faqs} />
+  {dataset && <script type="application/ld+json" is:inline set:html={ldJson(dataset)} />}
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+      ...others.slice(0, 8).map((o) => ({ label: bn ? `${o.bn} রেট` : `${o.en} rate`, path: currencyPath(o) })),
+    ]}
+  />
+</Base>

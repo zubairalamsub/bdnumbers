@@ -1,6 +1,8 @@
 // Every indexable page (paths without the /en prefix) and what its lastmod in sitemap.xml comes from.
 import { DISTRICTS, SERIES, dhakaDate, type Category, type LatestResponse } from '@bdnumbers/shared';
 import { CALCULATORS } from './calculators';
+import { COMMODITIES, commodityPath } from './commodities';
+import { CURRENCY_PAGES, currencyPath } from './currencies';
 import { MFS_RETRIEVED } from './mfs-fees';
 
 type LastMod =
@@ -16,14 +18,16 @@ type LastMod =
 const ALL_CATEGORIES = [...new Set(SERIES.map((s) => s.category))];
 
 /** When /privacy last changed; bump it whenever the policy text or the services it describes change. */
-export const PRIVACY_UPDATED = '2026-10-23';
+export const PRIVACY_UPDATED = '2026-10-25';
 
 export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> = [
   { path: '/', lastmod: { categories: ALL_CATEGORIES } },
   { path: '/dollar-rate-today', lastmod: { categories: ['fx'] } },
+  ...CURRENCY_PAGES.map((c) => ({ path: currencyPath(c), lastmod: { categories: ['fx'] } as const })),
   { path: '/gold-price-today', lastmod: { categories: ['gold'] } },
   { path: '/silver-price-today', lastmod: { categories: ['silver'] } },
   { path: '/market-price-today', lastmod: { categories: ['market'] } },
+  ...COMMODITIES.map((c) => ({ path: commodityPath(c), lastmod: { categories: ['market'] } as const })),
   { path: '/share-market-today', lastmod: { categories: ['stock'] } },
   { path: '/weather', lastmod: { categories: ['weather'] } },
   { path: '/fuel-price', lastmod: { categories: ['fuel'] } },

@@ -1,0 +1,249 @@
+---
+import { defaultDigits, formatDate, formatNumber, unitLabel, type Lang, type LatestEntry } from '@bdnumbers/shared';
+import AdSlot from '../components/AdSlot.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ChangeText from '../components/ChangeText.astro';
+import DateText from '../components/DateText.astro';
+import EntryMeta from '../components/EntryMeta.astro';
+import Faq from '../components/Faq.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import Related from '../components/Related.astro';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { midpoints } from '../lib/chart';
+import { COMMODITIES, commodityItems, commodityPath, type Commodity } from '../lib/commodities';
+import { getHistory, getLatest } from '../lib/data';
+import { midChange } from '../lib/market';
+import { datasetLd, keywordsFor, ldJson, type Faq as FaqItem } from '../lib/seo';
+import { direction } from '../lib/view';
+
+interface Props {
+  lang: Lang;
+  commodity: Commodity;
+}
+
+const { lang, commodity: c } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const m = s.market;
+const digits = defaultDigits(lang);
+const latest = await getLatest();
+const byKey = new Map(latest.series.map((e) => [e.key, e]));
+
+const rows = commodityItems(c)
+  .map((item) => ({ item, min: byKey.get(`tcb_${item.id}_min`), max: byKey.get(`tcb_${item.id}_max`) }))
+  .filter((r): r is typeof r & { min: LatestEntry; max: LatestEntry } => !!r.min && !!r.max);
+const main = rows[0]!;
+const [minHistory, maxHistory] = await Promise.all([getHistory(main.min.key), getHistory(main.max.key)]);
+const points = midpoints(
+  minHistory.points.map((p) => [p.date, p.value]),
+  maxHistory.points.map((p) => [p.date, p.value]),
+);
+
+const name = bn ? c.bn : c.en;
+const itemName = (r: (typeof rows)[number]) => (bn ? r.item.bn : r.item.en);
+const unit = (r: (typeof rows)[number]) => unitLabel(`BDT/${r.item.unit}`, lang);
+const num = (n: number) => formatNumber(n, digits, 0);
+const range = (lo: number, hi: number) => (lo === hi ? num(hi) : `${num(lo)}–${num(hi)}`);
+const rowRange = (r: (typeof rows)[number]) => range(r.min.value, r.max.value);
+const date = formatDate(main.max.date, lang, digits);
+
+// The title's range covers every variant sold in the main one's unit (all rice is per kg; loose oil per litre).
+const sameUnit = rows.filter((r) => r.item.unit === main.item.unit);
+const headline = `${range(Math.min(...sameUnit.map((r) => r.min.value)), Math.max(...sameUnit.map((r) => r.max.value)))} ${unit(main)}`;
+const title = bn ? [`আজকের ${c.bnOf} দাম: ${headline}`, `আজকের ${c.bnOf} দাম`] : [`${c.en} price today: ${headline}`, `${c.en} price today`];
+const list = rows.map((r) => (bn ? `${itemName(r)} ${rowRange(r)} ${unit(r)}` : `${itemName(r).toLowerCase()} ${rowRange(r)} ${unit(r)}`)).join(bn ? ', ' : '; ');
+const description = bn
+  ? [`টিসিবির ${date} তারিখের হিসাবে ঢাকায় ${list}। গত সপ্তাহ, মাস ও বছরের তুলনা ও চার্ট।`, `টিসিবির ${date} তারিখের হিসাবে ঢাকায় ${c.bnOf} দাম ${headline}। সব ধরন, পরিবর্তন ও চার্ট।`]
+  : [`TCB Dhaka retail prices for ${date}: ${list}. Compared with last week, month and year, with a chart.`, `TCB Dhaka retail price of ${c.en.toLowerCase()} for ${date}: ${headline}. Every variety, changes and a chart.`];
+const path = commodityPath(c);
+
+const week = midChange(main.min, main.max, 'd7');
+const weekDir = week ? direction(week.abs) : null;
+const weekAbs = week ? formatNumber(Math.abs(week.abs), digits, 2) : '';
+const weekPct = week?.pct != null ? ` (${formatNumber(Math.abs(week.pct), digits, 1)}%)` : '';
+const month = [main.min.change.d30, main.max.change.d30];
+const faqs: FaqItem[] = bn
+  ? [
+      { q: `আজ ঢাকায় ${c.bnOf} দাম কত?`, a: `টিসিবির ${date} তারিখের হিসাবে ঢাকার খুচরা বাজারে ${list}।` },
+      {
+        q: `গত সপ্তাহের তুলনায় ${c.bnOf} দাম বেড়েছে না কমেছে?`,
+        a: !weekDir
+          ? 'এক সপ্তাহ আগের দাম পাওয়া যায়নি, তাই তুলনা দেখানো যাচ্ছে না।'
+          : weekDir === 'flat'
+            ? `${itemName(main)}-এর দাম এক সপ্তাহ আগের মতোই আছে (${rowRange(main)} ${unit(main)})।`
+            : `এক সপ্তাহে ${itemName(main)}-এর দাম (সর্বনিম্ন ও সর্বোচ্চের মাঝামাঝি) ${weekAbs} টাকা${weekPct} ${weekDir === 'up' ? 'বেড়েছে' : 'কমেছে'}; এখন ${rowRange(main)} ${unit(main)}।`,
+      },
+      {
+        q: `এক মাস আগে ${c.bnOf} দাম কত ছিল?`,
+        a:
+          month[0] && month[1]
+            ? `এক মাস আগে (${formatDate(month[1].date, lang, digits)}) ${itemName(main)} ছিল ${range(month[0].from, month[1].from)} ${unit(main)}; এখন ${rowRange(main)} ${unit(main)}।`
+            : 'এক মাস আগের দাম এখনও সংরক্ষিত নেই।',
+      },
+      {
+        q: 'এই দাম কোথা থেকে নেওয়া?',
+        a: 'ট্রেডিং কর্পোরেশন অব বাংলাদেশ (টিসিবি) প্রতিদিন ঢাকার কয়েকটি বাজার থেকে খুচরা দাম সংগ্রহ করে সর্বনিম্ন ও সর্বোচ্চ দাম প্রকাশ করে। এই পাতা টিসিবির সেই তালিকা থেকে নিজে থেকে হালনাগাদ হয়। পাড়ার দোকানে দাম কিছুটা ভিন্ন হতে পারে।',
+      },
+    ]
+  : [
+      { q: `What does ${c.en.toLowerCase()} cost in Dhaka today?`, a: `TCB's Dhaka retail prices for ${date}: ${list}.` },
+      {
+        q: `Has the price of ${c.en.toLowerCase()} gone up since last week?`,
+        a: !weekDir
+          ? 'There is no price from a week ago to compare with yet.'
+          : weekDir === 'flat'
+            ? `${itemName(main)} costs the same as a week ago (${rowRange(main)} ${unit(main)}).`
+            : `${itemName(main)} (midpoint of lowest and highest) is ${weekDir} Tk ${weekAbs}${weekPct} on the week; it is now ${rowRange(main)} ${unit(main)}.`,
+      },
+      {
+        q: `What did ${c.en.toLowerCase()} cost a month ago?`,
+        a:
+          month[0] && month[1]
+            ? `A month ago (${formatDate(month[1].date, lang, digits)}) ${itemName(main).toLowerCase()} was ${range(month[0].from, month[1].from)} ${unit(main)}; now ${rowRange(main)} ${unit(main)}.`
+            : 'Prices from a month ago are not stored yet.',
+      },
+      {
+        q: 'Where do these prices come from?',
+        a: 'The Trading Corporation of Bangladesh (TCB) collects retail prices from several Dhaka markets every day and publishes the lowest and highest price of each item. This page updates from that list on its own. Your local shop may charge a little more or less.',
+      },
+    ];
+
+const group = COMMODITIES.filter((o) => o.slug !== c.slug && commodityItems(o)[0]!.group === main.item.group);
+const others = COMMODITIES.filter((o) => o.slug !== c.slug && !group.includes(o)).slice(0, Math.max(0, 8 - group.length));
+const dataset = datasetLd({
+  lang,
+  path,
+  name: bn ? `টিসিবির ঢাকার খুচরা বাজারে ${c.bnOf} দাম` : `TCB Dhaka retail price of ${c.en.toLowerCase()}`,
+  description: description.at(-1)!,
+  entries: rows.flatMap((r) => [r.max, r.min]),
+  since: points[0]?.[0] ?? main.max.date,
+  keywords: keywordsFor('/market-price/{item}', lang, { item: bn ? c.bnOf : c.en }),
+  place: 'Dhaka, Bangladesh',
+});
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.market, path: '/market-price-today' }, { label: name, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? `আজকের ${c.bnOf} দাম` : `${c.en} price today`}</h1>
+  <p class="mt-1 text-sm text-ink-2">{bn ? 'ঢাকার খুচরা বাজার, টিসিবির হিসাবে' : 'Dhaka retail markets, as reported by TCB'}</p>
+
+  <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
+    <article class="card flex flex-col gap-1 p-4 sm:p-5">
+      <h2 class="text-[0.9375rem] font-semibold text-ink-2">{itemName(main)}</h2>
+      <p class="text-4xl font-semibold leading-tight text-ink sm:text-5xl">
+        <span data-series={main.min.key}><Num value={main.min.value} lang={lang} field="value" /></span>–<span data-series={main.max.key}><Num value={main.max.value} lang={lang} field="value" /></span>
+        <span class="ml-1 text-xl font-normal text-ink-2">{unit(main)}</span>
+      </p>
+      <p class="text-sm text-ink-2">
+        <ChangeText change={week} category="market" lang={lang} class="font-semibold" />
+        {week && <span> {s.vs.d7}</span>}
+      </p>
+      <div data-series={main.max.key}><EntryMeta entry={main.max} lang={lang} /></div>
+    </article>
+    <div class="card p-4 sm:p-5">
+      <table class="data-table text-[0.9375rem]">
+        <thead>
+          <tr>
+            <th scope="col">{s.period}</th>
+            <th scope="col">{bn ? 'তখনকার দাম' : 'Price then'}</th>
+            <th scope="col">{s.change}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            (['d7', 'd30', 'y1'] as const).map((p) => {
+              const a = main.min.change[p];
+              const b = main.max.change[p];
+              return (
+                <tr>
+                  <th scope="row" class="font-normal text-ink-2">
+                    {s.vs[p]}
+                  </th>
+                  <td class="text-ink-2">{a && b ? range(a.from, b.from) : '—'}</td>
+                  <td>
+                    <ChangeText change={midChange(main.min, main.max, p)} category="market" lang={lang} empty="dash" />
+                  </td>
+                </tr>
+              );
+            })
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {
+    points.length >= 2 && (
+      <div class="mt-4">
+        <LineChart
+          points={points}
+          category="market"
+          unit={`BDT/${main.item.unit}`}
+          lang={lang}
+          label={bn ? `${itemName(main)}: সর্বনিম্ন ও সর্বোচ্চ দামের গড়` : `${itemName(main)}: midpoint of lowest and highest price`}
+        />
+        <p class="mt-2 text-xs text-muted">{bn ? 'চার্টে প্রতিদিনের সর্বনিম্ন ও সর্বোচ্চ দামের মাঝামাঝি।' : "The chart shows the midpoint of each day's lowest and highest price."}</p>
+      </div>
+    )
+  }
+
+  {
+    rows.length > 1 && (
+      <section class="mt-8">
+        <h2 class="mb-3 text-lg font-semibold">{bn ? `সব ধরনের ${c.bnOf} দাম` : `Every variety of ${c.en.toLowerCase()}`}</h2>
+        <div class="card overflow-x-auto">
+          <table class="data-table text-[0.9375rem]">
+            <thead>
+              <tr>
+                <th scope="col">{m.item}</th>
+                <th scope="col">{m.today}</th>
+                <th scope="col" class="hidden sm:table-cell">{m.weekAgo}</th>
+                <th scope="col">{s.change} ({s.vs.d7})</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const d7 = [r.min.change.d7, r.max.change.d7];
+                return (
+                  <tr>
+                    <th scope="row" class="font-normal">
+                      {itemName(r)}
+                      <span class="block text-xs text-muted">{unit(r)}</span>
+                    </th>
+                    <td class="font-semibold">
+                      <span data-series={r.min.key}><Num value={r.min.value} lang={lang} field="value" /></span>–<span data-series={r.max.key}><Num value={r.max.value} lang={lang} field="value" /></span>
+                      {r.max.date !== main.max.date && (
+                        <span class="block min-w-[9em] whitespace-normal text-xs font-normal text-muted">
+                          {m.notToday} <DateText date={r.max.date} lang={lang} />
+                        </span>
+                      )}
+                    </td>
+                    <td class="hidden text-ink-2 sm:table-cell">{d7[0] && d7[1] ? range(d7[0].from, d7[1].from) : '—'}</td>
+                    <td>
+                      <ChangeText change={midChange(r.min, r.max, 'd7')} category="market" lang={lang} empty="dash" class="text-sm text-ink-2" />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  <p class="mt-6 max-w-3xl text-sm text-ink-2">
+    <a href={localePath(lang, '/market-price-today')}>{bn ? 'আজকের সব পণ্যের বাজারদর দেখুন' : "See today's prices of all 60 items"}</a>
+  </p>
+
+  <AdSlot lang={lang} />
+  <Faq lang={lang} faqs={faqs} />
+  <script type="application/ld+json" is:inline set:html={ldJson(dataset)} />
+
+  <Related
+    lang={lang}
+    links={[...group, ...others].map((o) => ({ label: bn ? `${o.bnOf} দাম` : `${o.en} price`, path: commodityPath(o) }))}
+  />
+</Base>

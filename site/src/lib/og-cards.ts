@@ -13,11 +13,12 @@ import {
   type SavingsNotice,
 } from '@bdnumbers/shared';
 import { STRINGS } from '../i18n';
+import { CURRENCY_PAGES } from './currencies';
 import { formatPointDate } from './view';
 import type { OgCard } from './og';
 
 /** Pages with a card of their own; every other page uses its section's card or "default". */
-export const OG_CARDS = [
+const PAGE_CARDS = [
   'index',
   'dollar-rate-today',
   'gold-price-today',
@@ -33,13 +34,23 @@ export const OG_CARDS = [
   'calculators',
   'default',
 ] as const;
-export type OgCardName = (typeof OG_CARDS)[number];
+/** Each currency page has its own card with its rate: currency-sar, currency-eur, … */
+type CurrencyCard = `currency-${string}`;
+export type OgCardName = (typeof PAGE_CARDS)[number] | CurrencyCard;
+const isCurrencyCard = (name: OgCardName): name is CurrencyCard => name.startsWith('currency-');
+export const OG_CARDS: readonly OgCardName[] = [...PAGE_CARDS, ...CURRENCY_PAGES.map((c): CurrencyCard => `currency-${c.code}`)];
 
 /** The card for a page path (without the /en prefix). */
 export function ogCardFor(path: string): OgCardName {
   if (path === '/') return 'index';
-  const first = path.split('/')[1] ?? '';
-  return (OG_CARDS as readonly string[]).includes(first) ? (first as OgCardName) : 'default';
+  const [, first = '', second = ''] = path.split('/');
+  if (first === 'currency') {
+    const currency = CURRENCY_PAGES.find((c) => c.slug === second);
+    if (currency) return `currency-${currency.code}`;
+  }
+  // Commodity pages share the market card.
+  if (first === 'market-price') return 'market-price-today';
+  return (PAGE_CARDS as readonly string[]).includes(first) ? (first as OgCardName) : 'default';
 }
 
 /** Absolute path of the card image; `v` changes with the data so shares pick up new numbers. */
@@ -60,6 +71,22 @@ export function ogCard(name: OgCardName, lang: Lang, latest: LatestResponse): Og
   };
   const taka = (n: string) => (bn ? `${n} টাকা` : `Tk ${n}`);
   const footer = bn ? 'আজকের রেট ও দাম · bdrate.fyi' : 'Daily numbers for Bangladesh · bdrate.fyi';
+
+  if (isCurrencyCard(name)) {
+    const c = CURRENCY_PAGES.find((x) => `currency-${x.code}` === name)!;
+    const usd = e('usd_bdt_avg');
+    const bid = e(`${c.code}_bdt_bid`);
+    const ask = e(`${c.code}_bdt_ask`);
+    // The same figure as the page's headline: the dollar rate over the peg, or the mid of bid and ask.
+    const rate = c.peg ? (usd ? usd.value / c.peg.perUsd : null) : bid && ask ? (bid.value + ask.value) / 2 : null;
+    const dayKey = c.peg ? 'usd_bdt_avg' : `${c.code}_bdt_ask`;
+    return {
+      title: bn ? `আজকের ${c.bn} রেট` : `${c.en} rate today`,
+      value: rate === null ? '—' : taka(formatSeriesValue(rate, 'fx', digits)),
+      note: bn ? `বাংলাদেশ ব্যাংকের রেট থেকে · ${day(dayKey)}` : `From Bangladesh Bank rates · ${day(dayKey)}`,
+      footer,
+    };
+  }
 
   switch (name) {
     case 'index':
