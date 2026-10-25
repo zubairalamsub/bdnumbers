@@ -1,5 +1,5 @@
 ---
-import { SERIES, type Lang } from '@bdnumbers/shared';
+import { PHONE_SHOPS, SERIES, type Lang } from '@bdnumbers/shared';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { CONTACT_EMAIL, SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
@@ -35,14 +35,18 @@ const SOURCES: Record<string, { name_bn: string; bn: string; en: string }> = {
   'National Savings Directorate': { name_bn: 'জাতীয় সঞ্চয় অধিদপ্তর', bn: 'সঞ্চয়পত্রের মুনাফার হার', en: 'Savings certificate profit rates' },
   'Google Calendar (Bangladesh holidays)': { name_bn: 'গুগল ক্যালেন্ডার (বাংলাদেশের ছুটি)', bn: 'সরকারি ছুটির তারিখ', en: 'Public holiday dates' },
 };
-const sources = [...new Map(SERIES.map((d) => [d.source_name, d])).values()].map((d) => {
-  const info = SOURCES[d.source_name];
-  return {
-    name: bn ? (info?.name_bn ?? d.source_name) : d.source_name,
-    what: info ? info[lang] : '',
-    url: d.source_url,
-  };
-});
+const sources = [
+  ...[...new Map(SERIES.map((d) => [d.source_name, d])).values()].map((d) => {
+    const info = SOURCES[d.source_name];
+    return {
+      name: bn ? (info?.name_bn ?? d.source_name) : d.source_name,
+      what: info ? info[lang] : '',
+      url: d.source_url,
+    };
+  }),
+  // Phone prices come from each shop's own website.
+  ...PHONE_SHOPS.map((x) => ({ name: x.name, what: bn ? 'মোবাইল ফোনের দাম' : 'Mobile phone prices', url: x.url })),
+];
 
 const title = bn
   ? ['আমাদের সম্পর্কে: তথ্য কোথা থেকে আসে', 'আমাদের সম্পর্কে']
@@ -61,13 +65,13 @@ const description = bn
       bn ? (
         <p>
           {SITE_NAME} বাংলাদেশের প্রতিদিনের দরকারি সংখ্যা এক জায়গায় দেখায়: ডলার রেট, সোনা ও রুপার দাম, বাজারদর, শেয়ারবাজার, জ্বালানি
-          তেল ও এলপিজির দাম, সঞ্চয়পত্রের মুনাফার হার, আবহাওয়া, নামাজের সময় ও সরকারি ছুটি। প্রতিটি সংখ্যার পাশে তার উৎস ও তারিখ দেওয়া
+          তেল ও এলপিজির দাম, সঞ্চয়পত্রের মুনাফার হার, মোবাইল ফোনের দাম, আবহাওয়া, নামাজের সময় ও সরকারি ছুটি। প্রতিটি সংখ্যার পাশে তার উৎস ও তারিখ দেওয়া
           থাকে, যাতে আপনি নিজে মিলিয়ে নিতে পারেন।
         </p>
       ) : (
         <p>
           {SITE_NAME} puts Bangladesh's everyday numbers in one place: the dollar rate, gold and silver prices, market prices, the share
-          market, fuel and LPG prices, savings certificate rates, the weather, prayer times and public holidays. Every number shows its
+          market, fuel and LPG prices, savings certificate rates, mobile phone prices, the weather, prayer times and public holidays. Every number shows its
           source and date, so you can check it yourself.
         </p>
       )

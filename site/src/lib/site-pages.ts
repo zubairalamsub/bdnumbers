@@ -1,9 +1,11 @@
 // Every indexable page (paths without the /en prefix) and what its lastmod in sitemap.xml comes from.
-import { DISTRICTS, SERIES, dhakaDate, type Category, type LatestResponse } from '@bdnumbers/shared';
+// Phone pages come and go with the shops' stock, so they are listed from the data (phonePages below).
+import { DISTRICTS, SERIES, dhakaDate, type Category, type LatestResponse, type PhonesResponse } from '@bdnumbers/shared';
 import { CALCULATORS } from './calculators';
 import { COMMODITIES, commodityPath } from './commodities';
 import { CURRENCY_PAGES, currencyPath } from './currencies';
 import { MFS_RETRIEVED } from './mfs-fees';
+import { PHONES_PATH, brandPath, byBrand, phonePath } from './phones';
 
 type LastMod =
   /** Newest data change among these categories. */
@@ -12,6 +14,8 @@ type LastMod =
   | { daily: true }
   /** A fixed date (e.g. when fees were last checked). */
   | { date: string }
+  /** When the phone prices were last rebuilt. */
+  | { phones: true }
   /** Nothing data-driven: no lastmod. */
   | null;
 
@@ -28,6 +32,7 @@ export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> 
   { path: '/silver-price-today', lastmod: { categories: ['silver'] } },
   { path: '/market-price-today', lastmod: { categories: ['market'] } },
   ...COMMODITIES.map((c) => ({ path: commodityPath(c), lastmod: { categories: ['market'] } as const })),
+  { path: PHONES_PATH, lastmod: { phones: true } },
   { path: '/share-market-today', lastmod: { categories: ['stock'] } },
   { path: '/weather', lastmod: { categories: ['weather'] } },
   { path: '/fuel-price', lastmod: { categories: ['fuel'] } },
@@ -53,10 +58,22 @@ export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> 
   { path: '/privacy', lastmod: { date: PRIVACY_UPDATED } },
 ];
 
+/** Each phone model's page and each brand's, with when a price on it last changed. */
+export function phonePages(phones: PhonesResponse): Array<{ path: string; lastmod: LastMod }> {
+  const changed = (models: PhonesResponse['models']) => ({
+    date: models.flatMap((m) => m.offers.map((o) => o.changed_at)).sort().at(-1) ?? phones.generated_at,
+  });
+  return [
+    ...byBrand(phones.models).map((b) => ({ path: brandPath(b.brand.id), lastmod: changed(b.models) })),
+    ...phones.models.map((m) => ({ path: phonePath(m), lastmod: changed([m]) })),
+  ];
+}
+
 /** When a page's content last changed, from the data behind it (W3C datetime), or null. */
-export function lastModified(lastmod: LastMod, latest: LatestResponse): string | null {
+export function lastModified(lastmod: LastMod, latest: LatestResponse, phones?: PhonesResponse): string | null {
   if (lastmod === null) return null;
   if ('date' in lastmod) return lastmod.date;
+  if ('phones' in lastmod) return phones?.generated_at || null;
   if ('daily' in lastmod) return dhakaDate();
   const times = latest.series
     .filter((e) => lastmod.categories.includes(e.category))

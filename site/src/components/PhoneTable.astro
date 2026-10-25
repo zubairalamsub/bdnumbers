@@ -1,0 +1,46 @@
+---
+import type { Lang, PhoneModel } from '@bdnumbers/shared';
+import { STRINGS, localePath } from '../i18n';
+import { phonePath } from '../lib/phones';
+import Num from './Num.astro';
+
+interface Props {
+  lang: Lang;
+  models: readonly PhoneModel[];
+}
+
+// Each phone's lowest in-stock price by kind, and how many shops have it in stock. Official and unofficial
+// prices are never mixed: an imported phone can cost a third less than the same model with its warranty.
+const { lang, models } = Astro.props;
+const s = STRINGS[lang];
+const p = s.phones;
+---
+
+<div class="card overflow-x-auto">
+  <table class="data-table text-[0.9375rem]">
+    <thead>
+      <tr>
+        <th scope="col">{p.model}</th>
+        <th scope="col">{p.official}</th>
+        <th scope="col">{p.other}</th>
+        <th scope="col" class="hidden sm:table-cell">{p.shops}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        models.map((m) => (
+          <tr>
+            <th scope="row" class="font-normal">
+              <a href={localePath(lang, phonePath(m))} class="text-ink no-underline hover:underline">
+                {m.name}
+              </a>
+            </th>
+            <td>{m.official === null ? <span class="text-muted">—</span> : <>৳<Num value={m.official} lang={lang} /></>}</td>
+            <td>{m.other === null ? <span class="text-muted">—</span> : <>৳<Num value={m.other} lang={lang} /></>}</td>
+            <td class="hidden sm:table-cell">{m.shops > 0 ? <Num value={m.shops} lang={lang} /> : <span class="text-muted">{p.out}</span>}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

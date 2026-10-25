@@ -1,0 +1,12 @@
+---
+import type { PhoneModel } from '@bdnumbers/shared';
+import type { GetStaticPaths } from 'astro';
+import { getPhones } from '../../../lib/data';
+import PhonePrice from '../../../views/PhonePrice.astro';
+
+export const getStaticPaths = (async () => (await getPhones()).models.map((model) => ({ params: { slug: model.slug }, props: { model } }))) satisfies GetStaticPaths;
+
+const { model } = Astro.props as { model: PhoneModel };
+---
+
+<PhonePrice lang="en" model={model} />

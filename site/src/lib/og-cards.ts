@@ -1,5 +1,6 @@
 // What each page's social card says, from today's data. Rendering lives in og.ts (build-time only).
 import {
+  PHONE_SHOPS,
   SAVINGS_NOTICE,
   defaultDigits,
   dhakaDate,
@@ -24,6 +25,7 @@ const PAGE_CARDS = [
   'gold-price-today',
   'silver-price-today',
   'market-price-today',
+  'mobile-price',
   'share-market-today',
   'weather',
   'fuel-price',
@@ -123,6 +125,13 @@ export function ogCard(name: OgCardName, lang: Lang, latest: LatestResponse): Og
         footer,
       };
     }
+    case 'mobile-price':
+      return {
+        title: s.phones.title,
+        value: bn ? `${formatNumber(PHONE_SHOPS.length, digits, 0)}টি দোকানের দাম তুলনা` : `${PHONE_SHOPS.length} shops compared`,
+        note: PHONE_SHOPS.map((x) => x.name).join(' · '),
+        footer,
+      };
     case 'share-market-today':
       return {
         title: bn ? 'আজকের শেয়ারবাজার' : 'Share market today',

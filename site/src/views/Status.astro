@@ -1,5 +1,5 @@
 ---
-import { formatNumber, defaultDigits, type Lang } from '@bdnumbers/shared';
+import { PHONE_SHOPS, formatNumber, defaultDigits, type Lang } from '@bdnumbers/shared';
 import Ago from '../components/Ago.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { STRINGS } from '../i18n';
@@ -22,6 +22,7 @@ const NAMES: Record<string, string> = {
   tcbMarketPrices: 'TCB',
   dseIndex: 'Dhaka Stock Exchange',
   weather: 'MET Norway',
+  ...Object.fromEntries(PHONE_SHOPS.map((x) => [`phones:${x.id}`, `${x.name} (${lang === 'bn' ? 'মোবাইলের দাম' : 'phone prices'})`])),
 };
 const title = `${s.nav.status}`;
 const description =

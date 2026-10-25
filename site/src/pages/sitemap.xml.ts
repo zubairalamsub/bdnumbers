@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { SITE_URL } from '../config';
 import { localePath } from '../i18n';
-import { getLatest } from '../lib/data';
-import { INDEXABLE_PAGES, lastModified } from '../lib/site-pages';
+import { getLatest, getPhones } from '../lib/data';
+import { INDEXABLE_PAGES, lastModified, phonePages } from '../lib/site-pages';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -10,8 +10,9 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 // behind the page last changed (a value was written), not when the site was built.
 export const GET: APIRoute = async () => {
   const latest = await getLatest();
-  const urls = INDEXABLE_PAGES.flatMap(({ path, lastmod }) => {
-    const modified = lastModified(lastmod, latest);
+  const phones = await getPhones();
+  const urls = [...INDEXABLE_PAGES, ...phonePages(phones)].flatMap(({ path, lastmod }) => {
+    const modified = lastModified(lastmod, latest, phones);
     const alternates = [
       ['bn', localePath('bn', path)],
       ['en', localePath('en', path)],

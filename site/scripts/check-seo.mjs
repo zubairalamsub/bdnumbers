@@ -52,6 +52,8 @@ function keywordEntry(pagePath) {
   if (/^\/prayer-times\/[a-z-]+$/.test(pagePath)) return keywords['/prayer-times/{district}'];
   if (/^\/currency\/[a-z-]+$/.test(pagePath)) return keywords['/currency/{currency}'];
   if (/^\/market-price\/[a-z-]+$/.test(pagePath)) return keywords['/market-price/{item}'];
+  if (/^\/mobile-price\/brand\/[a-z0-9-]+$/.test(pagePath)) return keywords['/mobile-price/brand/{brand}'];
+  if (/^\/mobile-price\/[a-z0-9-]+$/.test(pagePath)) return keywords['/mobile-price/{phone}'];
   return null;
 }
 
@@ -98,6 +100,15 @@ function checkJsonLd(page, data, canonical) {
         'every distribution needs an https contentUrl and an encodingFormat',
       );
       break;
+    case 'Product': {
+      // Phone pages: the lowest and highest in-stock price across the shops.
+      const o = data.offers ?? {};
+      need(data.name && data.brand?.name, 'needs a name and a brand');
+      need(data.url === canonical, 'url must be the canonical URL');
+      need(o['@type'] === 'AggregateOffer' && o.priceCurrency === 'BDT', 'offers must be an AggregateOffer in BDT');
+      need(o.lowPrice > 0 && o.highPrice >= o.lowPrice && o.offerCount >= 1, 'offers need lowPrice <= highPrice and an offerCount');
+      break;
+    }
     default:
       fail(page, `unexpected JSON-LD type ${data['@type']}`);
   }

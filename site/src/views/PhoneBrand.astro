@@ -1,0 +1,67 @@
+---
+import { PHONE_SHOPS, defaultDigits, formatNumber, type Lang, type PhoneBrand as Brand } from '@bdnumbers/shared';
+import Ago from '../components/Ago.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import PhoneTable from '../components/PhoneTable.astro';
+import Related from '../components/Related.astro';
+import { STRINGS } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getPhones } from '../lib/data';
+import { PHONES_PATH, brandPath, byBrand, lowestPrice } from '../lib/phones';
+
+interface Props {
+  lang: Lang;
+  brand: Brand;
+}
+
+const { lang, brand } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const digits = defaultDigits(lang);
+const phones = await getPhones();
+const brands = byBrand(phones.models);
+const models = brands.find((b) => b.brand.id === brand.id)?.models ?? [];
+const num = (n: number) => formatNumber(n, digits, 0);
+const prices = models.map(lowestPrice).filter((x): x is number => x !== null);
+const span = prices.length > 0 ? `৳${num(Math.min(...prices))}–${num(Math.max(...prices))}` : '';
+const path = brandPath(brand.id);
+
+const title = bn
+  ? [`${brand.name} মোবাইলের দাম বাংলাদেশে ${span}`.trim(), `${brand.name} মোবাইলের দাম বাংলাদেশে`]
+  : [`${brand.name} mobile price in Bangladesh ${span}`.trim(), `${brand.name} mobile price in Bangladesh`];
+const description = bn
+  ? `${num(models.length)}টি ${brand.name} ফোনের দাম ${num(PHONE_SHOPS.length)}টি দোকানে পাশাপাশি${span ? `, ${span}` : ''}। অফিসিয়াল ও আনঅফিসিয়াল আলাদা, প্রতিদিন হালনাগাদ।`
+  : `${models.length} ${brand.name} phones at ${PHONE_SHOPS.length} shops side by side${span ? `, ${span}` : ''}. Official and unofficial apart, updated daily.`;
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.phones, path: PHONES_PATH }, { label: brand.name, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? `${brand.name} মোবাইলের দাম` : `${brand.name} mobile prices`}</h1>
+  <p class="mt-2 max-w-3xl text-ink-2">
+    {
+      bn
+        ? `${num(models.length)}টি ${brand.name} ফোন, ${num(PHONE_SHOPS.length)}টি দোকানের সর্বনিম্ন দাম; কম দাম থেকে বেশি। মডেলে ক্লিক করলে প্রতিটি দোকানের দাম ও দামের ইতিহাস দেখা যাবে।`
+        : `${models.length} ${brand.name} phones with the lowest price at ${PHONE_SHOPS.length} shops, cheapest first. Pick a model for every shop's price and its price history.`
+    }
+  </p>
+  <p class="mt-1 text-sm text-ink-2">{s.updated}: <Ago at={phones.generated_at} lang={lang} /></p>
+
+  <div class="mt-5">
+    <PhoneTable lang={lang} models={models} />
+  </div>
+  <p class="mt-2 max-w-3xl text-xs text-muted">
+    {
+      bn
+        ? 'দাম দোকানের দেখানো সবচেয়ে কম দামের র‍্যাম/স্টোরেজ সংস্করণের। দোকান অফিসিয়াল না আনঅফিসিয়াল উল্লেখ না করলে দামটি "আনঅফিসিয়াল/অন্যান্য" কলামে থাকে।'
+        : 'Prices are for the cheapest RAM/storage option each shop lists. When a shop doesn\'t say whether a phone is official, its price goes in the "unofficial/other" column.'
+    }
+  </p>
+
+  <Related
+    lang={lang}
+    links={[
+      ...brands.filter((b) => b.brand.id !== brand.id).slice(0, 8).map((b) => ({ label: bn ? `${b.brand.name} মোবাইলের দাম` : `${b.brand.name} phones`, path: brandPath(b.brand.id) })),
+      { label: s.nav.phones, path: PHONES_PATH },
+    ]}
+  />
+</Base>

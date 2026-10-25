@@ -1,4 +1,12 @@
-import type { ChangesResponse, LatestEntry, LatestResponse, SeriesHistory, StatusResponse } from '@bdnumbers/shared';
+import type {
+  ChangesResponse,
+  LatestEntry,
+  LatestResponse,
+  PhoneHistoryResponse,
+  PhonesResponse,
+  SeriesHistory,
+  StatusResponse,
+} from '@bdnumbers/shared';
 import { API_BASE } from '../config';
 
 // Build-time data. Each URL is fetched once per build and shared by every page. A failure is retried a
@@ -30,7 +38,24 @@ function getJson<T>(path: string): Promise<T> {
   return pending as Promise<T>;
 }
 
+/** Like getJson, but a 404 (nothing published yet) gives `fallback` instead of failing the build. */
+function getOptionalJson<T>(path: string, fallback: T): Promise<T> {
+  let pending = cache.get(path);
+  if (!pending) {
+    pending = fetchJson(`${API_BASE}${path}`).catch((err: unknown) => {
+      if (err instanceof Error && / returned HTTP 404$/.test(err.message)) return fallback;
+      throw err;
+    });
+    cache.set(path, pending);
+  }
+  return pending as Promise<T>;
+}
+
 export const getLatest = () => getJson<LatestResponse>('/api/latest.json');
+// Phone prices are crawled from the shops through the day; before the first crawl there are none yet.
+export const getPhones = () => getOptionalJson<PhonesResponse>('/api/phones.json', { generated_at: '', models: [] });
+export const getPhoneHistory = () =>
+  getOptionalJson<PhoneHistoryResponse>('/api/phones/history.json', { generated_at: '', daily: {}, changes: {} });
 export const getStatus = () => getJson<StatusResponse>('/api/status.json');
 export const getChanges = () => getJson<ChangesResponse>('/api/changes.json');
 export const getHistory = (key: string) => getJson<SeriesHistory>(`/api/series/${key}.json`);

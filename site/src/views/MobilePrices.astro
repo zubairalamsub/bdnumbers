@@ -1,0 +1,173 @@
+---
+import { PHONE_SHOPS, defaultDigits, formatNumber, type Lang } from '@bdnumbers/shared';
+import Ago from '../components/Ago.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Faq from '../components/Faq.astro';
+import PhoneTable from '../components/PhoneTable.astro';
+import Related from '../components/Related.astro';
+import { STRINGS, localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getLatest, getPhones } from '../lib/data';
+import { PHONES_PATH, brandPath, byBrand, lowestPrice, phonePath, popular } from '../lib/phones';
+import type { Faq as FaqItem } from '../lib/seo';
+
+interface Props {
+  lang: Lang;
+}
+
+/** Phones listed per brand here; each brand's page has all of them. */
+const PER_BRAND = 8;
+
+const { lang } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const p = s.phones;
+const digits = defaultDigits(lang);
+const phones = await getPhones();
+const latest = await getLatest();
+const brands = byBrand(phones.models);
+const num = (n: number) => formatNumber(n, digits, 0);
+const shops = PHONE_SHOPS.map((x) => x.name).join(', ');
+const count = phones.models.length;
+const search = phones.models.map((m) => {
+  const low = lowestPrice(m);
+  return [m.name, localePath(lang, phonePath(m)), low === null ? p.out : `৳${num(low)}`];
+});
+
+const path = PHONES_PATH;
+const title = bn
+  ? `আজকের মোবাইল ফোনের দাম: ${num(PHONE_SHOPS.length)}টি দোকানের তুলনা`
+  : `Mobile phone prices in Bangladesh: ${PHONE_SHOPS.length} shops compared`;
+const description = bn
+  ? `${count > 0 ? `${num(count)}টি মোবাইল ফোনের` : 'মোবাইল ফোনের'} দাম ${num(PHONE_SHOPS.length)}টি দোকানে পাশাপাশি: ${shops}। অফিসিয়াল ও আনঅফিসিয়াল আলাদা, প্রতিদিন হালনাগাদ।`
+  : `${count > 0 ? `${count} mobile phones'` : 'Mobile phone'} prices at ${PHONE_SHOPS.length} shops side by side: ${shops}. Official and unofficial apart, updated daily.`;
+const seen = phones.generated_at || null;
+
+const faqs: FaqItem[] = bn
+  ? [
+      { q: 'কোন কোন দোকানের দাম দেখানো হয়?', a: `${shops}। প্রতিটি দোকানের নিজের ওয়েবসাইটে দেখানো দাম দিনে অন্তত একবার পড়া হয়।` },
+      {
+        q: 'অফিসিয়াল আর আনঅফিসিয়াল ফোনের দাম আলাদা কেন?',
+        a: 'অফিসিয়াল ফোন ব্র্যান্ডের বাংলাদেশি পরিবেশকের মাধ্যমে আসে, সঙ্গে ব্র্যান্ডের ওয়ারেন্টি ও বিটিআরসির নিবন্ধন থাকে। আনঅফিসিয়াল ফোন দোকান নিজে আমদানি করে; দাম সাধারণত কম, ওয়ারেন্টি দোকানের। তাই দুটির দাম আলাদা কলামে দেখানো হয়।',
+      },
+      {
+        q: 'তালিকার দাম কোন র‍্যাম/স্টোরেজের?',
+        a: 'প্রতিটি দোকানের দেখানো সবচেয়ে কম দামের সংস্করণের। একই ফোনের বেশি র‍্যাম বা স্টোরেজের দাম বেশি; ফোনের পাতায় প্রতিটি দোকানের দাম ও সীমা দেখা যায়।',
+      },
+    ]
+  : [
+      { q: 'Which shops are compared?', a: `${shops}. Each shop's own website is read at least once a day.` },
+      {
+        q: 'Why are official and unofficial prices shown apart?',
+        a: "An official phone comes through the brand's Bangladeshi distributor, with the brand's warranty and BTRC registration. An unofficial one is imported by the shop: usually cheaper, with the shop's own warranty. So the two are never mixed.",
+      },
+      {
+        q: 'Which RAM/storage option is the price for?',
+        a: "The cheapest option each shop lists. More RAM or storage costs more; each phone's page shows every shop's price and range.",
+      },
+    ];
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at || latest.generated_at}>
+  <Breadcrumbs lang={lang} items={[{ label: s.nav.phones, path }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? 'আজকের মোবাইল ফোনের দাম' : 'Mobile phone prices today'}</h1>
+  <p class="mt-2 max-w-3xl text-ink-2">
+    {
+      bn
+        ? `বাংলাদেশের ${num(PHONE_SHOPS.length)}টি দোকানের দাম পাশাপাশি: ${shops}। অফিসিয়াল ও আনঅফিসিয়াল দাম আলাদা দেখানো হয়।`
+        : `Prices at ${PHONE_SHOPS.length} Bangladeshi shops side by side: ${shops}. Official and unofficial prices are kept apart.`
+    }
+  </p>
+  {
+    seen && (
+      <p class="mt-1 text-sm text-ink-2">
+        {s.updated}: <Ago at={seen} lang={lang} />
+      </p>
+    )
+  }
+
+  {
+    count === 0 ? (
+      <p class="card mt-6 p-4 text-ink-2">{p.notYet}</p>
+    ) : (
+      <>
+        <div class="mt-5 max-w-xl" data-phone-search>
+          <label for="phone-search" class="mb-1 block text-sm font-semibold">
+            {bn ? 'ফোন খুঁজুন' : 'Find a phone'}
+          </label>
+          <input
+            id="phone-search"
+            type="search"
+            autocomplete="off"
+            placeholder={p.search}
+            class="w-full rounded-md border border-hairline bg-surface px-3 py-2 text-ink outline-none focus-visible:border-accent"
+          />
+          <ul data-results hidden class="card mt-2 divide-y divide-grid overflow-hidden" />
+          <p data-empty hidden class="mt-2 text-sm text-ink-2">
+            {p.noMatch}
+          </p>
+          <script type="application/json" is:inline set:html={JSON.stringify(search).replace(/</g, '\\u003c')} />
+        </div>
+
+        <nav class="-mx-4 mt-5 flex gap-2 overflow-x-auto whitespace-nowrap px-4 pb-1 text-sm sm:mx-0 sm:flex-wrap sm:px-0" aria-label={p.brands}>
+          {brands.map(({ brand, models }) => (
+            <a href={localePath(lang, brandPath(brand.id))} class="card shrink-0 px-3 py-1.5 no-underline hover:underline">
+              {brand.name} <span class="text-muted">({num(models.length)})</span>
+            </a>
+          ))}
+        </nav>
+
+        {brands.map(({ brand, models }) => (
+          <section class="mt-8" id={brand.id}>
+            <h2 class="mb-2 text-lg font-semibold">{bn ? `${brand.name} মোবাইলের দাম` : `${brand.name} phone prices`}</h2>
+            <PhoneTable lang={lang} models={models.length > PER_BRAND ? popular(models, PER_BRAND) : models} />
+            {models.length > PER_BRAND && (
+              <p class="mt-2 text-sm">
+                <a href={localePath(lang, brandPath(brand.id))}>
+                  {bn ? `সব ${num(models.length)}টি ${brand.name} ফোনের দাম` : `All ${models.length} ${brand.name} phones`}
+                </a>
+              </p>
+            )}
+          </section>
+        ))}
+      </>
+    )
+  }
+
+  <section class="mt-10 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{bn ? 'দাম কোথা থেকে' : 'Where the prices come from'}</h2>
+    <p>
+      {
+        bn
+          ? 'প্রতিটি দাম দোকানের নিজের ওয়েবসাইট থেকে, দিনে অন্তত একবার পড়া। একই ফোন বিভিন্ন দোকান বিভিন্ন নামে লেখে; নাম মিলিয়ে একই মডেলের দাম পাশাপাশি রাখা হয়েছে। দোকান অফিসিয়াল না আনঅফিসিয়াল উল্লেখ না করলে দামটি "আনঅফিসিয়াল/অন্যান্য" কলামে থাকে। কেনার আগে দাম, ওয়ারেন্টি ও স্টক দোকানে যাচাই করুন।'
+          : "Every price is read from the shop's own website at least once a day. Shops write the same phone in different ways; names are matched so each model's prices sit side by side. When a shop doesn't say whether a phone is official, its price goes in the \"unofficial/other\" column. Check the price, warranty and stock with the shop before you buy."
+      }
+    </p>
+    <ul class="flex flex-wrap gap-x-4 gap-y-1">
+      {
+        PHONE_SHOPS.map((x) => (
+          <li>
+            <a href={x.url} rel="nofollow noopener" target="_blank">
+              {x.name}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <Faq lang={lang} faqs={faqs} />
+
+  <Related
+    lang={lang}
+    links={[
+      { label: s.nav.dollar, path: '/dollar-rate-today' },
+      { label: s.nav.market, path: '/market-price-today' },
+      { label: s.nav.calculators, path: '/calculators' },
+    ]}
+  />
+</Base>
+
+<script>
+  import '../scripts/phone-search';
+</script>

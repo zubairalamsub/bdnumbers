@@ -1,0 +1,13 @@
+---
+import type { PhoneBrand as Brand } from '@bdnumbers/shared';
+import type { GetStaticPaths } from 'astro';
+import { getPhones } from '../../../lib/data';
+import { byBrand } from '../../../lib/phones';
+import PhoneBrand from '../../../views/PhoneBrand.astro';
+
+export const getStaticPaths = (async () => byBrand((await getPhones()).models).map(({ brand }) => ({ params: { brand: brand.id }, props: { brand } }))) satisfies GetStaticPaths;
+
+const { brand } = Astro.props as { brand: Brand };
+---
+
+<PhoneBrand lang="bn" brand={brand} />

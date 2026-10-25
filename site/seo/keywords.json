@@ -119,6 +119,30 @@
       "en": ["{item} price in Bangladesh", "{item} price in Dhaka", "{item} price per kg"]
     }
   },
+  "/mobile-price": {
+    "bn": "মোবাইল ফোনের দাম",
+    "en": "mobile phone prices",
+    "longTail": {
+      "bn": ["মোবাইলের দাম বাংলাদেশে", "অফিসিয়াল মোবাইলের দাম", "আনঅফিসিয়াল ফোনের দাম", "মোবাইলের দাম তুলনা"],
+      "en": ["mobile price in Bangladesh", "official phone price in BD", "unofficial phone price in Bangladesh", "mobile price comparison Bangladesh"]
+    }
+  },
+  "/mobile-price/{phone}": {
+    "bn": "{phone} দাম",
+    "en": "{phone} price",
+    "longTail": {
+      "bn": ["{phone} দাম বাংলাদেশে", "{phone} অফিসিয়াল দাম", "{phone} আনঅফিসিয়াল দাম"],
+      "en": ["{phone} price in Bangladesh", "{phone} official price in BD", "{phone} unofficial price"]
+    }
+  },
+  "/mobile-price/brand/{brand}": {
+    "bn": "{brand} মোবাইলের দাম",
+    "en": "{brand} mobile price",
+    "longTail": {
+      "bn": ["{brand} ফোনের দাম বাংলাদেশে", "{brand} অফিসিয়াল ফোনের দাম"],
+      "en": ["{brand} mobile price in Bangladesh", "{brand} phone price list BD"]
+    }
+  },
   "/calculators": {
     "bn": "ক্যালকুলেটর",
     "en": "calculators",

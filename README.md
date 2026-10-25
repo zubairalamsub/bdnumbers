@@ -52,6 +52,30 @@ GET /api/* ─▶ edge cache (keyed by cache version) ─▶ KV ─▶ D1
 
 Each parser has tests against pages saved from the live sites (`worker/test/fixtures`). When a site changes its layout, the parser throws a clear error and `/api/status.json` shows it.
 
+### Mobile phone prices
+
+Six shops, read from their own websites (robots.txt allows every page used; checked 2026-10-25). Ryans shows scripts a Cloudflare challenge, and Star Tech was left out at the owner's request.
+
+| Shop | How its phones are found |
+|---|---|
+| [Apple Gadgets](https://www.applegadgetsbd.com) | Product sitemap (its listings page in the browser, and robots.txt asks crawlers to skip query URLs) |
+| [Dazzle](https://dazzle.com.bd) | Paged phone listing, `/categories/phones?page=n` |
+| [Gadget & Gear](https://gadgetandgear.com) | Sitemap; one product per RAM/storage variant |
+| [KRY International](https://kryinternational.com) | Sitemap |
+| [Rio International](https://riointernational.com.bd) | Paged phone listing, `/category/mobile/?page=n` |
+| [Sumash Tech](https://www.sumashtech.com) | Paged phone listing, `/category/phone-smartphone?page=n` |
+
+Every product page carries schema.org Product JSON-LD, so one parser reads them all ([`worker/src/phones/parse.ts`](worker/src/phones/parse.ts)): name, price (the cheapest variant; KRY gives a range), stock. Sitemap URLs are filtered by slug first, so accessories and other gadgets are never fetched.
+
+- **Matching:** shops write the same phone many ways ("Galaxy A57 5G", "Samsung Galaxy A57 5G (12/256GB)", "… Price in Bangladesh"). [`shared/src/catalog/phones.ts`](shared/src/catalog/phones.ts) cleans a name into a model key. RAM/storage, region and SIM labels and "Official"/"Unofficial" are kept apart from the key. It knows 30 brands and their series names ("Galaxy" is Samsung, "Redmi" is Xiaomi), and turns away accessories, tablets, watches and earbuds.
+- **"5G" in names:** a model is listed with and without it, so "5G"/"4G" splits a model only when shops sell both versions.
+- **Prices left out:** a price far below the model's others is dropped from the comparison. Apple Gadgets, for one, lists pre-order deposits as prices.
+- **Official or unofficial:** an offer is official or unofficial only when the shop says so. Otherwise it goes in the "unofficial/other" column; official and unofficial prices are never mixed.
+- **Crawl:** a queue in D1 (`phone_pages`). Every hour each shop gets a run in its own invocation, and each page is fetched and parsed in another, at most 45 per shop run. Listing pages and sitemaps are re-read daily, products in stock daily, out of stock every 2 days, and unpriced ones every 3. A page that 404s twice is dropped.
+- **History:** every price or stock change is kept (`phone_price_log`). The daily batch records each model's lowest official and unofficial price (`phone_daily`), which the model pages chart; history starts on 2026-10-25.
+- **Models and site builds:** a model's slug is fixed when it is first seen (`phone_models`), so its page URL never changes. When phone prices change, the daily batch triggers a site build even if no other number moved.
+- **Switching it off:** `PHONE_CRAWL = "off"` in `[vars]` stops the crawl without a code change.
+
 ## Site
 
 Every page is static HTML in Bengali (`/`) and English (`/en/…`), with Bengali or Latin digits remembered per language. Besides the number pages:
@@ -59,6 +83,11 @@ Every page is static HTML in Bengali (`/`) and English (`/en/…`), with Bengali
 - **Light and dark mode:** follows the device until the reader picks one with the header switch; the choice is kept in `localStorage` (`bdrate:theme`) and applied by an inline script before first paint, so the page never flashes the other theme. Colours are CSS tokens in [`site/src/styles/global.css`](site/src/styles/global.css), with the dark set repeated for the device setting and for an explicit choice.
 - **Currency pages** (`/currency/<slug>`, 15): Bangladesh Bank's 10 cross rates, plus the Saudi riyal, UAE dirham, Qatari riyal, Omani rial and Bahraini dinar. Bangladesh Bank doesn't list those five, but each is fixed to the US dollar by its central bank, so their taka rate is Bangladesh Bank's dollar rate divided by the peg, worked out at build time and labelled as such ([`site/src/lib/currencies.ts`](site/src/lib/currencies.ts)). Each page has the rate, changes, a chart, a table of common amounts and FAQs. The converter has the Gulf currencies too.
 - **Commodity pages** (`/market-price/<slug>`, 38): TCB's 60 items grouped the way people search ("চালের দাম" covers four kinds of rice), each with today's range, the week/month/year comparison, a chart and FAQs ([`site/src/lib/commodities.ts`](site/src/lib/commodities.ts); a test checks every TCB item has a page).
+- **Mobile prices** (`/mobile-price`): every phone the six shops list, by brand, with a search box that works in the browser.
+  - Each model has a page (`/mobile-price/<slug>`) with every shop's price, type, RAM/storage and stock, linked to the shop.
+  - Model pages also show the lowest official and lowest unofficial price, a chart of the lowest price over time, the recent price changes at each shop, and FAQs. Product JSON-LD gives the price range.
+  - Each brand has a page too (`/mobile-price/brand/<id>`).
+  - Model and brand pages are built from `/api/phones.json`, so they appear and disappear with the shops' listings, and the sitemap lists them from the same data.
 - **Weather map:** `/weather` shows the eight division cities on a map of Bangladesh (temperature, humidity, rain or wind) next to each city's temperature range for the next 24 hours. Zooming in (+, pinch, ctrl/trackpad wheel, or tapping a division) draws the 64 districts with each one's weather; labels that would overlap are hidden, nearest the centre kept, so zooming further reveals more, and tapping a district opens its details. The district outlines and readings load only on the first zoom ([`site/src/scripts/weather-map.ts`](site/src/scripts/weather-map.ts)). Outlines come from geoBoundaries' simplified boundaries, turned into SVG paths by [`site/scripts/bd-map.mjs`](site/scripts/bd-map.mjs): divisions (ADM1, CC0) and districts (ADM2, Bangladesh Bureau of Statistics and OCHA ROAP, CC BY 3.0 IGO, credited under the map). Values refresh in the browser with the rest of the page.
 - **Prayer times** (`/prayer-times/<district>`, all 64 districts): computed with [adhan](https://github.com/batoulapps/adhan-js) using the Karachi method and Hanafi Asr, the convention in Bangladesh. They are computed at build time and again in the browser, so they stay right between builds. Each page has today's times, the month's timetable and a Ramadan sehri/iftar table. Ramadan dates come from the Umm al-Qura calendar, shifted by `RAMADAN_OFFSET_DAYS` in `site/src/views/PrayerDistrict.astro` if the local moon sighting differs. District coordinates are GeoNames places, listed in `shared/src/catalog/districts.ts`.
 - **Calculators** (`/calculators`): currency converter, gold/silver weight and value, zakat, loan EMI, DPS maturity, Sanchayapatra return, and bKash/Nagad/Rocket cash-out fees. All run in the browser and take today's rates from the build. The math is in `site/src/lib/calc.ts` with tests. Cash-out fees are in `site/src/lib/mfs-fees.ts`, with the date they were checked; Rocket's newest published rates are from March 2025. To add your own calculator (income tax, electricity bill and construction cost already have slots), see [site/CALCULATORS.md](site/CALCULATORS.md).
@@ -106,10 +135,13 @@ Base URL: `https://api.bdrate.fyi`. GET responses allow CORS and carry `Cache-Co
 | `GET /api/changes.json` | Values fetched today (Dhaka) that differ from the previous point |
 | `GET /api/status.json` | Per source: last run, last success, failures in the last 24 h, stale series |
 | `GET /api/weather/districts.json` | Current weather in the 56 district headquarters that aren't division cities (one KV snapshot, rewritten hourly; no history). A district whose fetch failed keeps its last reading with `stale: true` |
+| `GET /api/phones.json` | Every phone model: `slug`, `name`, `brand`, lowest in-stock `official` and `other` price, `shops` with it in stock, and each shop's offer (`price`, `high`, `variant`, `kind`, `stock`, `url`, `seen_at`, `changed_at`). Rebuilt when a crawl changes a price; 404 before the first crawl |
+| `GET /api/phones/history.json` | Per model: `[date, official, other]` on each day a lowest price moved, and the last 90 days of price and stock changes at each shop. Rebuilt daily |
 | `POST /api/ingest` | Bearer `INGEST_TOKEN`; rate limited to 10/min per IP. Body: `{"source":"manual","points":[{"series_key":"gold_22k","date":"2026-10-22","value":226340}],"mode":"upsert","override":false}` |
 | `GET /embed/:key?lang=bn\|en` | A small iframe-able widget with an attribution link |
 | `GET /manual` | Form for entering or correcting a value (uses your ingest token) |
 | `POST /internal/run/:source`, `POST /internal/batch/daily\|hourly` | Bearer `INTERNAL_TOKEN`; run a source or a whole batch now |
+| `POST /internal/phones/shop/:shop`, `POST /internal/phones/publish` | Bearer `INTERNAL_TOKEN`; one shop's crawl run now, or rebuild `phones.json` |
 
 Types for every response are in [`shared/src/types.ts`](shared/src/types.ts).
 
@@ -237,6 +269,7 @@ Everything here is on free plans. Report problems as described in [SECURITY.md](
 - **A site changed its layout:** the run fails and the data goes stale. Save the new page as a fixture, update the parser and its test, and push; CI deploys it.
 - **Failure alerts:** after every batch the Worker emails the owner (from `alerts@bdrate.fyi` through Cloudflare Email Routing, free) when a source has failed twice in a row, and once more when it works again; an outage never sends more than those two emails. The recipient is the `ALERT_TO` Worker secret, a verified Email Routing destination, so the address stays out of this repository. Without it, alerts are off.
 - **Blocked from Cloudflare's network:** a source whose parser takes a page can be relayed: fetch the page anywhere else and `POST /api/ingest/html/<source>` with the `INGEST_TOKEN`. The Worker parses and validates it exactly as in a normal run and logs it as that source's run (trigger `relay`). BAJUS has shown Cloudflare's bot check to the Worker since 2026-10-23, so [`gold-relay.yml`](.github/workflows/gold-relay.yml) runs 20 minutes after each daily batch and, when the Worker's BAJUS fetch failed or fell back to the UNB mirror, fetches BAJUS from GitHub's network and relays it. It needs the `INGEST_TOKEN` repository secret. On 2026-10-25 BAJUS showed GitHub's network the bot check too, so for now the job only logs a warning and gold keeps coming from the UNB mirror (labelled as such); the relay starts working by itself if BAJUS lets either network through. For a source that can't be fetched as one page, post points to `/api/ingest` instead.
+- **A phone shop changed its site or blocks the crawl:** its `phones:<shop>` run fails on `/status`, with an alert email. Prices already crawled stay for 7 days, then drop out of the comparison. Fix the shop's entry in `worker/src/phones/shops.ts` (or the parser) against a newly saved page, or set `PHONE_CRAWL = "off"` to pause every shop. A phone whose name isn't recognised is skipped quietly: add its brand or series word to `PHONE_BRANDS` in `shared/src/catalog/phones.ts`.
 - **Savings rates changed:** when `/status` warns that the directorate links a new notice, transcribe its table into `SAVINGS_NOTICE` in `shared/src/catalog/periodic.ts` and push. Do the same for `site/src/lib/mfs-fees.ts` when an operator changes its charges.
 
 ## Free-tier limits
@@ -247,7 +280,8 @@ Everything runs at $0. The Cloudflare account is on the **Workers Free** plan an
 |---|---|---|---|
 | Workers requests | 100,000/day | ~80/day for cron and fan-out (24 hourly + 2 daily batches), plus 1 per visible page view whose data is ≥5 min old (the live refresh, which asks only for the page's series) | Make the island poll less often or serve `latest.json` from Pages. Workers Paid is $5/mo for 10M requests. |
 | Workers CPU | 10 ms per invocation (HTTP and cron) | Each source runs in its own invocation; HTMLRewriter parsing is native | `runs` shows "exceeded CPU". Move that parser to a GitHub Actions job that posts to `/api/ingest`. |
-| Workers subrequests | 50 per invocation (1,000 via service bindings) | ≤3 per source | Already spread across invocations |
+| Workers subrequests | 50 per invocation, calls through the SELF service binding included (D1 and KV calls don't count) | ≤3 per source; a phone shop run makes at most 45 page calls | Already spread across invocations |
+| Workers requests for the phone crawl | (same 100,000/day) | ~3,500/day: one invocation per page read, about once a day each for ~3,400 phone pages | Lower `PAGES_PER_RUN` in `worker/src/phones/crawl.ts`, or re-read products every other day |
 | Cron triggers | 5 per account | 2 | — |
 | D1 rows written | 100,000/day | ~2,500/day: 32 weather points an hour, ~120 TCB and 4 DSE points a day, each also updating indexes (the one-off TCB backfill was ~17,000) | Fewer weather cities or metrics, or fetch weather every 3 h |
 | D1 rows read | 5,000,000/day | ~1,000 per batch plus API cache misses | Cache misses are rare thanks to KV and the edge cache; lengthen `max-age` |

@@ -1,0 +1,325 @@
+---
+import { PHONE_SHOPS, addDays, defaultDigits, dhakaDate, formatDate, formatNumber, phoneBrand, phoneShop, type Lang, type PhoneModel } from '@bdnumbers/shared';
+import AdSlot from '../components/AdSlot.astro';
+import Ago from '../components/Ago.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Faq from '../components/Faq.astro';
+import LineChart from '../components/LineChart.astro';
+import Num from '../components/Num.astro';
+import Related from '../components/Related.astro';
+import { STRINGS } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { getPhoneHistory, getPhones } from '../lib/data';
+import { PHONES_PATH, brandPath, byPrice, highestPrice, kindLabel, lowestPrice, phonePath, priceHistory, stockLabel } from '../lib/phones';
+import { absoluteUrl, type Faq as FaqItem } from '../lib/seo';
+
+interface Props {
+  lang: Lang;
+  model: PhoneModel;
+}
+
+const { lang, model: m } = Astro.props;
+const bn = lang === 'bn';
+const s = STRINGS[lang];
+const p = s.phones;
+const digits = defaultDigits(lang);
+const phones = await getPhones();
+const history = await getPhoneHistory();
+const brand = phoneBrand(m.brand)!;
+const path = phonePath(m);
+const today = dhakaDate();
+
+const num = (n: number) => formatNumber(n, digits, 0);
+const tk = (n: number) => `৳${num(n)}`;
+const shopName = (id: string) => phoneShop(id)?.name ?? id;
+const inStock = m.offers.filter((o) => o.stock === 'in');
+const low = lowestPrice(m);
+const cheapest = inStock[0];
+const officialOffer = inStock.find((o) => o.kind === 'official');
+const otherOffer = inStock.find((o) => o.kind !== 'official');
+const seen = m.offers.map((o) => o.seen_at).sort().at(-1) ?? null;
+const date = formatDate(today, lang, digits);
+
+const chart = priceHistory(history, m.key, today);
+const since = chart.points[0]?.[0] ?? m.first_seen;
+const monthAgo = chart.points.find(([d]) => d >= addDays(today, -30));
+const changes = history.changes[m.key] ?? [];
+
+const priceText = low === null ? '' : bn ? `${tk(low)} থেকে` : `from ${tk(low)}`;
+// The last variant leads with the keyword, so a very long model name is cut at its end, not the keyword's.
+const title = bn
+  ? [`${m.name}-এর দাম বাংলাদেশে ${priceText}`.trim(), `${m.name}-এর দাম বাংলাদেশে`, `${m.name}-এর দাম`, `দাম: ${m.name}`]
+  : [`${m.name} price in Bangladesh ${priceText}`.trim(), `${m.name} price in Bangladesh`, `${m.name} price`, `Price: ${m.name}`];
+const where = (o: (typeof inStock)[number]) => `${shopName(o.shop)}${o.variant ? ` (${o.variant})` : ''}`;
+const lows = [
+  officialOffer && (bn ? `অফিসিয়াল ${tk(officialOffer.price)} (${where(officialOffer)})` : `official ${tk(officialOffer.price)} at ${where(officialOffer)}`),
+  otherOffer && (bn ? `আনঅফিসিয়াল/অন্যান্য ${tk(otherOffer.price)} (${where(otherOffer)})` : `unofficial/other ${tk(otherOffer.price)} at ${where(otherOffer)}`),
+].filter(Boolean);
+const description = bn
+  ? [
+      `${date}: ${m.name}-এর দাম ${lows.join(', ') || 'এখন কোনো দোকানে স্টকে নেই'}। ${num(PHONE_SHOPS.length)}টি দোকানের দাম তুলনা ও দামের ইতিহাস।`,
+      `${m.name}-এর দাম ${num(PHONE_SHOPS.length)}টি দোকানে: ${low !== null ? `${tk(low)} থেকে` : 'স্টকে নেই'}। প্রতিদিন হালনাগাদ, দামের ইতিহাসসহ।`,
+    ]
+  : [
+      `${m.name} price in Bangladesh on ${date}: ${lows.join('; ') || 'out of stock at every shop'}. ${PHONE_SHOPS.length} shops compared, with price history.`,
+      `${m.name} price at ${PHONE_SHOPS.length} Bangladeshi shops: ${low !== null ? `from ${tk(low)}` : 'out of stock'}. Updated daily, with history.`,
+    ];
+
+const kindNote = bn
+  ? 'অফিসিয়াল ফোন ব্র্যান্ডের বাংলাদেশি পরিবেশকের মাধ্যমে আসে, সঙ্গে ব্র্যান্ডের ওয়ারেন্টি থাকে ও বিটিআরসির নিবন্ধন থাকে। আনঅফিসিয়াল ফোন বিদেশ থেকে আমদানি করা, দাম সাধারণত কম, ওয়ারেন্টি দোকানের নিজের।'
+  : "An official phone comes through the brand's Bangladeshi distributor, with the brand's warranty and BTRC registration. An unofficial one is imported by the shop: usually cheaper, with the shop's own warranty.";
+const trend = (() => {
+  const now = chart.points.at(-1);
+  if (!monthAgo || !now || monthAgo[0] === now[0]) return null;
+  return { from: monthAgo, to: now };
+})();
+const faqs: FaqItem[] = bn
+  ? [
+      {
+        q: `${m.name}-এর দাম কত?`,
+        a: low === null
+          ? `${date} তারিখে আমাদের দেখা ${num(PHONE_SHOPS.length)}টি দোকানের কোনোটিতে ${m.name} স্টকে নেই। সর্বশেষ দামগুলো ওপরের তালিকায় আছে।`
+          : `${date} তারিখে ${m.name} ${num(m.shops)}টি দোকানে স্টকে আছে: ${lows.join(', ')}। দাম দোকানের দেখানো সবচেয়ে কম দামের র‍্যাম/স্টোরেজ সংস্করণের।`,
+      },
+      {
+        q: `কোন দোকানে ${m.name} সবচেয়ে কম দামে পাওয়া যাচ্ছে?`,
+        a: cheapest
+          ? `এখন সবচেয়ে কম দাম ${shopName(cheapest.shop)}-এ: ${tk(cheapest.price)}${cheapest.variant ? ` (${cheapest.variant})` : ''}, ${cheapest.kind ? kindLabel(cheapest.kind, lang) : 'অফিসিয়াল কি না দোকান উল্লেখ করেনি'}। কেনার আগে দোকানে দাম ও ওয়ারেন্টি যাচাই করুন।`
+          : `এখন কোনো দোকানে স্টকে নেই।`,
+      },
+      { q: `অফিসিয়াল আর আনঅফিসিয়াল ${m.name}-এর পার্থক্য কী?`, a: kindNote },
+      {
+        q: `গত এক মাসে ${m.name}-এর দাম বেড়েছে না কমেছে?`,
+        a: trend
+          ? `${formatDate(trend.from[0], lang, digits)} তারিখে সর্বনিম্ন ${chart.kind === 'official' ? 'অফিসিয়াল ' : ''}দাম ছিল ${tk(trend.from[1])}; এখন ${tk(trend.to[1])}।`
+          : `এই ফোনের দাম রাখা শুরু হয়েছে ${formatDate(since, lang, digits)} থেকে; এক মাসের তুলনা তার পর থেকে দেখা যাবে।`,
+      },
+      {
+        q: 'এই দাম কোথা থেকে নেওয়া, কত দিন পরপর হালনাগাদ হয়?',
+        a: `প্রতিটি দোকানের নিজের ওয়েবসাইটে দেখানো দাম, দিনে অন্তত একবার পড়া হয়: ${PHONE_SHOPS.map((x) => x.name).join(', ')}। এই পাতা দিনে দুবার হালনাগাদ হয়।`,
+      },
+    ]
+  : [
+      {
+        q: `What is the price of the ${m.name} in Bangladesh?`,
+        a: low === null
+          ? `On ${date} none of the ${PHONE_SHOPS.length} shops we follow has the ${m.name} in stock. Their last prices are in the table above.`
+          : `On ${date} the ${m.name} is in stock at ${m.shops} shop${m.shops === 1 ? '' : 's'}: ${lows.join('; ')}. Prices are for the cheapest RAM/storage option each shop lists.`,
+      },
+      {
+        q: `Which shop has the ${m.name} cheapest?`,
+        a: cheapest
+          ? `${shopName(cheapest.shop)}, at ${tk(cheapest.price)}${cheapest.variant ? ` (${cheapest.variant})` : ''}, ${cheapest.kind ? kindLabel(cheapest.kind, lang).toLowerCase() : "the shop doesn't say whether official"}. Check the price and warranty with the shop before you buy.`
+          : 'No shop has it in stock right now.',
+      },
+      { q: `What is the difference between an official and an unofficial ${m.name}?`, a: kindNote },
+      {
+        q: `Has the ${m.name} got cheaper in the last month?`,
+        a: trend
+          ? `On ${formatDate(trend.from[0], lang, digits)} the lowest ${chart.kind === 'official' ? 'official ' : ''}price was ${tk(trend.from[1])}; it is now ${tk(trend.to[1])}.`
+          : `Prices for this phone are recorded from ${formatDate(since, lang, digits)}; the month's comparison shows up from then on.`,
+      },
+      {
+        q: 'Where do these prices come from, and how often are they updated?',
+        a: `From each shop's own website, read at least once a day: ${PHONE_SHOPS.map((x) => x.name).join(', ')}. This page is rebuilt twice a day.`,
+      },
+    ];
+
+const productLd =
+  low === null
+    ? null
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: m.name,
+        brand: { '@type': 'Brand', name: brand.name },
+        url: absoluteUrl(lang, path),
+        offers: {
+          '@type': 'AggregateOffer',
+          priceCurrency: 'BDT',
+          lowPrice: low,
+          highPrice: Math.max(low, ...inStock.map((o) => o.high ?? o.price)),
+          offerCount: inStock.length,
+          availability: 'https://schema.org/InStock',
+        },
+      };
+
+// Same brand, nearest in price.
+const siblings = phones.models
+  .filter((x) => x.brand === m.brand && x.key !== m.key)
+  .sort((a, b) => Math.abs((lowestPrice(a) ?? highestPrice(a)) - (low ?? highestPrice(m))) - Math.abs((lowestPrice(b) ?? highestPrice(b)) - (low ?? highestPrice(m))) || byPrice(a, b))
+  .slice(0, 6);
+---
+
+<Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at} jsonLd={productLd ? [productLd] : []}>
+  <Breadcrumbs
+    lang={lang}
+    items={[
+      { label: s.nav.phones, path: PHONES_PATH },
+      { label: brand.name, path: brandPath(brand.id) },
+      { label: m.name, path },
+    ]}
+  />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? `${m.name}-এর দাম` : `${m.name} price`}</h1>
+  <p class="mt-1 flex flex-col gap-y-1 text-sm text-ink-2 sm:flex-row sm:flex-wrap sm:gap-x-3">
+    <span>{bn ? `বাংলাদেশের ${num(PHONE_SHOPS.length)}টি দোকানের দাম` : `Prices at ${PHONE_SHOPS.length} shops in Bangladesh`}</span>
+    <span>{s.updated}: <Ago at={seen} lang={lang} /></span>
+  </p>
+
+  <div class="mt-5 grid gap-4 sm:grid-cols-2">
+    {
+      [
+        { label: bn ? 'সর্বনিম্ন অফিসিয়াল দাম' : 'Lowest official price', offer: officialOffer },
+        { label: bn ? 'সর্বনিম্ন আনঅফিসিয়াল/অন্যান্য দাম' : 'Lowest unofficial/other price', offer: otherOffer },
+      ].map(({ label, offer }) => (
+        <article class="card flex flex-col gap-1 p-4 sm:p-5">
+          <h2 class="text-[0.9375rem] font-semibold text-ink-2">{label}</h2>
+          {offer ? (
+            <>
+              <p class="text-3xl font-semibold leading-tight sm:text-4xl">
+                ৳<Num value={offer.price} lang={lang} />
+              </p>
+              <p class="text-sm text-ink-2">
+                {shopName(offer.shop)}
+                {offer.variant && <span> · {offer.variant}</span>}
+              </p>
+            </>
+          ) : (
+            <p class="text-ink-2">{bn ? 'কোনো দোকানে স্টকে নেই' : 'Not in stock at any shop'}</p>
+          )}
+        </article>
+      ))
+    }
+  </div>
+
+  <section class="mt-8">
+    <h2 class="mb-3 text-lg font-semibold">{bn ? 'দোকানভিত্তিক দাম' : 'Price at each shop'}</h2>
+    <div class="card overflow-x-auto">
+      <table class="data-table text-[0.9375rem]">
+        <thead>
+          <tr>
+            <th scope="col">{p.shop}</th>
+            <th scope="col">{p.price}</th>
+            <th scope="col" class="text-left">{bn ? 'ধরন ও স্টক' : 'Type and stock'}</th>
+            <th scope="col" class="hidden text-left sm:table-cell">{p.variant}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            m.offers.map((o) => (
+              <tr class:list={[o.stock !== 'in' && 'text-ink-2']}>
+                <th scope="row" class="font-normal">
+                  <a href={o.url} rel="nofollow noopener" target="_blank">
+                    {shopName(o.shop)}
+                    <span class="sr-only"> ({p.view})</span>
+                  </a>
+                  <span class="block max-w-[16em] text-xs text-muted sm:hidden">{o.variant}</span>
+                </th>
+                <td class:list={['whitespace-nowrap', o.stock === 'in' && o.price === low && 'font-semibold']}>
+                  ৳<Num value={o.price} lang={lang} />{o.high && <>–<Num value={o.high} lang={lang} /></>}
+                </td>
+                <td class="text-left">
+                  {kindLabel(o.kind, lang)}
+                  <span class:list={['block text-xs', o.stock === 'in' ? 'text-muted' : 'font-semibold text-warn-ink']}>{stockLabel(o.stock, lang)}</span>
+                </td>
+                <td class="hidden text-left sm:table-cell">{o.variant ?? '—'}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 max-w-3xl text-xs text-muted">
+      {
+        bn
+          ? 'দাম দোকানের ওয়েবসাইটে দেখানো সবচেয়ে কম দামের র‍্যাম/স্টোরেজ সংস্করণের; দুটি দাম থাকলে তা সব সংস্করণের সীমা। দোকান অফিসিয়াল না আনঅফিসিয়াল উল্লেখ না করলে "উল্লেখ নেই" দেখানো হয়। কেনার আগে দোকানে যাচাই করুন।'
+          : "Each price is the cheapest RAM/storage option on the shop's website; a range covers all its options. \"Not stated\" means the shop doesn't say whether the phone is official. Check with the shop before you buy."
+      }
+    </p>
+  </section>
+
+  {
+    chart.points.length >= 2 ? (
+      <section class="mt-8">
+        <h2 class="mb-3 text-lg font-semibold">{bn ? 'দামের ইতিহাস' : 'Price history'}</h2>
+        <LineChart
+          points={chart.points}
+          category="market"
+          unit="BDT"
+          lang={lang}
+          label={
+            chart.kind === 'official'
+              ? bn
+                ? `${m.name}: দোকানগুলোর মধ্যে সর্বনিম্ন অফিসিয়াল দাম`
+                : `${m.name}: lowest official price across the shops`
+              : bn
+                ? `${m.name}: দোকানগুলোর মধ্যে সর্বনিম্ন দাম`
+                : `${m.name}: lowest price across the shops`
+          }
+        />
+      </section>
+    ) : (
+      <p class="mt-6 text-sm text-ink-2">
+        {bn ? `এই ফোনের দামের ইতিহাস রাখা শুরু হয়েছে ${formatDate(since, lang, digits)} থেকে; চার্ট দেখা যাবে কয়েক দিন পর।` : `Price history for this phone starts on ${formatDate(since, lang, digits)}; the chart appears after a few days.`}
+      </p>
+    )
+  }
+
+  {
+    changes.length > 0 && (
+      <section class="mt-8">
+        <h2 class="mb-3 text-lg font-semibold">{bn ? 'সাম্প্রতিক দামের পরিবর্তন' : 'Recent price changes'}</h2>
+        <div class="card overflow-x-auto">
+          <table class="data-table text-[0.9375rem]">
+            <thead>
+              <tr>
+                <th scope="col">{s.table.date}</th>
+                <th scope="col">{p.shop}</th>
+                <th scope="col">{s.change}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {changes.map((c) => (
+                <tr>
+                  <th scope="row" class="font-normal whitespace-nowrap">{formatDate(c.date, lang, digits)}</th>
+                  <td>
+                    {shopName(c.shop)}
+                    {c.variant && <span class="block text-xs text-muted">{c.variant}</span>}
+                  </td>
+                  <td class="whitespace-normal">
+                    {c.price !== c.previous ? (
+                      <span data-change data-dir={c.price > c.previous ? 'up' : 'down'} data-cat="market">
+                        {c.price > c.previous ? '▲' : '▼'} {tk(c.previous)} → {tk(c.price)}
+                      </span>
+                    ) : (
+                      <span>
+                        {stockLabel(c.previous_stock ?? 'in', lang)} → {stockLabel(c.stock, lang)}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="mt-8 max-w-3xl space-y-3 text-[0.9375rem] text-ink-2">
+    <h2 class="text-lg font-semibold text-ink">{bn ? 'অফিসিয়াল না আনঅফিসিয়াল' : 'Official or unofficial'}</h2>
+    <p>{kindNote}</p>
+  </section>
+
+  <AdSlot lang={lang} />
+  <Faq lang={lang} faqs={faqs} />
+
+  <Related
+    lang={lang}
+    links={[
+      ...siblings.map((x) => ({ label: bn ? `${x.name}-এর দাম` : `${x.name} price`, path: phonePath(x) })),
+      { label: bn ? `সব ${brand.name} মোবাইলের দাম` : `All ${brand.name} phone prices`, path: brandPath(brand.id) },
+      { label: s.nav.phones, path: PHONES_PATH },
+    ]}
+  />
+</Base>
