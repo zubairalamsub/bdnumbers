@@ -53,12 +53,14 @@ const description = bn
       bn ? (
         <ul class="list-disc space-y-1 ps-5">
           <li>সংখ্যা বাংলা না ইংরেজি অঙ্কে দেখাবেন, সেই পছন্দ।</li>
+          <li>লাইট না ডার্ক মোড বেছে নিয়েছেন (না বাছলে ডিভাইসের সেটিং মানা হয়)।</li>
           <li>যে পাতাগুলো আগে খুলেছেন তার একটি কপি, যাতে ইন্টারনেট না থাকলেও সেগুলো দেখা যায়।</li>
           {ONESIGNAL_APP_ID && <li>কোন বিষয়ে নোটিফিকেশন চালু করেছেন।</li>}
         </ul>
       ) : (
         <ul class="list-disc space-y-1 ps-5">
           <li>Whether you prefer numbers in Bengali or English digits.</li>
+          <li>Whether you picked light or dark mode (until you do, your device's setting is used).</li>
           <li>A copy of pages you have opened, so they still work without an internet connection.</li>
           {ONESIGNAL_APP_ID && <li>Which topics you turned notifications on for.</li>}
         </ul>

@@ -7,6 +7,7 @@ import Header from '../components/Header.astro';
 import { ADSENSE_CLIENT, API_BASE, SITE_NAME, SITE_URL } from '../config';
 import { localePath } from '../i18n';
 import { ogImagePath } from '../lib/og-cards';
+import { THEME_COLORS, THEME_KEY } from '../lib/prefs';
 import { fitDescription, fitTitle, ldJson, type JsonLd } from '../lib/seo';
 import '../styles/global.css';
 
@@ -51,8 +52,17 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
     }
     <meta name="robots" content={noindex ? 'noindex' : 'max-image-preview:large'} />
     {ADSENSE_CLIENT && <meta name="google-adsense-account" content={ADSENSE_CLIENT} />}
-    <meta name="theme-color" content="#006a4e" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content={THEME_COLORS.light} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={THEME_COLORS.dark} media="(prefers-color-scheme: dark)" />
+    {/* Before first paint, so a saved theme never flashes the other one. scripts/theme.ts does the rest. */}
+    <script is:inline define:vars={{ key: THEME_KEY }}>
+      let saved = null;
+      try {
+        saved = localStorage.getItem(key);
+      } catch {}
+      document.documentElement.dataset.theme =
+        saved === 'light' || saved === 'dark' ? saved : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href={localePath(lang, '/manifest.webmanifest')} />
@@ -85,6 +95,7 @@ const canonical = `${SITE_URL}${localePath(lang, path)}`;
     <script>
       import '../scripts/live';
       import '../scripts/pwa';
+      import '../scripts/theme';
     </script>
   </body>
 </html>

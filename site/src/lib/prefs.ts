@@ -4,6 +4,12 @@ import { defaultDigits, toLatinDigits, type Digits, type Lang } from '@bdnumbers
 /** Per language, so choosing Latin digits on Bengali pages doesn't change English pages. */
 export const digitsKey = (lang: Lang) => `bdrate:digits:${lang}`;
 
+/** The reader's light/dark choice; absent means "follow the device". */
+export const THEME_KEY = 'bdrate:theme';
+export type Theme = 'light' | 'dark';
+/** Browser chrome colour (meta theme-color) for each theme. */
+export const THEME_COLORS: Record<Theme, string> = { light: '#006a4e', dark: '#1a1a19' };
+
 export function readDigits(lang: Lang): Digits {
   try {
     const saved = localStorage.getItem(digitsKey(lang));

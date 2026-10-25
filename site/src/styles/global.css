@@ -25,8 +25,10 @@
   --bad-ink: #b42318;
 }
 
+/* Dark follows the device unless the reader picked a theme with the header switch (data-theme on <html>,
+   set before first paint by the inline script in Base.astro). The two dark blocks must stay identical. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     color-scheme: dark;
     --page: #0d0d0d;
     --surface: #1a1a19;
@@ -44,6 +46,24 @@
     --good-ink: #0ca30c;
     --bad-ink: #ff8a80;
   }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #a3a29b;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --hairline: rgb(255 255 255 / 0.1);
+  --series: #3987e5;
+  --series-wash: rgb(57 135 229 / 0.12);
+  --accent: #4cc79a;
+  --accent-ink: #0d0d0d;
+  --warn-ink: #fab219;
+  --good-ink: #0ca30c;
+  --bad-ink: #ff8a80;
 }
 
 @theme inline {
@@ -209,6 +229,12 @@
 }
 [data-change][data-dir='flat'] {
   color: var(--muted);
+}
+
+/* Theme switch: a moon while the page is light (switch to dark), a sun while it is dark. */
+:root[data-theme='dark'] [data-theme-toggle] [data-icon='moon'],
+:root:not([data-theme='dark']) [data-theme-toggle] [data-icon='sun'] {
+  display: none;
 }
 
 /* Digits switch: both options visible, the one in use filled in. */
