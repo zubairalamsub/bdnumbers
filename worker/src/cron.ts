@@ -1,3 +1,4 @@
+import { checkAlerts, type AlertOutcome } from './alerts';
 import { refreshCaches } from './cache';
 import { pruneRuns } from './db';
 import { triggerPagesDeploy, type DeployOutcome } from './deploy';
@@ -63,6 +64,7 @@ export interface BatchResult {
   deploy: DeployOutcome;
   push: PushOutcome | 'skipped';
   digest: DigestOutcome | 'skipped';
+  alerts: AlertOutcome;
 }
 
 /**
@@ -70,6 +72,7 @@ export interface BatchResult {
  * KV caches are rebuilt (which also invalidates edge-cached /api responses). After a daily batch that
  * wrote anything, the Pages site is rebuilt and web pushes go out for the numbers that moved; the
  * afternoon daily batch also sends the email digest. `now` only decides whether the digest is due.
+ * Every batch ends by emailing the owner about sources that started failing or recovered.
  */
 export async function runBatch(
   env: Env,
@@ -104,7 +107,9 @@ export async function runBatch(
     }
   }
 
-  const summary: BatchResult = { batch, trigger, results, written, deploy, push, digest };
+  const alerts = await checkAlerts(env, results, now);
+
+  const summary: BatchResult = { batch, trigger, results, written, deploy, push, digest, alerts };
   console.log(JSON.stringify(summary));
   return summary;
 }

@@ -20,6 +20,7 @@ export default defineConfig(async () => {
             ONESIGNAL_APP_ID: '',
             ONESIGNAL_KEY: '',
             BUTTONDOWN_API_KEY: '',
+            ALERT_TO: '',
           },
         },
       }),

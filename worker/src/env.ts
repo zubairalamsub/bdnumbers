@@ -21,6 +21,13 @@ export interface Env {
   ONESIGNAL_KEY?: string;
   /** Buttondown API key: the daily email digest (free plan). Unset: the digest is skipped. */
   BUTTONDOWN_API_KEY?: string;
+  /**
+   * Failure alerts by email: the send_email binding, the recipient (a verified Email Routing destination,
+   * kept as a secret so it stays out of the public repo) and the sender on this domain. Unset: no alerts.
+   */
+  ALERT_EMAIL?: SendEmail;
+  ALERT_TO?: string;
+  ALERT_FROM?: string;
 }
 
 export type AppEnv = { Bindings: Env };
