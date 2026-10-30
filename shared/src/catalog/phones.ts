@@ -90,12 +90,24 @@ const NOT_A_PHONE = new Set(
     'humidifier fryer cooler kettle scale bulb lamp light camera dashcam projector printer drone scooter ' +
     'controller gamepad remote bag backpack sleeve pouch wallet grip clip kit sim tray housing replacement display ' +
     'screen ssd sd microsd memory card pendrive usb otg hdd mijia used refurbished renewed preowned owned demo ' +
-    'combo bundle glasses mirror bottle massager thermometer'
+    'combo bundle glasses mirror bottle massager thermometer fan handheld choice bullets'
   ).split(' '),
 );
 
 /** A few of those words are part of real phone names. */
 const PHONE_PHRASES = [/\b(moto g|edge \d+) stylus\b/];
+
+/**
+ * Colours a shop may end a name with ("iPhone 13 Starlight", "… Natural Titanium"): they name a finish,
+ * not a model, so they are dropped from the end of the name.
+ */
+const COLOURS = new Set(
+  (
+    'black white blue green red purple pink gold silver gray grey graphite titanium natural desert starlight midnight ' +
+    'sierra alpine coral yellow orange lavender mint cream violet sage teal cosmic deep mist ultramarine jet ocean sky ' +
+    'navy rose bronze copper champagne icy frost glacier aurora emerald jade olive lime peach lilac porcelain obsidian onyx'
+  ).split(' '),
+);
 
 export interface ParsedPhoneName {
   /** Matching key: brand and model words run together, without network words, e.g. "samsunggalaxya57". */
@@ -132,7 +144,7 @@ function storage(n: number, unit: string | undefined): string | null {
 
 /** Region, SIM and edition labels and shop boilerplate: they change the price, not the model. */
 const LABELS =
-  /\b(?:price in (?:bd|bangladesh)(?: \d{4})?|in bangladesh|bd price|global(?: version| rom)?|international(?: version)?|chinese version|china(?: version| rom)?|china|indian?(?: version)?|ind|usa?(?: version)?|jp|japan|hk|sg|uae|kr|korea|dual sim|single sim|physical sim|e-?sim|nano sim|ds|with warranty|brand new|new|snapdragon|exynos)\b/gi;
+  /\b(?:price in (?:bd|bangladesh)(?: \d{4})?|in bangladesh|bd price|global(?: version| rom)?|international(?: version)?|chinese version|china(?: version| rom)?|china|indian?(?: version)?|ind|usa?(?: version)?|jp|japan|hk|sg|uae|kr|korea|dual sim|single sim|physical sim|e-?sim|nano sim|ds|with warranty|brand new|new|snapdragon|exynos|fan edition)\b/gi;
 
 interface Word {
   /** As the shop wrote it. */
@@ -215,6 +227,7 @@ export function parsePhoneName(raw: string, brandHint?: string | null): ParsedPh
   if (words[0]!.lc !== own && !brand.standalone?.includes(words[0]!.lc)) words.unshift(word(brand.name));
   if (brand.id === 'samsung' && words[1]?.lc !== 'galaxy') words.splice(1, 0, word('Galaxy'));
   if (words[0]!.lc === 'xiaomi' && words[1]?.lc === 'mi') words.splice(1, 1);
+  while (words.length > 2 && COLOURS.has(words.at(-1)!.lc)) words.pop();
   const network = (words.find((w) => w.lc === '5g' || w.lc === '4g')?.lc ?? null) as '5g' | '4g' | null;
   const model = words.filter((w) => w.lc !== '5g' && w.lc !== '4g').map((w) => w.lc);
   if (model.length < 2) return null;

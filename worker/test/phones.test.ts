@@ -52,6 +52,10 @@ describe('parsePhoneName', () => {
     ['Samsung Galaxy S24 (Snapdragon)', null, 'samsunggalaxys24', null, null, null],
     ['Nokia 3.4 Official', null, 'nokia3.4', null, null, 'official'],
     ['Galaxy S26 Ultra 12GB 1TB', null, 'samsunggalaxys26ultra', null, '12/1TB', null],
+    // A colour at the end names the finish, not the model.
+    ['iPhone 13 128GB Starlight', null, 'iphone13', null, '128GB', null],
+    ['iPhone 17 Pro Max Cosmic Orange', null, 'iphone17promax', null, null, null],
+    ['Samsung Galaxy S25 FE (Fan Edition)', null, 'samsunggalaxys25fe', null, null, null],
   ];
   it.each(cases)('%s', (raw, brand, key, network, variant, kind) => {
     expect(parsePhoneName(raw, brand)).toMatchObject({ key, network, variant, kind });
@@ -81,6 +85,9 @@ describe('parsePhoneName', () => {
       'Samsung 25W Travel Adapter',
       'Huawei FreeBuds 6i',
       'Apple Watch Series 11',
+      'HONOR CHOICE AISOLOVE Handheld Fan Pro',
+      'Honor Choice T10',
+      'OnePlus Bullets Wireless Z2 ANC',
       'Anker PowerCore 10000',
     ]) {
       expect(parsePhoneName(name), name).toBeNull();
