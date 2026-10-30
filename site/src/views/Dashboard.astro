@@ -2,6 +2,7 @@
 import {
   KARAT_ORDER,
   PHONE_SHOPS,
+  addDays,
   currencyName,
   defaultDigits,
   dhakaDate,
@@ -17,6 +18,7 @@ import {
   type Holiday,
   type Lang,
 } from '@bdnumbers/shared';
+import CardHead from '../components/CardHead.astro';
 import ChangeText from '../components/ChangeText.astro';
 import Num from '../components/Num.astro';
 import NumberCard from '../components/NumberCard.astro';
@@ -27,7 +29,7 @@ import { CALCULATORS } from '../lib/calculators';
 import { commodityOf, commodityPath } from '../lib/commodities';
 import { currencyByCode, currencyPath, pegEntry } from '../lib/currencies';
 import { homeLd } from '../lib/seo';
-import { getChanges, getEntries, getLatest, getPhones } from '../lib/data';
+import { getChanges, getEntries, getHistory, getLatest, getPhones } from '../lib/data';
 import { PHONES_PATH, lowestPrice, phonePath, popular } from '../lib/phones';
 
 interface Props {
@@ -61,6 +63,11 @@ const weatherCities = ['dhaka', 'chattogram', 'sylhet', 'rajshahi']
   .filter((c) => c.temp !== undefined);
 const [silver, ...silverRest] = await getEntries(KARAT_ORDER.map((k) => `silver_${k}`));
 const today = dhakaDate();
+// The last 90 days of the dollar and the share index, for the small trend lines on their cards.
+const since = addDays(today, -90);
+const recent = async (key: string) => (await getHistory(key)).points.filter((p) => p.date >= since).map((p): [string, number] => [p.date, p.value]);
+const [usdTrend, dsexTrend] = await Promise.all([recent('usd_bdt_avg'), dsex ? recent('dse_dsex') : Promise.resolve([])]);
+const trendLabel = lang === 'bn' ? 'গত ৯০ দিন' : 'Last 90 days';
 // Phones most shops have in stock, cheapest first.
 const phones = await getPhones();
 const phonePicks = popular(phones.models.filter((m) => lowestPrice(m) !== null), 8);
@@ -82,9 +89,12 @@ const description =
 
 <Base lang={lang} path="/" title={title} description={description} generatedAt={latest.generated_at} jsonLd={homeLd(lang, description)}>
   <h1 class="text-xl font-semibold sm:text-3xl">{s.tagline}</h1>
+  <p class="mt-1 text-sm text-ink-2 sm:text-base">
+    {lang === 'bn' ? 'সরকারি ও মূল উৎস থেকে নেওয়া, দিনে কয়েকবার নিজে থেকে হালনাগাদ।' : 'From official and primary sources, updated by itself several times a day.'}
+  </p>
 
   <div class="mt-5 grid gap-4 md:grid-cols-2">
-    <NumberCard entry={usd!} lang={lang} hero href={localePath(lang, '/dollar-rate-today')} label={s.nav.dollar}>
+    <NumberCard entry={usd!} lang={lang} hero href={localePath(lang, '/dollar-rate-today')} label={s.nav.dollar} trend={usdTrend} trendLabel={trendLabel}>
       <p class="flex flex-wrap gap-x-4 text-sm text-ink-2">
         <span data-series={bid!.key}>{s.table.bid}: <Num value={bid!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
         <span data-series={ask!.key}>{s.table.ask}: <Num value={ask!.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" /></span>
@@ -137,9 +147,7 @@ const description =
     </NumberCard>
 
     <section class="card overflow-x-auto p-4 sm:p-5">
-      <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
-        <a href={localePath(lang, '/dollar-rate-today')} class="text-ink-2 no-underline hover:underline">{lang === 'bn' ? 'অন্যান্য মুদ্রা (আস্ক)' : 'Other currencies (ask)'}</a>
-      </h2>
+      <CardHead icon="coins" hue="fx" href={localePath(lang, '/dollar-rate-today')}>{lang === 'bn' ? 'অন্যান্য মুদ্রা (আস্ক)' : 'Other currencies (ask)'}</CardHead>
       <table class="data-table text-[0.9375rem]">
         <tbody>
           {
@@ -168,11 +176,7 @@ const description =
     {
       marketItems.length > 0 && (
         <section class="card p-4 sm:p-5">
-          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
-            <a href={localePath(lang, '/market-price-today')} class="text-ink-2 no-underline hover:underline">
-              {s.nav.market} ({s.market.city})
-            </a>
-          </h2>
+          <CardHead icon="market" hue="market" href={localePath(lang, '/market-price-today')}>{s.nav.market} ({s.market.city})</CardHead>
           <ul class="divide-y divide-grid text-[0.9375rem]">
             {marketItems.map((r) => (
               <li class="flex justify-between gap-3 py-1">
@@ -194,7 +198,7 @@ const description =
 
     {
       dsex && (
-        <NumberCard entry={dsex} lang={lang} href={localePath(lang, '/share-market-today')} label={`${s.nav.stock} · DSEX`}>
+        <NumberCard entry={dsex} lang={lang} href={localePath(lang, '/share-market-today')} label={`${s.nav.stock} · DSEX`} trend={dsexTrend} trendLabel={trendLabel}>
           {turnover && (
             <p class="text-sm text-ink-2" data-series={turnover.key}>
               {lang === 'bn' ? 'লেনদেন' : 'Turnover'}: <Num value={turnover.value} fd={2} lang={lang} field="value" class="font-semibold text-ink" />{' '}
@@ -208,11 +212,7 @@ const description =
     {
       weatherCities.length > 0 && (
         <section class="card p-4 sm:p-5">
-          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
-            <a href={localePath(lang, '/weather')} class="text-ink-2 no-underline hover:underline">
-              {s.nav.weather}
-            </a>
-          </h2>
+          <CardHead icon="weather" hue="weather" href={localePath(lang, '/weather')}>{s.nav.weather}</CardHead>
           <ul class="divide-y divide-grid text-[0.9375rem]">
             {weatherCities.map(({ city, temp: e }) => {
               const sky = weatherCondition(e!.meta?.symbol, lang);
@@ -236,11 +236,7 @@ const description =
     {
       nextHolidays.length > 0 && (
         <section class="card p-4 sm:p-5">
-          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
-            <a href={localePath(lang, '/holidays')} class="text-ink-2 no-underline hover:underline">
-              {lang === 'bn' ? 'পরের সরকারি ছুটি' : 'Next public holidays'}
-            </a>
-          </h2>
+          <CardHead icon="calendar" hue="calendar" href={localePath(lang, '/holidays')}>{lang === 'bn' ? 'পরের সরকারি ছুটি' : 'Next public holidays'}</CardHead>
           <ul class="divide-y divide-grid text-[0.9375rem]">
             {nextHolidays.map((h, i) => (
               <li class="flex justify-between gap-3 py-1" data-day={h.date}>
@@ -259,11 +255,7 @@ const description =
     {
       fuels.length > 0 && (
         <section class="card p-4 sm:p-5">
-          <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
-            <a href={localePath(lang, '/fuel-price')} class="text-ink-2 no-underline hover:underline">
-              {lang === 'bn' ? 'জ্বালানি ও এলপিজি' : 'Fuel and LPG'}
-            </a>
-          </h2>
+          <CardHead icon="fuel" hue="fuel" href={localePath(lang, '/fuel-price')}>{lang === 'bn' ? 'জ্বালানি ও এলপিজি' : 'Fuel and LPG'}</CardHead>
           <ul class="divide-y divide-grid text-[0.9375rem]">
             {fuels.map((e) => (
               <li class="flex justify-between gap-3 py-1" data-series={e.key}>
@@ -280,9 +272,7 @@ const description =
     }
 
     <section class="card p-4 sm:p-5">
-      <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
-        <a href={localePath(lang, '/calculators')} class="text-ink-2 no-underline hover:underline">{s.nav.calculators}</a>
-      </h2>
+      <CardHead icon="calculator" hue="tools" href={localePath(lang, '/calculators')}>{s.nav.calculators}</CardHead>
       <ul class="divide-y divide-grid text-[0.9375rem]">
         {CALCULATORS.slice(0, 5).map((c) => (
           <li>
@@ -299,11 +289,7 @@ const description =
   {
     phonePicks.length > 0 && (
       <section class="card mt-4 p-4 sm:p-5">
-        <h2 class="mb-2 text-[0.9375rem] font-semibold text-ink-2">
-          <a href={localePath(lang, PHONES_PATH)} class="text-ink-2 no-underline hover:underline">
-            {lang === 'bn' ? `মোবাইলের দাম · ${formatNumber(PHONE_SHOPS.length, digits, 0)}টি দোকানের সর্বনিম্ন` : `Mobile prices · lowest of ${PHONE_SHOPS.length} shops`}
-          </a>
-        </h2>
+        <CardHead icon="phone" hue="phone" href={localePath(lang, PHONES_PATH)}>{lang === 'bn' ? `মোবাইলের দাম · ${formatNumber(PHONE_SHOPS.length, digits, 0)}টি দোকানের সর্বনিম্ন` : `Mobile prices · lowest of ${PHONE_SHOPS.length} shops`}</CardHead>
         <ul class="grid gap-x-8 text-[0.9375rem] md:grid-cols-2">
           {phonePicks.map((m) => (
             <li class="flex justify-between gap-3 border-b border-grid py-1">

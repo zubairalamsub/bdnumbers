@@ -59,7 +59,7 @@ const path = `/history/${seriesKey}`;
   <Breadcrumbs lang={lang} items={[{ label: parentLabel, path: parent }, { label: name, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{name}</h1>
   <div class="mt-2" data-series={entry.key}>
-    <EntryMeta entry={entry} lang={lang} />
+    <EntryMeta entry={entry} lang={lang} inCard={false} />
   </div>
 
   <div class="mt-4">

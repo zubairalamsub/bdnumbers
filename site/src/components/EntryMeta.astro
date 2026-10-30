@@ -3,25 +3,32 @@ import type { Lang, LatestEntry } from '@bdnumbers/shared';
 import { STRINGS } from '../i18n';
 import Ago from './Ago.astro';
 import DateText from './DateText.astro';
+import Icon from './Icon.astro';
 
 interface Props {
   entry: LatestEntry;
   lang: Lang;
   /** Hide the source link when the page already names the source nearby. */
   source?: boolean;
+  /** At the foot of a card: a rule above it, pushed to the card's bottom. */
+  inCard?: boolean;
 }
 
-const { entry, lang, source = true } = Astro.props;
+// Date, last checked and source on one quiet line, each marked by an icon; the words stay for screen
+// readers and as tooltips.
+const { entry, lang, source = true, inCard = true } = Astro.props;
 const s = STRINGS[lang];
 const mirror = entry.meta?.source === 'mirror';
 ---
 
-<p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
-  <span>{s.asOf}: <DateText date={entry.date} lang={lang} field="date" /></span>
+<p class:list={['flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] text-muted', inCard && 'mt-auto border-t border-grid pt-2.5']}>
+  <span class="inline-flex items-center gap-1" title={s.asOf}>
+    <Icon name="calendar" size={13} /><span class="sr-only">{s.asOf}: </span><DateText date={entry.date} lang={lang} field="date" />
+  </span>
   {/* The time is built as "22 Oct 2026, 13:00" and the script shortens it to "5 hours ago". Reserving
       the long form's width keeps the line breaks the same before and after, so nothing below shifts. */}
-  <span class="whitespace-nowrap">
-    {s.updated}: <span class:list={['inline-block', lang === 'bn' ? 'min-w-[10.9em]' : 'min-w-[8.9em]']}><Ago at={entry.checked_at} lang={lang} field="checked" /></span>
+  <span class="inline-flex items-center gap-1 whitespace-nowrap" title={s.updated}>
+    <Icon name="clock" size={13} /><span class="sr-only">{s.updated}: </span><span class:list={['inline-block', lang === 'bn' ? 'min-w-[10.9em]' : 'min-w-[8.9em]']}><Ago at={entry.checked_at} lang={lang} field="checked" /></span>
   </span>
   <span class="badge text-warn-ink" data-field="stale" title={s.staleHint} hidden={!entry.stale}>
     <span aria-hidden="true">⚠</span>{s.stale}
@@ -35,9 +42,10 @@ const mirror = entry.meta?.source === 'mirror';
   }
   {
     source && (
-      <span>
-        {s.source}:{' '}
-        <a href={entry.source_url} rel="noopener" target="_blank">
+      <span class="inline-flex items-center gap-1" title={s.source}>
+        <Icon name="link" size={13} />
+        <span class="sr-only">{s.source}: </span>
+        <a href={entry.source_url} rel="noopener" target="_blank" class="text-ink-2">
           {entry.source_name}
         </a>
       </span>

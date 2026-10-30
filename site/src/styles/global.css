@@ -23,6 +23,19 @@
   --good-ink: #006300;
   /* Text colour for a bad move (a price that rose); 6.4:1 on --surface. */
   --bad-ink: #b42318;
+  /* Section hues for the icon beside each card title (never for text): each is at least 3:1 on --surface. */
+  --hue-fx: #0f7b5f;
+  --hue-gold: #a86b00;
+  --hue-silver: #5f6b7a;
+  --hue-market: #c2410c;
+  --hue-stock: #4f46e5;
+  --hue-weather: #0369a1;
+  --hue-fuel: #b91c1c;
+  --hue-phone: #7c3aed;
+  --hue-calendar: #be185d;
+  --hue-tools: #475569;
+  --hue-savings: #0f766e;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.04);
 }
 
 /* Dark follows the device unless the reader picked a theme with the header switch (data-theme on <html>,
@@ -45,6 +58,18 @@
     --warn-ink: #fab219;
     --good-ink: #0ca30c;
     --bad-ink: #ff8a80;
+    --hue-fx: #4cc79a;
+    --hue-gold: #e3b341;
+    --hue-silver: #a8b3bf;
+    --hue-market: #fb923c;
+    --hue-stock: #a5b4fc;
+    --hue-weather: #38bdf8;
+    --hue-fuel: #f87171;
+    --hue-phone: #c4b5fd;
+    --hue-calendar: #f472b6;
+    --hue-tools: #94a3b8;
+    --hue-savings: #2dd4bf;
+    --shadow: none;
   }
 }
 :root[data-theme='dark'] {
@@ -64,6 +89,18 @@
   --warn-ink: #fab219;
   --good-ink: #0ca30c;
   --bad-ink: #ff8a80;
+  --hue-fx: #4cc79a;
+  --hue-gold: #e3b341;
+  --hue-silver: #a8b3bf;
+  --hue-market: #fb923c;
+  --hue-stock: #a5b4fc;
+  --hue-weather: #38bdf8;
+  --hue-fuel: #f87171;
+  --hue-phone: #c4b5fd;
+  --hue-calendar: #f472b6;
+  --hue-tools: #94a3b8;
+  --hue-savings: #2dd4bf;
+  --shadow: none;
 }
 
 @theme inline {
@@ -127,7 +164,42 @@
     min-width: 0;
     background: var(--surface);
     border: 1px solid var(--hairline);
-    border-radius: 12px;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+  /* The small square beside a card title: the section's icon on a wash of its hue. */
+  .icon-chip {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 8px;
+    color: var(--hue, var(--accent));
+    background: color-mix(in srgb, var(--hue, var(--accent)) 14%, transparent);
+  }
+  .icon-chip[data-hue='fx'] { --hue: var(--hue-fx); }
+  .icon-chip[data-hue='gold'] { --hue: var(--hue-gold); }
+  .icon-chip[data-hue='silver'] { --hue: var(--hue-silver); }
+  .icon-chip[data-hue='market'] { --hue: var(--hue-market); }
+  .icon-chip[data-hue='stock'] { --hue: var(--hue-stock); }
+  .icon-chip[data-hue='weather'] { --hue: var(--hue-weather); }
+  .icon-chip[data-hue='fuel'] { --hue: var(--hue-fuel); }
+  .icon-chip[data-hue='phone'] { --hue: var(--hue-phone); }
+  .icon-chip[data-hue='calendar'] { --hue: var(--hue-calendar); }
+  .icon-chip[data-hue='tools'] { --hue: var(--hue-tools); }
+  .icon-chip[data-hue='savings'] { --hue: var(--hue-savings); }
+  /* A change as a tinted pill; the tint follows the text colour, so it is coloured only where the
+     direction is plainly good or bad (see the [data-change] rules below) and grey elsewhere. */
+  .change-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0 0.5rem;
+    background: color-mix(in srgb, currentColor 11%, transparent);
+  }
+  .change-pill[hidden] {
+    display: none;
   }
   .badge {
     display: inline-flex;

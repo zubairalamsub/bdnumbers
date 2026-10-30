@@ -1,0 +1,26 @@
+---
+import { ICON_PATHS, type IconName } from '../lib/icons';
+
+interface Props {
+  name: IconName;
+  size?: number;
+  class?: string;
+}
+
+// Line icons drawn inline (no font or sprite request), in the current text colour.
+const { name, size = 16, class: className } = Astro.props;
+---
+
+<svg
+  class={className}
+  aria-hidden="true"
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  set:html={ICON_PATHS[name]}
+/>

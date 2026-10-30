@@ -3,6 +3,7 @@ import { PHONE_SHOPS, addDays, defaultDigits, dhakaDate, formatDate, formatNumbe
 import AdSlot from '../components/AdSlot.astro';
 import Ago from '../components/Ago.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import CardHead from '../components/CardHead.astro';
 import Faq from '../components/Faq.astro';
 import LineChart from '../components/LineChart.astro';
 import Num from '../components/Num.astro';
@@ -173,7 +174,7 @@ const siblings = phones.models
         { label: bn ? 'সর্বনিম্ন আনঅফিসিয়াল/অন্যান্য দাম' : 'Lowest unofficial/other price', offer: otherOffer },
       ].map(({ label, offer }) => (
         <article class="card flex flex-col gap-1 p-4 sm:p-5">
-          <h2 class="text-[0.9375rem] font-semibold text-ink-2">{label}</h2>
+          <CardHead icon="phone" hue="phone">{label}</CardHead>
           {offer ? (
             <>
               <p class="text-3xl font-semibold leading-tight sm:text-4xl">

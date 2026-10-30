@@ -1,0 +1,37 @@
+---
+import { defaultDigits, formatNumber, type Lang } from '@bdnumbers/shared';
+import type { Pt } from '../lib/chart';
+
+interface Props {
+  points: readonly Pt[];
+  lang: Lang;
+  /** What the line covers, e.g. "Last 90 days"; also its accessible name. */
+  label: string;
+  /** Fraction digits for the low–high caption. */
+  fd?: number;
+}
+
+// A small trend line for a card: one 2px line in the series colour over a light wash, no axes. The caption
+// gives the period and the low–high range, so the shape never has to be read for numbers.
+const { points, lang, label, fd = 0 } = Astro.props;
+const values = points.map((p) => p[1]);
+const min = Math.min(...values);
+const max = Math.max(...values);
+const span = max - min || 1;
+const xy = points.map((p, i) => [(i / (points.length - 1)) * 100, 28 - ((p[1] - min) / span) * 26] as const);
+const line = xy.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)}`).join('');
+const area = `${line}L100 30L0 30Z`;
+const digits = defaultDigits(lang);
+const fmt = (n: number) => formatNumber(n, digits, fd, fd);
+---
+
+<figure class="mt-2">
+  <svg viewBox="0 0 100 30" preserveAspectRatio="none" class="h-12 w-full overflow-visible" role="img" aria-label={`${label}: ${fmt(min)}–${fmt(max)}`}>
+    <path d={area} fill="var(--series-wash)" />
+    <path d={line} fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+  </svg>
+  <figcaption class="mt-1 flex justify-between gap-2 text-xs text-muted" aria-hidden="true">
+    <span>{label}</span>
+    <span class="tabular-nums">{fmt(min)}–{fmt(max)}</span>
+  </figcaption>
+</figure>

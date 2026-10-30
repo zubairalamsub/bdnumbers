@@ -10,36 +10,73 @@ interface Props {
 
 const { lang } = Astro.props;
 const s = STRINGS[lang];
-const pages = [
-  { path: '/dollar-rate-today', label: s.nav.dollar },
-  { path: '/currency/saudi-riyal', label: lang === 'bn' ? 'সৌদি রিয়াল রেট' : 'Saudi riyal rate' },
-  { path: '/gold-price-today', label: s.nav.gold },
-  { path: '/silver-price-today', label: s.nav.silver },
-  { path: '/market-price-today', label: s.nav.market },
-  { path: '/mobile-price', label: s.nav.phones },
-  { path: '/share-market-today', label: s.nav.stock },
-  { path: '/fuel-price', label: s.nav.fuel },
-  { path: '/lpg-price', label: s.nav.lpg },
-  { path: '/savings-rates', label: s.nav.savings },
-  { path: '/weather', label: s.nav.weather },
-  { path: '/prayer-times', label: s.nav.prayer },
-  { path: '/holidays', label: s.nav.holidays },
-  { path: '/calculators', label: s.nav.calculators },
-  { path: '/status', label: s.nav.status },
-  { path: '/about', label: s.nav.about },
-  { path: '/privacy', label: s.nav.privacy },
+const bn = lang === 'bn';
+// Every page, in three groups.
+const groups = [
+  {
+    title: bn ? 'রেট ও দাম' : 'Rates and prices',
+    pages: [
+      { path: '/dollar-rate-today', label: s.nav.dollar },
+      { path: '/currency/saudi-riyal', label: bn ? 'সৌদি রিয়াল রেট' : 'Saudi riyal rate' },
+      { path: '/gold-price-today', label: s.nav.gold },
+      { path: '/silver-price-today', label: s.nav.silver },
+      { path: '/market-price-today', label: s.nav.market },
+      { path: '/mobile-price', label: s.nav.phones },
+      { path: '/fuel-price', label: s.nav.fuel },
+      { path: '/lpg-price', label: s.nav.lpg },
+    ],
+  },
+  {
+    title: bn ? 'আরও তথ্য' : 'More',
+    pages: [
+      { path: '/share-market-today', label: s.nav.stock },
+      { path: '/savings-rates', label: s.nav.savings },
+      { path: '/weather', label: s.nav.weather },
+      { path: '/prayer-times', label: s.nav.prayer },
+      { path: '/holidays', label: s.nav.holidays },
+      { path: '/calculators', label: s.nav.calculators },
+    ],
+  },
+  {
+    title: SITE_NAME,
+    pages: [
+      { path: '/about', label: s.nav.about },
+      { path: '/status', label: s.nav.status },
+      { path: '/privacy', label: s.nav.privacy },
+    ],
+  },
 ];
 ---
 
-<footer class="border-t border-hairline bg-surface">
-  <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 text-sm text-ink-2 sm:px-6">
+<footer class="mt-4 border-t border-hairline bg-surface">
+  <div class="mx-auto max-w-5xl space-y-6 px-4 py-8 text-sm text-ink-2 sm:px-6">
     <DigestSignup lang={lang} />
-    <nav aria-label={s.nav.allPages} id="all-pages">
-      <ul class="grid grid-cols-2 gap-x-4 sm:flex sm:flex-wrap sm:gap-y-1">
-        {pages.map((p) => <li><a href={localePath(lang, p.path)} class="block py-2 text-ink-2 sm:py-0">{p.label}</a></li>)}
-      </ul>
-    </nav>
-    <p>{s.footer}</p>
-    <p>{SITE_NAME}</p>
+    <div class="grid gap-6 md:grid-cols-[1.2fr_2fr]">
+      <div class="space-y-3">
+        <a href={localePath(lang, '/')} class="flex items-center gap-2 text-ink no-underline">
+          <span aria-hidden="true" class="inline-grid size-8 place-items-center rounded-lg bg-accent text-lg font-semibold text-accent-ink">৳</span>
+          <span class="text-lg font-semibold">{SITE_NAME}</span>
+        </a>
+        <p class="max-w-sm">{s.footer}</p>
+      </div>
+      <nav aria-label={s.nav.allPages} id="all-pages" class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">
+        {
+          groups.map((g) => (
+            <div>
+              <h2 class="mb-1 text-xs font-semibold text-muted">{g.title}</h2>
+              <ul>
+                {g.pages.map((p) => (
+                  <li>
+                    <a href={localePath(lang, p.path)} class="block py-1.5 text-ink-2 no-underline hover:text-ink hover:underline">
+                      {p.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </nav>
+    </div>
   </div>
 </footer>

@@ -2,6 +2,7 @@
 import { defaultDigits, formatDate, formatNumber, unitLabel, type Lang, type LatestEntry } from '@bdnumbers/shared';
 import AdSlot from '../components/AdSlot.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import CardHead from '../components/CardHead.astro';
 import ChangeText from '../components/ChangeText.astro';
 import DateText from '../components/DateText.astro';
 import EntryMeta from '../components/EntryMeta.astro';
@@ -131,7 +132,7 @@ const dataset = datasetLd({
 
   <div class="mt-5 grid gap-4 md:grid-cols-[3fr_2fr]">
     <article class="card flex flex-col gap-1 p-4 sm:p-5">
-      <h2 class="text-[0.9375rem] font-semibold text-ink-2">{itemName(main)}</h2>
+      <CardHead icon="market" hue="market">{itemName(main)}</CardHead>
       <p class="text-4xl font-semibold leading-tight text-ink sm:text-5xl">
         <span data-series={main.min.key}><Num value={main.min.value} lang={lang} field="value" /></span>–<span data-series={main.max.key}><Num value={main.max.value} lang={lang} field="value" /></span>
         <span class="ml-1 text-xl font-normal text-ink-2">{unit(main)}</span>

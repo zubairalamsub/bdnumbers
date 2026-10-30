@@ -1,9 +1,13 @@
 ---
 import { fractionDigits, unitLabel, type Lang, type LatestEntry } from '@bdnumbers/shared';
 import { STRINGS } from '../i18n';
+import { CATEGORY_ICONS } from '../lib/icons';
+import CardHead from './CardHead.astro';
 import ChangeText from './ChangeText.astro';
 import EntryMeta from './EntryMeta.astro';
 import Num from './Num.astro';
+import Sparkline from './Sparkline.astro';
+import type { Pt } from '../lib/chart';
 
 interface Props {
   entry: LatestEntry;
@@ -13,26 +17,28 @@ interface Props {
   label?: string;
   href?: string;
   headingLevel?: 2 | 3;
+  /** Recent history for a small trend line above the source line, and what period it covers. */
+  trend?: readonly Pt[];
+  trendLabel?: string;
 }
 
-const { entry, lang, hero = false, label, href, headingLevel = 2 } = Astro.props;
+const { entry, lang, hero = false, label, href, headingLevel = 2, trend, trendLabel = '' } = Astro.props;
 const s = STRINGS[lang];
 const name = label ?? (lang === 'bn' ? entry.name_bn : entry.name_en);
-const Heading = headingLevel === 2 ? 'h2' : 'h3';
+const { icon, hue } = CATEGORY_ICONS[entry.category];
 ---
 
-<article class="card flex flex-col gap-1 p-4 sm:p-5" data-series={entry.key}>
-  <Heading class="text-[0.9375rem] font-semibold text-ink-2">
-    {href ? <a href={href} class="text-ink-2 no-underline hover:underline">{name}</a> : name}
-  </Heading>
-  <p class:list={['font-semibold leading-tight text-ink', hero ? 'text-5xl' : 'text-3xl']}>
+<article class="card flex flex-col gap-1.5 p-4 sm:p-5" data-series={entry.key}>
+  <CardHead icon={icon} hue={hue} href={href} level={headingLevel}>{name}</CardHead>
+  <p class:list={['font-semibold leading-tight tracking-tight text-ink', hero ? 'text-5xl' : 'text-3xl']}>
     <Num value={entry.value} fd={fractionDigits(entry.category, entry.value)} lang={lang} field="value" />
-    <span class:list={['ml-1 font-normal text-ink-2', hero ? 'text-xl' : 'text-base']}>{unitLabel(entry.unit, lang)}</span>
+    <span class:list={['ml-1 font-normal tracking-normal text-ink-2', hero ? 'text-xl' : 'text-base']}>{unitLabel(entry.unit, lang)}</span>
   </p>
-  <p class="text-sm text-ink-2">
-    <ChangeText change={entry.change.prev} category={entry.category} lang={lang} field="change.prev" class="font-semibold text-ink" />
-    {entry.change.prev && <span> {s.vs.prev}</span>}
+  <p class="flex flex-wrap items-center gap-x-1.5 text-sm text-ink-2">
+    <ChangeText change={entry.change.prev} category={entry.category} lang={lang} field="change.prev" class="change-pill font-semibold text-ink" />
+    {entry.change.prev && <span>{s.vs.prev}</span>}
   </p>
   <slot />
+  {trend && trend.length >= 2 && <Sparkline points={trend} lang={lang} label={trendLabel} fd={fractionDigits(entry.category, entry.value)} />}
   <EntryMeta entry={entry} lang={lang} />
 </article>

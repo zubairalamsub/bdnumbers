@@ -1,0 +1,32 @@
+---
+import type { Hue, IconName } from '../lib/icons';
+import Icon from './Icon.astro';
+
+interface Props {
+  icon: IconName;
+  hue: Hue;
+  /** Where the title links (the section's page); a chevron shows it goes somewhere. */
+  href?: string;
+  level?: 2 | 3;
+}
+
+// A card's title: the section's icon on a wash of its hue, then the title (a link when the card has a page).
+const { icon, hue, href, level = 2 } = Astro.props;
+const Heading = level === 2 ? 'h2' : 'h3';
+---
+
+<Heading class="mb-2 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-2">
+  <span class="icon-chip" data-hue={hue}><Icon name={icon} /></span>
+  {
+    href ? (
+      <a href={href} class="group inline-flex min-w-0 items-center gap-0.5 text-ink-2 no-underline hover:text-ink">
+        <span class="group-hover:underline"><slot /></span>
+        <Icon name="arrow" size={14} class="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
+      </a>
+    ) : (
+      <span class="min-w-0">
+        <slot />
+      </span>
+    )
+  }
+</Heading>

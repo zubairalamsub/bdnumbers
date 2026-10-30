@@ -8,6 +8,7 @@ export function localePath(lang: Lang, path: string): string {
 
 const bn = {
   tagline: 'বাংলাদেশের আজকের ডলার রেট, সোনার দাম, বাজারদর ও আবহাওয়া',
+  brandLine: 'বাংলাদেশের প্রতিদিনের হিসাব',
   nav: {
     home: 'হোম',
     dollar: 'ডলার রেট',
@@ -130,6 +131,7 @@ type Strings = typeof bn;
 
 const en: Strings = {
   tagline: "Today's dollar rate, gold, market prices, shares and weather in Bangladesh",
+  brandLine: 'Bangladesh, by the numbers',
   nav: {
     home: 'Home',
     dollar: 'Dollar rate',
