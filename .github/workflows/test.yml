@@ -20,5 +20,13 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      # Builds against the live API, so a site that can't render today's data fails CI.
-      - run: npm run build -w site
+      # Builds against the live API, so a site that can't render today's data fails CI. On failure the end of
+      # the output becomes an error annotation, which GitHub shows without signing in (the logs need a login).
+      - name: Build site
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! npm run build -w site 2>&1 | tee build.log; then
+            echo "::error title=Site build failed::$(tail -c 4000 build.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+            exit 1
+          fi
