@@ -201,6 +201,13 @@
   .change-pill[hidden] {
     display: none;
   }
+  /* A row of buttons that scrolls sideways by swipe or wheel, without a scrollbar under it. */
+  .scroll-row {
+    scrollbar-width: none;
+  }
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
   .badge {
     display: inline-flex;
     align-items: center;

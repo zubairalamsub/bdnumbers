@@ -3,20 +3,18 @@ import { PHONE_SHOPS, defaultDigits, formatNumber, type Lang } from '@bdnumbers/
 import Ago from '../components/Ago.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Faq from '../components/Faq.astro';
-import PhoneTable from '../components/PhoneTable.astro';
+import Icon from '../components/Icon.astro';
 import Related from '../components/Related.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest, getPhones } from '../lib/data';
-import { PHONES_PATH, brandPath, byBrand, lowestPrice, phonePath, popular } from '../lib/phones';
+import { BUDGETS, DEFAULT_FINDER, FINDER_PAGE, findPhones, finderCount, finderRow, type FinderPhone } from '../lib/phone-finder';
+import { PHONES_PATH, brandPath, byBrand, lowestPrice, phonePath } from '../lib/phones';
 import type { Faq as FaqItem } from '../lib/seo';
 
 interface Props {
   lang: Lang;
 }
-
-/** Phones listed per brand here; each brand's page has all of them. */
-const PER_BRAND = 8;
 
 const { lang } = Astro.props;
 const bn = lang === 'bn';
@@ -29,10 +27,18 @@ const brands = byBrand(phones.models);
 const num = (n: number) => formatNumber(n, digits, 0);
 const shops = PHONE_SHOPS.map((x) => x.name).join(', ');
 const count = phones.models.length;
-const search = phones.models.map((m) => {
-  const low = lowestPrice(m);
-  return [m.name, localePath(lang, phonePath(m)), low === null ? p.out : `৳${num(low)}`];
-});
+// The finder's data: every phone, short. The first rows are drawn here, the rest in the browser.
+const finderData = {
+  phones: phones.models.map((m): FinderPhone => [m.name, localePath(lang, phonePath(m)), m.brand, m.official, m.other, m.shops]),
+  brands: Object.fromEntries(brands.map((b) => [b.brand.id, b.brand.name])),
+  text: { official: p.official, other: p.other, out: p.out },
+};
+const first = findPhones(finderData.phones, DEFAULT_FINDER);
+const rowOptions = { lang, digits, brands: finderData.brands, text: finderData.text, official: false };
+const cheapest = (models: typeof phones.models) => {
+  const prices = models.map(lowestPrice).filter((x): x is number => x !== null);
+  return prices.length > 0 ? Math.min(...prices) : null;
+};
 
 const path = PHONES_PATH;
 const title = bn
@@ -71,65 +77,95 @@ const faqs: FaqItem[] = bn
 <Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at || latest.generated_at}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.phones, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? 'আজকের মোবাইল ফোনের দাম' : 'Mobile phone prices today'}</h1>
-  <p class="mt-2 max-w-3xl text-ink-2">
-    {
-      bn
-        ? `বাংলাদেশের ${num(PHONE_SHOPS.length)}টি দোকানের দাম পাশাপাশি: ${shops}। অফিসিয়াল ও আনঅফিসিয়াল দাম আলাদা দেখানো হয়।`
-        : `Prices at ${PHONE_SHOPS.length} Bangladeshi shops side by side: ${shops}. Official and unofficial prices are kept apart.`
-    }
+  <p class="mt-1 flex flex-wrap gap-x-2 text-sm text-ink-2">
+    <span>{bn ? `${num(count)}টি ফোন · ${num(PHONE_SHOPS.length)}টি দোকানের দাম পাশাপাশি` : `${count} phones · ${PHONE_SHOPS.length} shops side by side`}</span>
+    {seen && <span>· {s.updated}: <Ago at={seen} lang={lang} /></span>}
   </p>
-  {
-    seen && (
-      <p class="mt-1 text-sm text-ink-2">
-        {s.updated}: <Ago at={seen} lang={lang} />
-      </p>
-    )
-  }
 
   {
     count === 0 ? (
       <p class="card mt-6 p-4 text-ink-2">{p.notYet}</p>
     ) : (
       <>
-        <div class="mt-5 max-w-xl" data-phone-search>
-          <label for="phone-search" class="mb-1 block text-sm font-semibold">
-            {bn ? 'ফোন খুঁজুন' : 'Find a phone'}
-          </label>
-          <input
-            id="phone-search"
-            type="search"
-            autocomplete="off"
-            placeholder={p.search}
-            class="w-full rounded-md border border-hairline bg-surface px-3 py-2 text-ink outline-none focus-visible:border-accent"
-          />
-          <ul data-results hidden class="card mt-2 divide-y divide-grid overflow-hidden" />
-          <p data-empty hidden class="mt-2 text-sm text-ink-2">
-            {p.noMatch}
-          </p>
-          <script type="application/json" is:inline set:html={JSON.stringify(search).replace(/</g, '\\u003c')} />
-        </div>
+        <section class="card mt-5 overflow-hidden" data-phone-finder aria-labelledby="finder-title">
+          <div class="space-y-3 border-b border-grid p-4">
+            <h2 id="finder-title" class="flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-2">
+              <span class="icon-chip" data-hue="phone"><Icon name="phone" /></span>
+              {bn ? 'ফোন খুঁজুন' : 'Find a phone'}
+            </h2>
+            <input
+              type="search"
+              data-query
+              autocomplete="off"
+              aria-label={bn ? 'মডেলের নাম' : 'Model name'}
+              placeholder={p.search}
+              class="w-full rounded-lg border border-hairline bg-page px-3 py-2 text-ink outline-none focus-visible:border-accent"
+            />
+            <div role="group" aria-label={bn ? 'বাজেট' : 'Budget'} class="scroll-row -mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 text-sm">
+              {
+                BUDGETS.map((b) => (
+                  <button
+                    type="button"
+                    data-budget={b.id}
+                    aria-pressed={b.id === DEFAULT_FINDER.budget ? 'true' : 'false'}
+                    class="shrink-0 whitespace-nowrap rounded-full border border-hairline px-3 py-1 text-ink-2 hover:text-ink aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-accent-ink"
+                  >
+                    {b[lang]}
+                  </button>
+                ))
+              }
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm sm:flex sm:flex-wrap sm:items-center">
+              <select data-brand aria-label={p.brands} class="rounded-lg border border-hairline bg-page px-2 py-1.5 text-ink">
+                <option value="">{bn ? 'সব ব্র্যান্ড' : 'All brands'}</option>
+                {brands.map(({ brand, models }) => <option value={brand.id}>{brand.name} ({num(models.length)})</option>)}
+              </select>
+              <select data-sort aria-label={bn ? 'সাজানো' : 'Sort'} class="rounded-lg border border-hairline bg-page px-2 py-1.5 text-ink">
+                <option value="popular">{bn ? 'বেশি দোকানে আছে' : 'Most shops'}</option>
+                <option value="low">{bn ? 'দাম: কম থেকে বেশি' : 'Price: low to high'}</option>
+                <option value="high">{bn ? 'দাম: বেশি থেকে কম' : 'Price: high to low'}</option>
+              </select>
+              <label class="col-span-2 inline-flex items-center gap-2 text-ink-2 sm:ml-2">
+                <input type="checkbox" data-official class="size-4 accent-[var(--accent)]" />
+                {bn ? 'শুধু অফিসিয়াল দাম' : 'Official prices only'}
+              </label>
+            </div>
+          </div>
+          <p class="px-4 pt-3 text-xs text-muted" data-count aria-live="polite">{finderCount(first.length, lang, digits)}</p>
+          <ul data-results class="divide-y divide-grid" set:html={first.slice(0, FINDER_PAGE).map((ph) => finderRow(ph, rowOptions)).join('')} />
+          <p data-empty hidden class="px-4 py-6 text-center text-ink-2">{p.noMatch}</p>
+          <div class="border-t border-grid p-3 text-center">
+            <button
+              type="button"
+              data-more
+              hidden={first.length <= FINDER_PAGE}
+              class="rounded-full border border-hairline px-4 py-1.5 text-sm text-ink hover:border-accent"
+            >
+              {bn ? 'আরও দেখুন' : 'Show more'}
+            </button>
+          </div>
+          <script type="application/json" is:inline set:html={JSON.stringify(finderData).replace(/</g, '\\u003c')} />
+        </section>
 
-        <nav class="-mx-4 mt-5 flex gap-2 overflow-x-auto whitespace-nowrap px-4 pb-1 text-sm sm:mx-0 sm:flex-wrap sm:px-0" aria-label={p.brands}>
-          {brands.map(({ brand, models }) => (
-            <a href={localePath(lang, brandPath(brand.id))} class="card shrink-0 px-3 py-1.5 no-underline hover:underline">
-              {brand.name} <span class="text-muted">({num(models.length)})</span>
-            </a>
-          ))}
-        </nav>
-
-        {brands.map(({ brand, models }) => (
-          <section class="mt-8" id={brand.id}>
-            <h2 class="mb-2 text-lg font-semibold">{bn ? `${brand.name} মোবাইলের দাম` : `${brand.name} phone prices`}</h2>
-            <PhoneTable lang={lang} models={models.length > PER_BRAND ? popular(models, PER_BRAND) : models} />
-            {models.length > PER_BRAND && (
-              <p class="mt-2 text-sm">
-                <a href={localePath(lang, brandPath(brand.id))}>
-                  {bn ? `সব ${num(models.length)}টি ${brand.name} ফোনের দাম` : `All ${models.length} ${brand.name} phones`}
-                </a>
-              </p>
-            )}
-          </section>
-        ))}
+        <section class="mt-8" aria-labelledby="brands-title">
+          <h2 id="brands-title" class="mb-3 text-lg font-semibold">{bn ? 'ব্র্যান্ড অনুযায়ী দাম' : 'Prices by brand'}</h2>
+          <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+            {brands.map(({ brand, models }) => {
+              const from = cheapest(models);
+              return (
+                <li>
+                  <a href={localePath(lang, brandPath(brand.id))} class="card flex h-full flex-col px-3 py-2.5 no-underline hover:border-accent">
+                    <span class="font-semibold text-ink">{brand.name}</span>
+                    <span class="text-xs text-muted">
+                      {bn ? `${num(models.length)}টি ফোন` : `${models.length} phones`}
+                      {from !== null && (bn ? ` · ৳${num(from)} থেকে` : ` · from ৳${num(from)}`)}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       </>
     )
   }
@@ -169,5 +205,5 @@ const faqs: FaqItem[] = bn
 </Base>
 
 <script>
-  import '../scripts/phone-search';
+  import '../scripts/phone-finder';
 </script>
