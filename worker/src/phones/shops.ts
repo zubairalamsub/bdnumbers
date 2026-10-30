@@ -1,7 +1,8 @@
-// Where each phone shop lists its phones. Three shops have plain paged category listings; the other
-// three render their listings in the browser, so their product URLs come from the sitemap each one
-// publishes (and names in robots.txt). Product pages all carry schema.org Product JSON-LD with the price.
-// Every URL and pattern here was checked against the live sites on 2026-10-25 (robots.txt allows them).
+// Where each phone shop lists its phones. Two shops have plain paged category listings; the other four
+// render their listings in the browser or ask crawlers to skip query URLs, so their product URLs come from
+// the sitemap each one publishes (and names in robots.txt). Product pages all carry schema.org Product
+// JSON-LD with the price. Every URL and pattern here was checked against the live sites (robots.txt allows
+// them): 2026-10-25, and SMS Gadget on 2026-10-31.
 
 export type ShopDiscovery =
   /** A paged category listing: page n's URL, and product links on it (group 1, absolute or root-relative). */
@@ -52,13 +53,11 @@ export const SHOP_CRAWLS: readonly ShopCrawl[] = [
     },
   },
   {
-    id: 'sumash',
-    origin: 'https://www.sumashtech.com',
-    discovery: {
-      type: 'listing',
-      page: (n) => `https://www.sumashtech.com/category/phone-smartphone?page=${n}`,
-      product: /href="(\/product\/[^"?#]+)" class="block"/g,
-    },
+    id: 'smsgadget',
+    origin: 'https://smsgadget.com',
+    // robots.txt asks crawlers to skip URLs with a query, so not the paged listing: the sitemap (checked
+    // 2026-10-31: 2,554 products, ~960 of them phones by slug).
+    discovery: { type: 'sitemap', url: 'https://smsgadget.com/sitemap.xml', product: /^https:\/\/smsgadget\.com\/product\/[^/?#]+$/ },
   },
 ];
 

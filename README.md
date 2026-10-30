@@ -54,7 +54,7 @@ Each parser has tests against pages saved from the live sites (`worker/test/fixt
 
 ### Mobile phone prices
 
-Six shops, read from their own websites (robots.txt allows every page used; checked 2026-10-25). Ryans shows scripts a Cloudflare challenge, and Star Tech was left out at the owner's request.
+Six shops, read from their own websites (robots.txt allows every page used; checked 2026-10-25, SMS Gadget 2026-10-31). Ryans shows scripts a Cloudflare challenge, and Star Tech was left out at the owner's request. Sumash Tech was one of the six until 2026-10-31: its Cloudflare challenged every request from the Worker after 25 Oct, so SMS Gadget replaced it.
 
 | Shop | How its phones are found |
 |---|---|
@@ -63,7 +63,7 @@ Six shops, read from their own websites (robots.txt allows every page used; chec
 | [Gadget & Gear](https://gadgetandgear.com) | Sitemap; one product per RAM/storage variant |
 | [KRY International](https://kryinternational.com) | Sitemap |
 | [Rio International](https://riointernational.com.bd) | Paged phone listing, `/category/mobile/?page=n` |
-| [Sumash Tech](https://www.sumashtech.com) | Paged phone listing, `/category/phone-smartphone?page=n` |
+| [SMS Gadget](https://smsgadget.com) | Sitemap (robots.txt asks crawlers to skip query URLs, so not the paged listing) |
 
 Every product page carries schema.org Product JSON-LD, so one parser reads them all ([`worker/src/phones/parse.ts`](worker/src/phones/parse.ts)): name, price (the cheapest variant; KRY gives a range), stock. Sitemap URLs are filtered by slug first, so accessories and other gadgets are never fetched.
 

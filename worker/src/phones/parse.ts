@@ -145,7 +145,7 @@ export type ProductOutcome =
 export function productOutcome(data: ProductData, options: { kindInTitle?: boolean } = {}): ProductOutcome {
   const { name } = data;
   // A shop's category can rule a product out ("Home Appliances > Refrigerator"), but not in: Apple Gadgets
-  // files some phones under the brand alone ("Samsung", "POCO > Xiaomi"), and Sumash files them under
+  // files some phones under the brand alone ("Samsung", "POCO > Xiaomi"), and some shops file them under
   // "Smartphones/Accessories". The name decides the rest.
   const category = data.category;
   if (category && !/phone/i.test(category) && NOT_PHONE_CATEGORY.test(category)) {

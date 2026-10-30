@@ -16,7 +16,8 @@ export const PHONE_SHOPS: readonly PhoneShop[] = [
   { id: 'gadgetandgear', name: 'Gadget & Gear', url: 'https://gadgetandgear.com' },
   { id: 'kry', name: 'KRY International', url: 'https://kryinternational.com' },
   { id: 'rio', name: 'Rio International', url: 'https://riointernational.com.bd' },
-  { id: 'sumash', name: 'Sumash Tech', url: 'https://www.sumashtech.com' },
+  // Replaced Sumash Tech on 2026-10-31: its Cloudflare had challenged every request from ours since 25 Oct.
+  { id: 'smsgadget', name: 'SMS Gadget', url: 'https://smsgadget.com' },
 ];
 
 export const phoneShop = (id: string): PhoneShop | undefined => PHONE_SHOPS.find((s) => s.id === id);

@@ -16,9 +16,9 @@ import kryNothing from './fixtures/kry-nothing-phone-4a-2026-10-25.html?raw';
 import krySitemap from './fixtures/kry-sitemap-2026-10-25.xml?raw';
 import rioHonor from './fixtures/rio-honor-200-5g-2026-10-25.html?raw';
 import rioList from './fixtures/rio-mobile-page-1-2026-10-25.html?raw';
-import sumashA08 from './fixtures/sumash-galaxy-a08-official-2026-10-25.html?raw';
-import sumashIqoo from './fixtures/sumash-iqoo-16-2026-10-25.html?raw';
-import sumashList from './fixtures/sumash-smartphone-page-1-2026-10-25.html?raw';
+import smsF70 from './fixtures/smsgadget-samsung-galaxy-f70-2026-10-31.html?raw';
+import smsNote17 from './fixtures/smsgadget-redmi-note-17-official-2026-10-31.html?raw';
+import smsSitemap from './fixtures/smsgadget-sitemap-2026-10-31.xml?raw';
 import { DEPLOY_HOOK, allSourceRoutes, calledUrls, html, httpStatus, mockFetch, request, resetStorage } from './helpers';
 
 beforeEach(resetStorage);
@@ -106,10 +106,6 @@ describe('shop pages', () => {
     expect(rio[0]).toBe('https://riointernational.com.bd/product/honor-200-5g');
     expect(rio).toContain('https://riointernational.com.bd/product/samsung-galaxy-a57-5g');
 
-    const sumash = listingLinks(shop('sumash'), sumashList);
-    expect(sumash).toHaveLength(12);
-    expect(sumash[0]).toBe('https://www.sumashtech.com/product/meizu-note-21-pro');
-
     const dazzle = listingLinks(shop('dazzle'), dazzleList);
     expect(dazzle).toHaveLength(12);
     expect(dazzle).toContain('https://dazzle.com.bd/product/honor-x6e-official-price-in-bangladesh');
@@ -127,14 +123,23 @@ describe('shop pages', () => {
     expect(() => sitemapLinks(shop('kry'), '<html>Just a moment...</html>')).toThrow(/not a <urlset>/);
   });
 
+  it('reads SMS Gadget from its sitemap, which lists its products among blog and brand pages', () => {
+    const links = sitemapLinks(shop('smsgadget'), smsSitemap);
+    expect(links.length).toBeGreaterThan(800);
+    expect(links).toContain('https://smsgadget.com/product/redmi-note-17-official');
+    expect(links.every((u) => u.startsWith('https://smsgadget.com/product/'))).toBe(true);
+    expect(links).not.toContain('https://smsgadget.com/product/redmi-watch-6-lite');
+  });
+
   it('read product pages', () => {
     expect(productOutcome(productData(rioHonor))).toEqual({
       status: 'ok',
       offer: expect.objectContaining({ key: 'honor200', network: '5g', display: 'Honor 200 5G', price: 31499, stock: 'in', kind: null }),
     });
-    expect(productOutcome(productData(sumashA08))).toEqual({
+    // SMS Gadget: "Redmi Note 17 Official price in Bangladesh".
+    expect(productOutcome(productData(smsNote17))).toEqual({
       status: 'ok',
-      offer: expect.objectContaining({ key: 'samsunggalaxya08', price: 24999, kind: 'official', display: 'Samsung Galaxy A08' }),
+      offer: expect.objectContaining({ key: 'redminote17', brand: 'xiaomi', price: 36999, kind: 'official', display: 'Redmi Note 17', stock: 'in' }),
     });
     expect(productOutcome(productData(dazzleX6e))).toEqual({
       status: 'ok',
@@ -154,7 +159,7 @@ describe('shop pages', () => {
       offer: expect.objectContaining({ key: 'nothingphone4a', brand: 'nothing', price: 48499, high: 54999 }),
     });
     // Announced but not priced yet.
-    expect(productOutcome(productData(sumashIqoo))).toEqual({ status: 'no_price', name: 'iQOO 16' });
+    expect(productOutcome(productData(smsF70))).toEqual({ status: 'no_price', name: 'Samsung Galaxy F70 Price in Bangladesh' });
   });
 
   it('take "Official" from Gadget & Gear page titles, where it says so', () => {
@@ -171,6 +176,7 @@ describe('shop pages', () => {
     // Apple Gadgets files some phones as just "Samsung" or "POCO > Xiaomi".
     expect(productOutcome({ ...a57, category: 'Samsung' }).status).toBe('ok');
     expect(productOutcome({ ...a57, name: 'POCO M8 5G', category: 'POCO > Xiaomi' }).status).toBe('ok');
+    expect(productOutcome({ ...a57, category: 'Smartphones/Accessories' }).status).toBe('ok');
     expect(
       productOutcome({ ...a57, name: 'Samsung RT47K6231UT/D3 Twin Cooling Refrigerator - 465L', category: 'Home Appliances > Refrigerator & Freezer' }),
     ).toMatchObject({ status: 'not_phone' });
@@ -201,7 +207,7 @@ describe('groupOffers', () => {
     const groups = groupOffers([
       offer({ url: 'a', shop: 'applegadgets', model_key: 'samsunggalaxya57', network: '5g', display: 'Samsung Galaxy A57 5G', price: 47500 }),
       offer({ url: 'b', shop: 'gadgetandgear', model_key: 'samsunggalaxya57', network: '5g', display: 'Samsung Galaxy A57 5G', price: 88199 }),
-      offer({ url: 'c', shop: 'sumash', model_key: 'samsunggalaxya57', display: 'Samsung Galaxy A57', price: 46999 }),
+      offer({ url: 'c', shop: 'smsgadget', model_key: 'samsunggalaxya57', display: 'Samsung Galaxy A57', price: 46999 }),
     ]);
     expect(groups).toHaveLength(1);
     expect(groups[0]).toMatchObject({ key: 'samsunggalaxya575g', name: 'Samsung Galaxy A57 5G' });
@@ -223,7 +229,7 @@ describe('groupOffers', () => {
     const groups = groupOffers([
       offer({ url: 'a', shop: 'rio', model_key: 'redminote15', network: '4g', display: 'Redmi Note 15 4G', price: 21000, brand: 'xiaomi' }),
       offer({ url: 'b', shop: 'rio', model_key: 'redminote15', network: '5g', display: 'Redmi Note 15 5G', price: 25000, brand: 'xiaomi' }),
-      offer({ url: 'c', shop: 'sumash', model_key: 'redminote15', display: 'Redmi Note 15', price: 22000, brand: 'xiaomi' }),
+      offer({ url: 'c', shop: 'smsgadget', model_key: 'redminote15', display: 'Redmi Note 15', price: 22000, brand: 'xiaomi' }),
     ]);
     expect(groups.map((g) => g.key).sort()).toEqual(['redminote15', 'redminote154g', 'redminote155g']);
   });
@@ -374,7 +380,7 @@ describe('publishing', () => {
     const rows = [
       ['https://www.applegadgetsbd.com/product/galaxy-a57-5g', 'applegadgets', 'Galaxy A57 5G', 'samsunggalaxya57', '5g', 'Samsung Galaxy A57 5G', null, null, 47500, 'in'],
       ['https://gadgetandgear.com/product/galaxy-a57-5g-12gb-256gb', 'gadgetandgear', 'Samsung Galaxy A57 5G (12/256GB)', 'samsunggalaxya57', '5g', 'Samsung Galaxy A57 5G', '12/256GB', null, 88199, 'in'],
-      ['https://www.sumashtech.com/product/galaxy-a57-official', 'sumash', 'Galaxy A57 (Official)', 'samsunggalaxya57', null, 'Samsung Galaxy A57', null, 'official', 52999, 'in'],
+      ['https://smsgadget.com/product/galaxy-a57-official', 'smsgadget', 'Galaxy A57 (Official)', 'samsunggalaxya57', null, 'Samsung Galaxy A57', null, 'official', 52999, 'in'],
       ['https://dazzle.com.bd/product/galaxy-a57', 'dazzle', 'Samsung Galaxy A57', 'samsunggalaxya57', null, 'Samsung Galaxy A57', null, null, 45000, 'out'],
     ] as const;
     const stmt = env.DB.prepare(
@@ -393,7 +399,7 @@ describe('publishing', () => {
     const a57 = phones!.models[0]!;
     expect(a57).toMatchObject({ slug: 'samsung-galaxy-a57-5g', name: 'Samsung Galaxy A57 5G', brand: 'samsung', official: 52999, other: 47500, shops: 3 });
     // In stock first, cheapest first; Dazzle's out-of-stock offer last.
-    expect(a57.offers.map((o) => o.shop)).toEqual(['applegadgets', 'sumash', 'gadgetandgear', 'dazzle']);
+    expect(a57.offers.map((o) => o.shop)).toEqual(['applegadgets', 'smsgadget', 'gadgetandgear', 'dazzle']);
 
     const res = await request('/api/phones.json');
     expect(res.status).toBe(200);
