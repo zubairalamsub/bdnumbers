@@ -27,12 +27,16 @@ export function effectiveDate(text: string, published: string): string {
 const MENTION =
   /\b(22|21|18)[- ]?(?:carat|karat)\s+(gold|silver)\b|\b(gold|silver)\s+of\s+the\s+traditional\s+method\b|\btraditional(?:[- ]method)?\s+(gold|silver)\b/gi;
 const AMOUNT = /(?:Tk\.?|BDT)\s*(\d[\d,]*(?:\.\d+)?)/gi;
+/** Words before an amount that make it the size of a change, not a price: "by Tk 5,481", "down Tk 4,491". */
+const CHANGE_BEFORE = /\b(?:by|down|up|(?:hike|cut|increase|decrease|rise|fall|drop|reduction|total)\s+of)\s*$/i;
 
 /**
  * Pull per-bhori prices out of news prose such as "cutting the price of 22-carat gold by Tk 3,266 per
- * bhori to Tk 228,031". For each karat the first mention wins (later ones are usually past prices), and
- * the price is the largest amount between that mention and the next mention or the end of the sentence
- * (the other amounts are the size of the change).
+ * bhori to Tk 228,031". Amounts that size a change ("by Tk 3,266", "down Tk 4,491") are not prices. For
+ * each karat the first mention that states a price wins (later ones are usually past prices): a report
+ * may open with only the cut ("22-carat gold, … reduced by Tk 5,481 per bhori") and give the new price in
+ * the next sentence. The price is the largest amount between that mention and the next mention or the end
+ * of the sentence.
  */
 export function extractBhoriPrices(text: string): Record<Metal, Map<Karat, number>> {
   const out: Record<Metal, Map<Karat, number>> = { gold: new Map(), silver: new Map() };
@@ -48,7 +52,10 @@ export function extractBhoriPrices(text: string): Record<Metal, Map<Karat, numbe
     let segment = text.slice(mention.end, mentions[i + 1]?.start ?? text.length);
     const sentenceEnd = segment.search(/\.\s+[A-Z]/);
     if (sentenceEnd >= 0) segment = segment.slice(0, sentenceEnd + 1);
-    const amounts = [...segment.matchAll(AMOUNT)].map((a) => Number(a[1]!.replace(/,/g, ''))).filter(Number.isFinite);
+    const amounts = [...segment.matchAll(AMOUNT)]
+      .filter((a) => !CHANGE_BEFORE.test(segment.slice(Math.max(0, a.index - 20), a.index)))
+      .map((a) => Number(a[1]!.replace(/,/g, '')))
+      .filter(Number.isFinite);
     if (amounts.length > 0) out[mention.metal].set(mention.karat, Math.max(...amounts));
   });
   return out;

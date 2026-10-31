@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { effectiveDate, extractBhoriPrices, parseUnbArticle, parseUnbSearch } from '../src/sources/bajusMirror';
+import unbGold1031 from './fixtures/unb-gold-2026-10-31.html?raw';
 import { FIXTURES, UNB_ARTICLE_URL } from './helpers';
 
 describe('parseUnbSearch', () => {
@@ -29,6 +30,27 @@ describe('parseUnbArticle', () => {
     expect(points[0]!.meta).toMatchObject({ source: 'mirror', mirror: 'unb', url: UNB_ARTICLE_URL });
     // The article says 21K silver is Tk 4,966 while 22K is Tk 4,199: a typo, so silver is not trusted.
     expect(warnings).toEqual([expect.stringMatching(/UNB silver skipped: .*silver 21k \(4966\) is not below 22k \(4199\)/)]);
+  });
+
+  it('takes the new price, not the cut, when the first sentence gives only the cut', async () => {
+    // "the price of 22-carat gold … reduced by Tk 5,481 per bhori" comes first; the price is in the next
+    // sentence ("has been fixed at Tk 217,592"). Taking Tk 5,481 as the price stalled gold for six days.
+    const url = 'https://unb.com.bd/category/Business/gold-prices-slashed-by-tk-5481-per-bhori-in-bangladesh/199178';
+    const { points, warnings } = await parseUnbArticle(unbGold1031, url);
+    const v = Object.fromEntries(points.map((p) => [p.series_key, p.value]));
+    expect(v).toEqual({
+      gold_22k: 217_592,
+      gold_21k: 207_794,
+      gold_18k: 178_459,
+      gold_traditional: 145_800,
+      silver_22k: 3_499,
+      silver_21k: 3_383,
+      silver_18k: 2_916,
+      silver_traditional: 2_216,
+    });
+    // "The new prices came into effect at 10am on Saturday": published Saturday 31 October.
+    expect(new Set(points.map((p) => p.date))).toEqual(new Set(['2026-10-31']));
+    expect(warnings).toEqual([]);
   });
 
   it('rejects an article that is not about BAJUS prices', async () => {
