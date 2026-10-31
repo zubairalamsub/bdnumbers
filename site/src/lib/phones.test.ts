@@ -1,6 +1,6 @@
 import type { PhoneHistoryResponse, PhoneModel } from '@bdnumbers/shared';
 import { describe, expect, it } from 'vitest';
-import { byBrand, lowestPrice, popular, priceHistory } from './phones';
+import { byBrand, lowestPrice, popular, priceHistory, recentDrops } from './phones';
 import { phonePages } from './site-pages';
 
 const model = (o: Partial<PhoneModel> & Pick<PhoneModel, 'key' | 'brand'>): PhoneModel => ({
@@ -81,6 +81,71 @@ describe('priceHistory', () => {
       ],
     });
     expect(priceHistory(history, 'unknown', '2026-10-27').points).toEqual([]);
+  });
+});
+
+describe('recentDrops', () => {
+  const offer = (url: string, price: number, stock: 'in' | 'out' = 'in') => ({
+    shop: 'kry',
+    url,
+    name: 'n',
+    variant: null,
+    kind: null,
+    price,
+    high: null,
+    stock,
+    seen_at: '2026-11-01T00:00:00Z',
+    changed_at: '2026-11-01T00:00:00Z',
+  });
+  const change = (url: string, date: string, previous: number, price: number) => ({
+    date,
+    shop: 'kry',
+    url,
+    kind: null,
+    variant: null,
+    price,
+    previous,
+    stock: 'in' as const,
+    previous_stock: 'in' as const,
+  });
+  const phones = {
+    generated_at: '',
+    models: [
+      model({ key: 'iphone', brand: 'apple', offers: [offer('i1', 130999)] }),
+      model({ key: 'note', brand: 'xiaomi', offers: [offer('n1', 30999)] }),
+      model({ key: 'out', brand: 'xiaomi', offers: [offer('o1', 20000, 'out')] }),
+      model({ key: 'back', brand: 'xiaomi', offers: [offer('b1', 25000)] }),
+      model({ key: 'odd', brand: 'apple', offers: [offer('x1', 10000)] }),
+      model({ key: 'tiny', brand: 'xiaomi', offers: [offer('t1', 49900)] }),
+    ],
+  };
+  const history = {
+    generated_at: '',
+    daily: {},
+    changes: {
+      // Two cuts: the latest one counts.
+      iphone: [change('i1', '2026-11-01', 146999, 130999), change('i1', '2026-10-28', 150000, 146999)],
+      note: [change('n1', '2026-10-31', 31999, 30999)],
+      out: [change('o1', '2026-10-31', 22000, 20000)], // out of stock now
+      back: [change('b1', '2026-10-30', 26000, 24000)], // the shop has raised it again to 25,000
+      odd: [change('x1', '2026-10-31', 150000, 10000)], // 93% off: a listing error
+      tiny: [change('t1', '2026-10-31', 50000, 49900)], // 0.2%: not news
+      gone: [change('g1', '2026-10-31', 10000, 9000)], // model no longer listed
+    },
+  };
+
+  it('keeps cuts that still stand, one per phone, newest first', () => {
+    const drops = recentDrops(phones, history, '2026-11-01');
+    expect(drops.map((d) => [d.model.key, d.change.date, d.drop])).toEqual([
+      ['iphone', '2026-11-01', 16000],
+      ['note', '2026-10-31', 1000],
+    ]);
+    expect(drops[0]!.pct).toBeCloseTo(10.88, 1);
+  });
+
+  it('looks back only so far', () => {
+    expect(recentDrops(phones, history, '2026-11-20').map((d) => d.model.key)).toEqual([]);
+    expect(recentDrops(phones, history, '2026-11-01', { limit: 1 })).toHaveLength(1);
   });
 });
 

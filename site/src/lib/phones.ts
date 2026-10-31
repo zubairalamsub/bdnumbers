@@ -4,9 +4,11 @@ import {
   addDays,
   type Lang,
   type PhoneBrand,
+  type PhoneChange,
   type PhoneHistoryResponse,
   type PhoneKind,
   type PhoneModel,
+  type PhonesResponse,
   type PhoneStock,
 } from '@bdnumbers/shared';
 import { STRINGS } from '../i18n';
@@ -73,4 +75,47 @@ export function priceHistory(history: PhoneHistoryResponse, key: string, today: 
     for (let d = steps[i]![0]; d < until; d = addDays(d, 1)) points.push([d, value]);
   }
   return { kind, points };
+}
+
+export interface PriceDrop {
+  model: PhoneModel;
+  change: PhoneChange;
+  /** Taka off, and as a share of the old price (%). */
+  drop: number;
+  pct: number;
+}
+
+/**
+ * Recent price cuts worth a look: per phone its latest cut of at least `minPct`% within `days` days, and
+ * only while the shop still sells it at that price (a cut taken back since isn't news). Cuts over
+ * `maxPct`% are left out: they are almost always a listing error or a different variant. Newest first.
+ */
+export function recentDrops(
+  phones: PhonesResponse,
+  history: PhoneHistoryResponse,
+  today: string,
+  { days = 14, limit = 12, minPct = 1, maxPct = 35 } = {},
+): PriceDrop[] {
+  const since = addDays(today, -days);
+  const byKey = new Map(phones.models.map((m) => [m.key, m]));
+  const drops: PriceDrop[] = [];
+  for (const [key, changes] of Object.entries(history.changes)) {
+    const model = byKey.get(key);
+    if (!model) continue;
+    const offers = new Map(model.offers.map((o) => [o.url, o]));
+    let best: PriceDrop | null = null;
+    for (const change of changes) {
+      if (change.date < since || change.price >= change.previous) continue;
+      const offer = offers.get(change.url);
+      if (!offer || offer.stock !== 'in' || offer.price !== change.price) continue;
+      const drop = change.previous - change.price;
+      const pct = (drop / change.previous) * 100;
+      if (pct < minPct || pct > maxPct) continue;
+      if (!best || change.date > best.change.date || (change.date === best.change.date && pct > best.pct)) {
+        best = { model, change, drop, pct };
+      }
+    }
+    if (best) drops.push(best);
+  }
+  return drops.sort((a, b) => b.change.date.localeCompare(a.change.date) || b.pct - a.pct).slice(0, limit);
 }

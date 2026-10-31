@@ -1,15 +1,16 @@
 ---
-import { PHONE_SHOPS, defaultDigits, formatNumber, type Lang } from '@bdnumbers/shared';
+import { PHONE_SHOPS, defaultDigits, dhakaDate, formatDate, formatNumber, phoneShop, type Lang } from '@bdnumbers/shared';
 import Ago from '../components/Ago.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Faq from '../components/Faq.astro';
 import Icon from '../components/Icon.astro';
+import Num from '../components/Num.astro';
 import Related from '../components/Related.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { getLatest, getPhones } from '../lib/data';
+import { getLatest, getPhoneHistory, getPhones } from '../lib/data';
 import { BUDGETS, DEFAULT_FINDER, FINDER_PAGE, findPhones, finderCount, finderRow, type FinderPhone } from '../lib/phone-finder';
-import { PHONES_PATH, brandPath, byBrand, lowestPrice, phonePath } from '../lib/phones';
+import { PHONES_PATH, brandPath, byBrand, lowestPrice, phonePath, recentDrops } from '../lib/phones';
 import type { Faq as FaqItem } from '../lib/seo';
 
 interface Props {
@@ -24,6 +25,7 @@ const digits = defaultDigits(lang);
 const phones = await getPhones();
 const latest = await getLatest();
 const brands = byBrand(phones.models);
+const drops = recentDrops(phones, await getPhoneHistory(), dhakaDate());
 const num = (n: number) => formatNumber(n, digits, 0);
 const shops = PHONE_SHOPS.map((x) => x.name).join(', ');
 const count = phones.models.length;
@@ -146,6 +148,48 @@ const faqs: FaqItem[] = bn
           </div>
           <script type="application/json" is:inline set:html={JSON.stringify(finderData).replace(/</g, '\\u003c')} />
         </section>
+
+        {drops.length > 0 && (
+          <section class="card mt-6 overflow-hidden" aria-labelledby="drops-title">
+            <div class="border-b border-grid p-4">
+              <h2 id="drops-title" class="flex items-center gap-2 text-[0.9375rem] font-semibold text-ink-2">
+                <span class="icon-chip" data-hue="phone"><Icon name="trendDown" /></span>
+                {bn ? 'সাম্প্রতিক দাম কমেছে' : 'Recent price drops'}
+              </h2>
+              <p class="mt-1 text-xs text-muted">
+                {bn
+                  ? 'গত ১৪ দিনে যে দোকানে দাম কমেছে, এখনো সেই দামে স্টকে আছে। নতুনটি আগে।'
+                  : 'Cut in the last 14 days and still in stock at that price, newest first.'}
+              </p>
+            </div>
+            <ul class="divide-y divide-grid">
+              {drops.map(({ model, change, drop, pct }) => (
+                <li>
+                  <a href={localePath(lang, phonePath(model))} class="flex items-center justify-between gap-3 px-4 py-2.5 text-ink no-underline hover:bg-page">
+                    <span class="min-w-0">
+                      <span class="block font-medium">{model.name}</span>
+                      <span class="block text-xs text-muted">
+                        {phoneShop(change.shop)?.name ?? change.shop}
+                        {change.variant && ` · ${change.variant}`} · {formatDate(change.date, lang, digits)} · {bn ? 'আগে' : 'was'}{' '}
+                        <s>
+                          ৳<Num value={change.previous} lang={lang} />
+                        </s>
+                      </span>
+                    </span>
+                    <span class="shrink-0 whitespace-nowrap text-right">
+                      <span class="block font-semibold">
+                        ৳<Num value={change.price} lang={lang} />
+                      </span>
+                      <span class="block text-xs font-semibold text-good-ink">
+                        ▼ ৳<Num value={drop} lang={lang} /> (<Num value={pct} fd={1} lang={lang} />%)
+                      </span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section class="mt-8" aria-labelledby="brands-title">
           <h2 id="brands-title" class="mb-3 text-lg font-semibold">{bn ? 'ব্র্যান্ড অনুযায়ী দাম' : 'Prices by brand'}</h2>
