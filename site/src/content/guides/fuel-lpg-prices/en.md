@@ -2,7 +2,7 @@
 title: 'How fuel and LPG prices are set in Bangladesh'
 description: "The automatic pricing formula for diesel, octane, petrol and kerosene, how BERC sets the monthly LPG price, and what to check when you buy a cylinder."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 6
 related:
   - { label: 'Fuel prices', path: '/fuel-price' }

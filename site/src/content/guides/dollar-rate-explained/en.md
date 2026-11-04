@@ -2,7 +2,7 @@
 title: 'How the dollar rate is set: bid, ask and the average rate'
 description: "What bid, ask and the weighted average rate (WAR) mean in Bangladesh Bank's dollar rate, why banks' rates differ, and which rate to watch."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 3
 related:
   - { label: 'Dollar rate today', path: '/dollar-rate-today' }

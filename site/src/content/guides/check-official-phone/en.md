@@ -2,7 +2,7 @@
 title: 'How to tell an official phone: checking the IMEI'
 description: "How to check a phone's IMEI against BTRC's register before you buy, and what separates an official phone from an unofficial one in Bangladesh."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 1
 related:
   - { label: 'Mobile phone prices', path: '/mobile-price' }

@@ -2,7 +2,7 @@
 title: 'Calculating zakat: nisab, what counts, a worked example'
 description: "The gold and silver nisab, what it comes to in taka at today's prices, which assets count, and a step-by-step example at 2.5%."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 5
 related:
   - { label: 'Zakat calculator', path: '/calculators/zakat' }

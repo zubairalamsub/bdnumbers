@@ -2,7 +2,7 @@
 title: "Reading gold prices: bhori, karat, VAT and making charge"
 description: "Bhori, ana, rati and grams; how 22, 21 and 18 karat differ; how to read BAJUS's prices; and what a piece of jewellery really costs."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 2
 related:
   - { label: 'Gold price today', path: '/gold-price-today' }

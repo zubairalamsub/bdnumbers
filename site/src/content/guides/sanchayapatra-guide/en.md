@@ -2,7 +2,7 @@
 title: 'Savings certificates (Sanchayapatra): rates and how to buy'
 description: "Rates on Bangladesh, family, pensioner and three-monthly savings certificates, the Tk 7.5 lakh tier, tax at source, and what to know before you buy."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 4
 related:
   - { label: 'Savings certificate rates', path: '/savings-rates' }
