@@ -22,7 +22,8 @@ export interface Guide {
   slug: string;
   lang: Lang;
   meta: GuideMeta;
-  Content: MarkdownInstance<GuideMeta>['Content'];
+  /** The body as HTML. */
+  html: MarkdownInstance<GuideMeta>['compiledContent'];
   /** At about 200 words a minute. */
   minutes: number;
 }
@@ -40,7 +41,7 @@ export function guides(lang: Lang): Guide[] {
       const [, slug, fileLang] = /guides\/([a-z0-9-]+)\/(bn|en)\.md$/.exec(file) ?? [];
       if (!slug || fileLang !== lang) return null;
       const words = md.rawContent().split(/\s+/).filter(Boolean).length;
-      return { slug, lang, meta: md.frontmatter, Content: md.Content, minutes: Math.max(1, Math.round(words / 200)) };
+      return { slug, lang, meta: md.frontmatter, html: md.compiledContent, minutes: Math.max(1, Math.round(words / 200)) };
     })
     .filter((g): g is Guide => g !== null && (SHOW_DRAFTS || !g.meta.draft))
     .sort((a, b) => (a.meta.order ?? 99) - (b.meta.order ?? 99) || a.slug.localeCompare(b.slug));

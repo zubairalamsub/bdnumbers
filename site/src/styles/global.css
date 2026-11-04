@@ -241,6 +241,9 @@
   .guide-prose strong {
     font-weight: 600;
   }
+  .guide-prose .table-scroll {
+    overflow-x: auto;
+  }
   .guide-prose table {
     width: 100%;
     border-collapse: collapse;

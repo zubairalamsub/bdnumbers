@@ -16,7 +16,9 @@ const { lang, slug } = Astro.props;
 const bn = lang === 'bn';
 const digits = defaultDigits(lang);
 const g = findGuide(lang, slug)!;
-const { meta, Content } = g;
+const { meta } = g;
+// Each table sits in a box that scrolls sideways on its own, so a wide one can't widen the page on a phone.
+const body = (await g.html()).replace(/<table>/g, '<div class="table-scroll"><table>').replace(/<\/table>/g, '</table></div>');
 const path = guidePath(slug);
 const updated = meta.updated ?? meta.published;
 const others = guides(lang).filter((x) => x.slug !== slug);
@@ -59,7 +61,7 @@ const articleLd = {
       {bn ? 'হালনাগাদ' : 'Updated'}: {formatDate(updated, lang, digits)} · {bn ? `${formatNumber(g.minutes, digits, 0)} মিনিটে পড়া` : `${g.minutes} min read`}
     </p>
     <div class="guide-prose mt-6">
-      <Content />
+      <Fragment set:html={body} />
     </div>
     <p class="mt-8 border-t border-grid pt-4 text-sm text-ink-2">
       {
