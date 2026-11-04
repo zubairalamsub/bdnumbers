@@ -52,6 +52,7 @@ function keywordEntry(pagePath) {
   if (/^\/prayer-times\/[a-z-]+$/.test(pagePath)) return keywords['/prayer-times/{district}'];
   if (/^\/currency\/[a-z-]+$/.test(pagePath)) return keywords['/currency/{currency}'];
   if (/^\/market-price\/[a-z-]+$/.test(pagePath)) return keywords['/market-price/{item}'];
+  if (/^\/guides\/[a-z0-9-]+$/.test(pagePath)) return keywords['/guides/{guide}'];
   if (/^\/mobile-price\/brand\/[a-z0-9-]+$/.test(pagePath)) return keywords['/mobile-price/brand/{brand}'];
   if (/^\/mobile-price\/[a-z0-9-]+$/.test(pagePath)) return keywords['/mobile-price/{phone}'];
   return null;
@@ -99,6 +100,12 @@ function checkJsonLd(page, data, canonical) {
         data.distribution?.length > 0 && data.distribution.every((d) => d.contentUrl?.startsWith('https://') && d.encodingFormat),
         'every distribution needs an https contentUrl and an encodingFormat',
       );
+      break;
+    case 'Article':
+      need(data.headline && data.description, 'needs a headline and a description');
+      need(data.mainEntityOfPage === canonical, 'mainEntityOfPage must be the canonical URL');
+      need(/^\d{4}-\d{2}-\d{2}$/.test(data.datePublished ?? '') && /^\d{4}-\d{2}-\d{2}$/.test(data.dateModified ?? ''), 'needs datePublished and dateModified');
+      need(data.author?.name && data.publisher?.name && data.publisher?.logo?.url, 'needs an author and a publisher with a logo');
       break;
     case 'Product': {
       // Phone pages: the lowest and highest in-stock price across the shops.

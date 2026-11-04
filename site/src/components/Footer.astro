@@ -2,6 +2,7 @@
 import type { Lang } from '@bdnumbers/shared';
 import { SITE_NAME } from '../config';
 import { STRINGS, localePath } from '../i18n';
+import { guides } from '../lib/guides';
 import DigestSignup from './DigestSignup.astro';
 
 interface Props {
@@ -35,6 +36,8 @@ const groups = [
       { path: '/prayer-times', label: s.nav.prayer },
       { path: '/holidays', label: s.nav.holidays },
       { path: '/calculators', label: s.nav.calculators },
+      // Only once a guide is published (drafts are not built).
+      ...(guides(lang).some((g) => !g.meta.draft) ? [{ path: '/guides', label: bn ? 'গাইড' : 'Guides' }] : []),
     ],
   },
   {

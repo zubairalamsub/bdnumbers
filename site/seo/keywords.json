@@ -135,6 +135,19 @@
       "en": ["{phone} price in Bangladesh", "{phone} official price in BD", "{phone} unofficial price"]
     }
   },
+  "/guides": {
+    "bn": "গাইড",
+    "en": "guides",
+    "longTail": {
+      "bn": ["অফিসিয়াল ফোন যাচাই", "সোনার ভরি ও ক্যারেট", "সঞ্চয়পত্রের নিয়ম", "যাকাতের হিসাব"],
+      "en": ["check official phone Bangladesh", "gold bhori and karat", "savings certificate rules", "zakat calculation"]
+    }
+  },
+  "/guides/{guide}": {
+    "bn": "{guide}",
+    "en": "{guide}",
+    "longTail": { "bn": [], "en": [] }
+  },
   "/mobile-price/brand/{brand}": {
     "bn": "{brand} মোবাইলের দাম",
     "en": "{brand} mobile price",

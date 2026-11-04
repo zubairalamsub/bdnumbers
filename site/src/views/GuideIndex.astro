@@ -1,0 +1,63 @@
+---
+import { defaultDigits, formatNumber, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
+import { localePath } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { GUIDES_PATH, guidePath, guides } from '../lib/guides';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const bn = lang === 'bn';
+const digits = defaultDigits(lang);
+const list = guides(lang);
+const newest = list.map((g) => g.meta.updated ?? g.meta.published).sort().at(-1)!;
+const title = bn ? 'গাইড: দাম, রেট ও হিসাব বুঝে নিন' : 'Guides: understand the prices, rates and sums';
+const description = bn
+  ? 'অফিসিয়াল ফোন যাচাই, সোনার ভরি ও ক্যারেট, ডলার রেট, সঞ্চয়পত্র, যাকাত ও জ্বালানির দাম নিয়ে সহজ ভাষায় গাইড, সাইটের তথ্যসহ।'
+  : "Plain guides to checking an official phone, gold's bhori and karats, the dollar rate, savings certificates, zakat and fuel prices."
+---
+
+{/* With only drafts listed (a SHOW_DRAFTS preview), the list is not for search engines either. */}
+<Base
+  lang={lang}
+  path={GUIDES_PATH}
+  title={title}
+  description={description}
+  generatedAt={`${newest}T00:00:00.000Z`}
+  noindex={list.every((g) => g.meta.draft)}
+>
+  <Breadcrumbs lang={lang} items={[{ label: bn ? 'গাইড' : 'Guides', path: GUIDES_PATH }]} />
+  <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? 'গাইড' : 'Guides'}</h1>
+  <p class="mt-2 max-w-3xl text-ink-2">
+    {
+      bn
+        ? 'এই সাইটের সংখ্যাগুলো কোথা থেকে আসে, কীভাবে পড়বেন, আর কেনাকাটা বা বিনিয়োগের আগে কী দেখে নেবেন।'
+        : 'Where the numbers on this site come from, how to read them, and what to check before you buy or invest.'
+    }
+  </p>
+  <ul class="mt-6 grid gap-3 md:grid-cols-2">
+    {
+      list.map((g) => (
+        <li>
+          <a href={localePath(lang, guidePath(g.slug))} class="card flex h-full flex-col gap-1 p-4 no-underline hover:border-accent">
+            <span class="flex items-center gap-2 font-semibold text-ink">
+              <span class="icon-chip" data-hue="tools">
+                <Icon name="calculator" />
+              </span>
+              {g.meta.title}
+            </span>
+            <span class="text-sm text-ink-2">{g.meta.description}</span>
+            <span class="mt-auto pt-1 text-xs text-muted">
+              {bn ? `${formatNumber(g.minutes, digits, 0)} মিনিটে পড়া` : `${g.minutes} min read`}
+              {g.meta.draft && <span class="ml-2 text-warn-ink">{bn ? 'খসড়া' : 'Draft'}</span>}
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Base>

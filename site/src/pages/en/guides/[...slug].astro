@@ -1,0 +1,17 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { guides } from '../../../lib/guides';
+import GuideIndex from '../../../views/GuideIndex.astro';
+import GuidePage from '../../../views/GuidePage.astro';
+
+// /guides and /guides/<slug>; none at all while every guide is still a draft.
+export const getStaticPaths = (() => {
+  const list = guides('en');
+  if (list.length === 0) return [];
+  return [{ params: { slug: undefined }, props: { slug: null } }, ...list.map((g) => ({ params: { slug: g.slug }, props: { slug: g.slug } }))];
+}) satisfies GetStaticPaths;
+
+const { slug } = Astro.props as { slug: string | null };
+---
+
+{slug ? <GuidePage lang="en" slug={slug} /> : <GuideIndex lang="en" />}

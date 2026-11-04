@@ -1,0 +1,82 @@
+---
+import { defaultDigits, formatDate, formatNumber, type Lang } from '@bdnumbers/shared';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Related from '../components/Related.astro';
+import { SITE_NAME, SITE_URL } from '../config';
+import Base from '../layouts/Base.astro';
+import { GUIDES_PATH, guide as findGuide, guidePath, guides } from '../lib/guides';
+import { absoluteUrl } from '../lib/seo';
+
+interface Props {
+  lang: Lang;
+  slug: string;
+}
+
+const { lang, slug } = Astro.props;
+const bn = lang === 'bn';
+const digits = defaultDigits(lang);
+const g = findGuide(lang, slug)!;
+const { meta, Content } = g;
+const path = guidePath(slug);
+const updated = meta.updated ?? meta.published;
+const others = guides(lang).filter((x) => x.slug !== slug);
+
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: meta.title,
+  description: meta.description,
+  inLanguage: lang,
+  datePublished: meta.published,
+  dateModified: updated,
+  mainEntityOfPage: absoluteUrl(lang, path),
+  author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+  publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/icons/icon-512.png` } },
+};
+---
+
+<Base
+  lang={lang}
+  path={path}
+  title={meta.title}
+  description={meta.description}
+  generatedAt={`${updated}T00:00:00.000Z`}
+  jsonLd={[articleLd]}
+  noindex={meta.draft === true}
+>
+  <Breadcrumbs lang={lang} items={[{ label: bn ? 'গাইড' : 'Guides', path: GUIDES_PATH }, { label: meta.title, path }]} />
+  {
+    meta.draft && (
+      <p class="badge mb-3 text-warn-ink">
+        <span aria-hidden="true">⚠</span>
+        {bn ? 'খসড়া: প্রকাশের আগে পর্যালোচনার জন্য' : 'Draft: for review before publishing'}
+      </p>
+    )
+  }
+  <article class="max-w-3xl">
+    <h1 class="text-2xl font-semibold leading-snug sm:text-3xl">{meta.title}</h1>
+    <p class="mt-2 text-sm text-muted">
+      {bn ? 'হালনাগাদ' : 'Updated'}: {formatDate(updated, lang, digits)} · {bn ? `${formatNumber(g.minutes, digits, 0)} মিনিটে পড়া` : `${g.minutes} min read`}
+    </p>
+    <div class="guide-prose mt-6">
+      <Content />
+    </div>
+    <p class="mt-8 border-t border-grid pt-4 text-sm text-ink-2">
+      {
+        bn
+          ? `লিখেছে ${SITE_NAME}। নিয়ম ও দাম বদলায়: সিদ্ধান্ত নেওয়ার আগে সংশ্লিষ্ট প্রতিষ্ঠানের সর্বশেষ ঘোষণা দেখে নিন। ভুল চোখে পড়লে জানান: `
+          : `Written by ${SITE_NAME}. Rules and prices change: check the latest notice from the body concerned before you decide. Spotted a mistake? Tell us: `
+      }
+      <a href={`mailto:contact@${SITE_NAME}`}>contact@{SITE_NAME}</a>
+    </p>
+  </article>
+
+  <Related
+    lang={lang}
+    links={[
+      ...(meta.related ?? []),
+      ...others.slice(0, 4).map((o) => ({ label: o.meta.title, path: guidePath(o.slug) })),
+      { label: bn ? 'সব গাইড' : 'All guides', path: GUIDES_PATH },
+    ]}
+  />
+</Base>

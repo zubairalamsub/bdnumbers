@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { SITE_URL } from '../config';
 import { localePath } from '../i18n';
 import { getLatest, getPhones } from '../lib/data';
+import { GUIDES_PATH, guidePath, guides } from '../lib/guides';
 import { INDEXABLE_PAGES, lastModified, phonePages } from '../lib/site-pages';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -11,7 +12,13 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 export const GET: APIRoute = async () => {
   const latest = await getLatest();
   const phones = await getPhones();
-  const urls = [...INDEXABLE_PAGES, ...phonePages(phones)].flatMap(({ path, lastmod }) => {
+  // Published guides (drafts are never built), dated by their last update.
+  const published = guides('bn').filter((g) => !g.meta.draft);
+  const guidePages = published.length === 0 ? [] : [
+    { path: GUIDES_PATH, lastmod: { date: published.map((g) => g.meta.updated ?? g.meta.published).sort().at(-1)! } },
+    ...published.map((g) => ({ path: guidePath(g.slug), lastmod: { date: g.meta.updated ?? g.meta.published } })),
+  ];
+  const urls = [...INDEXABLE_PAGES, ...phonePages(phones), ...guidePages].flatMap(({ path, lastmod }) => {
     const modified = lastModified(lastmod, latest, phones);
     const alternates = [
       ['bn', localePath('bn', path)],
