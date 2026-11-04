@@ -13,6 +13,7 @@ import {
 } from '@bdnumbers/shared';
 import { STRINGS } from '../i18n';
 import type { Pt } from './chart';
+import { INDEX_GENERATED_PAGES } from './indexing';
 
 export const PHONES_PATH = '/mobile-price';
 export const phonePath = (m: Pick<PhoneModel, 'slug'>) => `${PHONES_PATH}/${m.slug}`;
@@ -123,8 +124,9 @@ export function recentDrops(
 /**
  * Shops that must have a phone in stock for its page to be offered to search engines. A page with one
  * shop compares nothing, and AdSense's review counted the ~1,700 such pages as low-value content; they stay
- * on the site for visitors, marked noindex and left out of the sitemap.
+ * on the site for visitors, marked noindex and left out of the sitemap. While INDEX_GENERATED_PAGES is
+ * off, no phone page is offered.
  */
 export const MIN_SHOPS_TO_INDEX = 2;
 
-export const isIndexed = (m: PhoneModel) => m.shops >= MIN_SHOPS_TO_INDEX;
+export const isIndexed = (m: PhoneModel) => INDEX_GENERATED_PAGES && m.shops >= MIN_SHOPS_TO_INDEX;

@@ -5,6 +5,7 @@ import Faq from '../components/Faq.astro';
 import { STRINGS, localePath } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getLatest } from '../lib/data';
+import { INDEX_GENERATED_PAGES } from '../lib/indexing';
 import { faqsFor } from '../lib/seo';
 import { PRAYERS, dayLabel, formatTime, monthTimes, prayerTimes, ramadanDates } from '../lib/prayer';
 
@@ -52,7 +53,7 @@ const path = `/prayer-times/${district.id}`;
 const neighbours = DISTRICTS.filter((d) => d.division === district.division && d.id !== district.id);
 ---
 
-<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at} noindex={!INDEX_GENERATED_PAGES}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.prayer, path: '/prayer-times' }, { label: name, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{lang === 'bn' ? `${name} জেলার নামাজের সময়সূচি` : `Prayer times in ${name}`}</h1>
 

@@ -15,6 +15,7 @@ import Base from '../layouts/Base.astro';
 import { midpoints } from '../lib/chart';
 import { COMMODITIES, commodityItems, commodityPath, type Commodity } from '../lib/commodities';
 import { getHistory, getLatest } from '../lib/data';
+import { INDEX_GENERATED_PAGES } from '../lib/indexing';
 import { midChange } from '../lib/market';
 import { datasetLd, keywordsFor, ldJson, type Faq as FaqItem } from '../lib/seo';
 import { direction } from '../lib/view';
@@ -125,7 +126,7 @@ const dataset = datasetLd({
 });
 ---
 
-<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at}>
+<Base lang={lang} path={path} title={title} description={description} generatedAt={latest.generated_at} noindex={!INDEX_GENERATED_PAGES}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.market, path: '/market-price-today' }, { label: name, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? `আজকের ${c.bnOf} দাম` : `${c.en} price today`}</h1>
   <p class="mt-1 text-sm text-ink-2">{bn ? 'ঢাকার খুচরা বাজার, টিসিবির হিসাবে' : 'Dhaka retail markets, as reported by TCB'}</p>

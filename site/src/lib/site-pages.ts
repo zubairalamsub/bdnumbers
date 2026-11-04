@@ -4,6 +4,7 @@ import { DISTRICTS, SERIES, dhakaDate, type Category, type LatestResponse, type 
 import { CALCULATORS } from './calculators';
 import { COMMODITIES, commodityPath } from './commodities';
 import { CURRENCY_PAGES, currencyPath } from './currencies';
+import { INDEX_GENERATED_PAGES } from './indexing';
 import { MFS_RETRIEVED } from './mfs-fees';
 import { PHONES_PATH, brandPath, byBrand, isIndexed, phonePath } from './phones';
 
@@ -31,7 +32,7 @@ export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> 
   { path: '/gold-price-today', lastmod: { categories: ['gold'] } },
   { path: '/silver-price-today', lastmod: { categories: ['silver'] } },
   { path: '/market-price-today', lastmod: { categories: ['market'] } },
-  ...COMMODITIES.map((c) => ({ path: commodityPath(c), lastmod: { categories: ['market'] } as const })),
+  ...(INDEX_GENERATED_PAGES ? COMMODITIES : []).map((c) => ({ path: commodityPath(c), lastmod: { categories: ['market'] } as const })),
   { path: PHONES_PATH, lastmod: { phones: true } },
   { path: '/share-market-today', lastmod: { categories: ['stock'] } },
   { path: '/weather', lastmod: { categories: ['weather'] } },
@@ -40,7 +41,7 @@ export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> 
   { path: '/savings-rates', lastmod: { categories: ['savings'] } },
   { path: '/holidays', lastmod: { categories: ['holidays'] } },
   { path: '/prayer-times', lastmod: { daily: true } },
-  ...DISTRICTS.map((d) => ({ path: `/prayer-times/${d.id}`, lastmod: { daily: true } as const })),
+  ...(INDEX_GENERATED_PAGES ? DISTRICTS : []).map((d) => ({ path: `/prayer-times/${d.id}`, lastmod: { daily: true } as const })),
   { path: '/calculators', lastmod: null },
   ...CALCULATORS.map((c) => ({
     path: `/calculators/${c.slug}`,
