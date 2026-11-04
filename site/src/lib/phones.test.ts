@@ -150,7 +150,7 @@ describe('recentDrops', () => {
 });
 
 describe('phonePages', () => {
-  it('lists each brand and model page with when a price on it last changed', () => {
+  it('lists phones in stock at two or more shops, and their brands, with when a price last changed', () => {
     const offer = (changed_at: string) => ({
       shop: 'rio',
       url: 'u',
@@ -166,14 +166,15 @@ describe('phonePages', () => {
     const pages = phonePages({
       generated_at: '2026-10-25T10:00:00Z',
       models: [
-        model({ key: 'a', slug: 'samsung-galaxy-a57-5g', brand: 'samsung', offers: [offer('2026-10-24T01:00:00Z'), offer('2026-10-25T02:00:00Z')] }),
-        model({ key: 'b', slug: 'samsung-galaxy-a37', brand: 'samsung', offers: [offer('2026-10-20T01:00:00Z')] }),
+        model({ key: 'a', slug: 'samsung-galaxy-a57-5g', brand: 'samsung', shops: 2, offers: [offer('2026-10-24T01:00:00Z'), offer('2026-10-25T02:00:00Z')] }),
+        // One shop: nothing to compare, so left to visitors (noindex, not in the sitemap).
+        model({ key: 'b', slug: 'samsung-galaxy-a37', brand: 'samsung', shops: 1, offers: [offer('2026-10-20T01:00:00Z')] }),
+        model({ key: 'c', slug: 'helio-47', brand: 'helio', shops: 1, offers: [offer('2026-10-20T01:00:00Z')] }),
       ],
     });
     expect(pages).toEqual([
       { path: '/mobile-price/brand/samsung', lastmod: { date: '2026-10-25T02:00:00Z' } },
       { path: '/mobile-price/samsung-galaxy-a57-5g', lastmod: { date: '2026-10-25T02:00:00Z' } },
-      { path: '/mobile-price/samsung-galaxy-a37', lastmod: { date: '2026-10-20T01:00:00Z' } },
     ]);
   });
 });

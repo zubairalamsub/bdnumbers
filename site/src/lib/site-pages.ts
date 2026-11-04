@@ -5,7 +5,7 @@ import { CALCULATORS } from './calculators';
 import { COMMODITIES, commodityPath } from './commodities';
 import { CURRENCY_PAGES, currencyPath } from './currencies';
 import { MFS_RETRIEVED } from './mfs-fees';
-import { PHONES_PATH, brandPath, byBrand, phonePath } from './phones';
+import { PHONES_PATH, brandPath, byBrand, isIndexed, phonePath } from './phones';
 
 type LastMod =
   /** Newest data change among these categories. */
@@ -58,14 +58,16 @@ export const INDEXABLE_PAGES: ReadonlyArray<{ path: string; lastmod: LastMod }> 
   { path: '/privacy', lastmod: { date: PRIVACY_UPDATED } },
 ];
 
-/** Each phone model's page and each brand's, with when a price on it last changed. */
+/** Phone and brand pages offered to search engines (see isIndexed), with when a price on them last changed. */
 export function phonePages(phones: PhonesResponse): Array<{ path: string; lastmod: LastMod }> {
   const changed = (models: PhonesResponse['models']) => ({
     date: models.flatMap((m) => m.offers.map((o) => o.changed_at)).sort().at(-1) ?? phones.generated_at,
   });
   return [
-    ...byBrand(phones.models).map((b) => ({ path: brandPath(b.brand.id), lastmod: changed(b.models) })),
-    ...phones.models.map((m) => ({ path: phonePath(m), lastmod: changed([m]) })),
+    ...byBrand(phones.models)
+      .filter((b) => b.models.some(isIndexed))
+      .map((b) => ({ path: brandPath(b.brand.id), lastmod: changed(b.models) })),
+    ...phones.models.filter(isIndexed).map((m) => ({ path: phonePath(m), lastmod: changed([m]) })),
   ];
 }
 

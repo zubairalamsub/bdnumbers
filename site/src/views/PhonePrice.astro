@@ -11,7 +11,7 @@ import Related from '../components/Related.astro';
 import { STRINGS } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getPhoneHistory, getPhones } from '../lib/data';
-import { PHONES_PATH, brandPath, byPrice, highestPrice, kindLabel, lowestPrice, phonePath, priceHistory, stockLabel } from '../lib/phones';
+import { PHONES_PATH, brandPath, byPrice, highestPrice, isIndexed, kindLabel, lowestPrice, phonePath, priceHistory, stockLabel } from '../lib/phones';
 import { absoluteUrl, type Faq as FaqItem } from '../lib/seo';
 
 interface Props {
@@ -152,7 +152,7 @@ const siblings = phones.models
   .slice(0, 6);
 ---
 
-<Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at} jsonLd={productLd ? [productLd] : []}>
+<Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at} jsonLd={productLd ? [productLd] : []} noindex={!isIndexed(m)}>
   <Breadcrumbs
     lang={lang}
     items={[

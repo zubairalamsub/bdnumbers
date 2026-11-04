@@ -119,3 +119,12 @@ export function recentDrops(
   }
   return drops.sort((a, b) => b.change.date.localeCompare(a.change.date) || b.pct - a.pct).slice(0, limit);
 }
+
+/**
+ * Shops that must have a phone in stock for its page to be offered to search engines. A page with one
+ * shop compares nothing, and AdSense's review counted the ~1,700 such pages as low-value content; they stay
+ * on the site for visitors, marked noindex and left out of the sitemap.
+ */
+export const MIN_SHOPS_TO_INDEX = 2;
+
+export const isIndexed = (m: PhoneModel) => m.shops >= MIN_SHOPS_TO_INDEX;

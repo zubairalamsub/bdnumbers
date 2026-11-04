@@ -7,7 +7,7 @@ import Related from '../components/Related.astro';
 import { STRINGS } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getPhones } from '../lib/data';
-import { PHONES_PATH, brandPath, byBrand, lowestPrice } from '../lib/phones';
+import { PHONES_PATH, brandPath, byBrand, isIndexed, lowestPrice } from '../lib/phones';
 
 interface Props {
   lang: Lang;
@@ -34,7 +34,7 @@ const description = bn
   : `${models.length} ${brand.name} phones at ${PHONE_SHOPS.length} shops side by side${span ? `, ${span}` : ''}. Official and unofficial apart, updated daily.`;
 ---
 
-<Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at}>
+<Base lang={lang} path={path} title={title} description={description} generatedAt={phones.generated_at} noindex={!models.some(isIndexed)}>
   <Breadcrumbs lang={lang} items={[{ label: s.nav.phones, path: PHONES_PATH }, { label: brand.name, path }]} />
   <h1 class="text-2xl font-semibold sm:text-3xl">{bn ? `${brand.name} মোবাইলের দাম` : `${brand.name} mobile prices`}</h1>
   <p class="mt-2 max-w-3xl text-ink-2">
