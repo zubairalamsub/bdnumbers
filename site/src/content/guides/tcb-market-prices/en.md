@@ -2,7 +2,7 @@
 title: "Reading TCB's daily market prices: ranges, units and comparisons"
 description: "Which Dhaka markets TCB surveys, how to read its low–high prices and units, comparing with last week, month and year, why prices move, and the family card."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 8
 related:
   - { label: "Today's market prices", path: '/market-price-today' }

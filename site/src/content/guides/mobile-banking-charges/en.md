@@ -2,7 +2,7 @@
 title: 'bKash, Nagad and Rocket charges: cash out, send money and how to pay less'
 description: 'What cash out, send money and cash in cost on bKash, Nagad and Rocket, the cheaper routes such as Priyo Agent and ATM, and a Tk 5,000 example.'
 published: '2026-11-05'
-draft: true
+draft: false
 order: 12
 related:
   - { label: 'Cash out charge calculator', path: '/calculators/mobile-banking' }

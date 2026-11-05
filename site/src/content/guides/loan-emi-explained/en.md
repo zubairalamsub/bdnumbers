@@ -2,7 +2,7 @@
 title: 'Loan EMI explained: the formula, an example and the costs'
 description: 'How a monthly loan instalment (EMI) is worked out on a reducing balance, why a flat rate looks cheaper than it is, and which fees to check.'
 published: '2026-11-05'
-draft: true
+draft: false
 order: 11
 related:
   - { label: 'EMI calculator', path: '/calculators/emi' }

@@ -2,7 +2,7 @@
 title: 'How public holidays work in Bangladesh'
 description: 'Who sets the yearly holiday list, how general, executive-order and optional holidays differ, why moon-dependent dates move, and when banks close on their own.'
 published: '2026-11-05'
-draft: true
+draft: false
 order: 10
 related:
   - { label: 'Public holidays', path: '/holidays' }

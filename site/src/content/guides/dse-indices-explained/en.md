@@ -2,7 +2,7 @@
 title: 'Reading the share market: DSEX, DS30, DSES and turnover'
 description: "What the DSEX, DS30 and DSES indices measure, when they started, why turnover matters, and how to read a day's change in points and percent."
 published: '2026-11-05'
-draft: true
+draft: false
 order: 9
 related:
   - { label: "Today's share market", path: '/share-market-today' }

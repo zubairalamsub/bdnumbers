@@ -2,7 +2,7 @@
 title: 'How prayer times are calculated: the 18° angle, Hanafi Asr and district differences'
 description: 'What each time from Fajr to Isha means, the 18° angle and the Hanafi Asr shadow rule, and why times differ by a few minutes between districts, seasons and mosques.'
 published: '2026-11-05'
-draft: true
+draft: false
 order: 7
 related:
   - { label: 'Prayer times', path: '/prayer-times' }
