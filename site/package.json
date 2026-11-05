@@ -13,16 +13,16 @@
   "dependencies": {
     "@bdnumbers/shared": "*",
     "adhan": "^4.4.6",
-    "astro": "^7.4.2"
+    "astro": "^7.4.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^24.19.2",
-    "harfbuzzjs": "^1.6.3",
+    "@types/node": "^26.6.6",
+    "harfbuzzjs": "^1.6.4",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3",
-    "vitest": "~4.1.12"
+    "typescript": "^7.0.2",
+    "vitest": "~5.0.5"
   }
 }
