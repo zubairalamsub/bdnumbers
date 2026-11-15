@@ -123,6 +123,7 @@ function checkJsonLd(page, data, canonical) {
 
 const pages = walk(DIST).filter((f) => f.endsWith('.html'));
 const indexable = new Set();
+const noindexed = new Set();
 for (const file of pages) {
   const page = urlPath(file);
   if (page === '/404') continue;
@@ -155,7 +156,10 @@ for (const file of pages) {
   for (const data of ld) checkJsonLd(page, data, canonical);
   const types = new Set(ld.map((d) => d['@type']));
 
-  if (noindex) continue;
+  if (noindex) {
+    noindexed.add(SITE + page);
+    continue;
+  }
   indexable.add(SITE + page);
   for (const hreflang of ['bn', 'en', 'x-default']) {
     if (!html.includes(`hreflang="${hreflang}"`)) fail(page, `no hreflang="${hreflang}" link`);
@@ -192,6 +196,14 @@ for (const [, lastmod] of sitemap.matchAll(/<lastmod>([^<]*)<\/lastmod>/g)) {
   if (Number.isNaN(Date.parse(lastmod))) fail('sitemap.xml', `bad lastmod ${lastmod}`);
 }
 if (!fs.readFileSync(path.join(DIST, 'robots.txt'), 'utf8').includes(`Sitemap: ${SITE}/sitemap.xml`)) fail('robots.txt', 'no Sitemap line');
+
+// The temporary sitemap of hidden pages lists only built pages that are noindex.
+const hiddenFile = path.join(DIST, 'sitemap-hidden.xml');
+if (fs.existsSync(hiddenFile)) {
+  for (const [, loc] of fs.readFileSync(hiddenFile, 'utf8').matchAll(/<loc>([^<]*)<\/loc>/g)) {
+    if (!noindexed.has(decode(loc))) fail('sitemap-hidden.xml', `lists ${decode(loc)}, which is not a built noindex page`);
+  }
+}
 
 // Feeds and manifests exist and point at real files.
 for (const feed of ['feed.xml', 'en/feed.xml', 'rss.xml', 'en/rss.xml']) {
